@@ -21,6 +21,6 @@ which can be easily integrated into Go applications.
 
 ### Contribute
 
-First of all: **Contributes are welcome!** 
+First of all: **Contributions are welcome!**
  
 If you have an idea or found a bug - please raise an issue. If you want to add functionality - as usual on github send a pull request.
