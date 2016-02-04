@@ -3,7 +3,7 @@ package chacha
 func (c *Chacha) XORKeyStream(dst, src []byte) {
 	n := len(src)
 	if len(dst) < n {
-		panic("chacha20: output buffer to small")
+		panic("output buffer to small")
 	}
 	dOff, sOff := 0, 0
 	if c.off < 64 {

@@ -10,7 +10,7 @@ package chacha
 
 import (
 	"errors"
-	"strconv"
+	"github.com/enceve/crypto"
 )
 
 // The default number of rounds
@@ -25,13 +25,6 @@ var sigma = []byte{'e', 'x', 'p', 'a', 'n', 'd', ' ', '3', '2', '-', 'b', 'y', '
 
 // The constants for a 128 bit key
 var tau = []byte{'e', 'x', 'p', 'a', 'n', 'd', ' ', '1', '6', '-', 'b', 'y', 't', 'e', ' ', 'k'}
-
-type KeySizeError int
-type NonceSizeError int
-
-func (e KeySizeError) Error() string { return "chacha: invalid key size " + strconv.Itoa(int(e)) }
-
-func (e NonceSizeError) Error() string { return "chacha: invalid nonce size " + strconv.Itoa(int(e)) }
 
 // Chacha describs an instance of the orig. chacha cipher.
 type Chacha struct {
@@ -53,13 +46,13 @@ type ChachaRFC struct {
 // The initial counter (64 bit) will be set to 0.
 func New(key, nonce []byte, nRounds uint) (*Chacha, error) {
 	if k := len(key); k != 16 && k != 32 {
-		return nil, KeySizeError(k)
+		return nil, crypto.KeySizeError(k)
 	}
-	if k := len(nonce); k < 8 {
-		return nil, NonceSizeError(k)
+	if n := len(nonce); n < 8 {
+		return nil, crypto.NonceSizeError(n)
 	}
 	if nRounds%2 != 0 {
-		return nil, errors.New("chacha: the number of rounds must be even")
+		return nil, errors.New("the number of rounds must be even")
 	}
 	c := &Chacha{
 		off:    64,
@@ -74,10 +67,10 @@ func New(key, nonce []byte, nRounds uint) (*Chacha, error) {
 // The initial counter (32 bit) will be set to 0.
 func NewRFC(key, nonce []byte) (*ChachaRFC, error) {
 	if k := len(key); k != 32 {
-		return nil, KeySizeError(k)
+		return nil, crypto.KeySizeError(k)
 	}
-	if k := len(nonce); k < 12 {
-		return nil, NonceSizeError(k)
+	if n := len(nonce); n < 12 {
+		return nil, crypto.NonceSizeError(n)
 	}
 	c := &ChachaRFC{
 		off: 64,

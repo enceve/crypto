@@ -36,7 +36,7 @@ func initializeRFC(key, nonce []byte, state *[16]uint32) {
 func (c *ChachaRFC) XORKeyStream(dst, src []byte) {
 	n := len(src)
 	if len(dst) < n {
-		panic("chacha: output buffer to small")
+		panic("output buffer to small")
 	}
 	dOff, sOff := 0, 0
 	if c.off < 64 {

@@ -1,7 +1,7 @@
 package hc
 
 // key & iv setup and initialization
-func (c *hc256) initialize(key, iv []byte) {
+func (c *hc256) initialize(key, nonce []byte) {
 	w := make([]uint32, 2560)
 
 	// insert the key into the temporally state
@@ -9,7 +9,7 @@ func (c *hc256) initialize(key, iv []byte) {
 		w[i>>2] |= uint32(v) << uint(8*(i%4))
 	}
 	// insert the iv into the temporally state
-	for i, v := range iv {
+	for i, v := range nonce {
 		w[(i>>2)+8] |= uint32(v) << uint(8*(i%4))
 	}
 
@@ -36,7 +36,7 @@ func (c *hc256) initialize(key, iv []byte) {
 func (c *hc256) XORKeyStream(dst, src []byte) {
 	n := len(src)
 	if len(dst) < n {
-		panic("hc: output buffer to small")
+		panic("output buffer to small")
 	}
 	dOff, sOff := 0, 0
 	for n > 0 && c.off < 4 {

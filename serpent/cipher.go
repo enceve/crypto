@@ -10,7 +10,7 @@ package serpent
 
 import (
 	"crypto/cipher"
-	"strconv"
+	"github.com/enceve/crypto"
 )
 
 const (
@@ -19,12 +19,6 @@ const (
 	// The Serpent phi constant (sqrt(5) - 1) * 2**31
 	phi = 0x9e3779b9
 )
-
-type KeySizeError int
-
-func (k KeySizeError) Error() string {
-	return "serpent: invalid key size " + strconv.Itoa(int(k))
-}
 
 // A serpent struct holds an array of 132 32 bit values.
 // These are the sub-keys created by the keySchedule function
@@ -38,7 +32,7 @@ func New(key []byte) (cipher.Block, error) {
 	n := len(key)
 	switch n {
 	default:
-		return nil, KeySizeError(n)
+		return nil, crypto.KeySizeError(n)
 	case 16, 24, 32:
 		break
 	}
@@ -52,20 +46,20 @@ func (s *serpent) BlockSize() int { return BlockSize }
 
 func (s *serpent) Encrypt(dst, src []byte) {
 	if len(src) < BlockSize {
-		panic("serpent: input to small")
+		panic("input to small")
 	}
 	if len(dst) < BlockSize {
-		panic("serpent: output to small")
+		panic("output to small")
 	}
 	encryptBlock(dst, src, &s.sk)
 }
 
 func (s *serpent) Decrypt(dst, src []byte) {
 	if len(src) < BlockSize {
-		panic("serpent: input to small")
+		panic("input to small")
 	}
 	if len(dst) < BlockSize {
-		panic("serpent: output to small")
+		panic("output to small")
 	}
 	decryptBlock(dst, src, &s.sk)
 }

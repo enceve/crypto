@@ -41,10 +41,10 @@ var two *big.Int = big.NewInt(2)
 // panics.
 func (pub *Public) SafePrime(n int) bool {
 	if pub == nil {
-		panic("dh: pub is nil")
+		panic("pub is nil")
 	}
 	if pub.P == nil {
-		panic("dh: pub.P is nil")
+		panic("pub.P is nil")
 	}
 	q := new(big.Int).Sub(pub.P, one)
 	q = q.Div(q, two)
@@ -58,13 +58,13 @@ func (pub *Public) SafePrime(n int) bool {
 // If the pub argument is nil, the functions panics.
 func GenerateKey(pub *Public, random io.Reader) (*Private, error) {
 	if pub == nil {
-		panic("dh: public part is nil")
+		panic("public part is nil")
 	}
 	if pub.P == nil {
-		return nil, errors.New("dh: public prime is nil")
+		return nil, errors.New("public prime is nil")
 	}
 	if pub.G == nil {
-		return nil, errors.New("dh: public generator is nil")
+		return nil, errors.New("public generator is nil")
 	}
 
 	pri := new(Private)
@@ -85,27 +85,27 @@ func GenerateKey(pub *Public, random io.Reader) (*Private, error) {
 // work correctly.
 func (pri *Private) Validate(pub *Public) error {
 	if pub == nil {
-		return errors.New("dh: public part is nil")
+		return errors.New("public part is nil")
 	}
 
 	if pri.Value == nil {
-		return errors.New("dh: private value is nil")
+		return errors.New("private value is nil")
 	}
 	if pub.P == nil {
-		return errors.New("dh: public prime is nil")
+		return errors.New("public prime is nil")
 	}
 	if pub.Value == nil {
-		return errors.New("dh: public value is nil")
+		return errors.New("public value is nil")
 	}
 
 	if pub.G.Cmp(pub.P) >= 0 {
-		return errors.New("dh: generator >= prime")
+		return errors.New("generator >= prime")
 	}
 	if pub.Value.Cmp(pub.P) >= 0 {
-		return errors.New("dh: public value >= prime")
+		return errors.New("public value >= prime")
 	}
 	if pri.Value.Cmp(pub.P) >= 0 {
-		return errors.New("dh: private value >= prime")
+		return errors.New("private value >= prime")
 	}
 	return nil
 }
@@ -118,7 +118,7 @@ func (pri *Private) Validate(pub *Public) error {
 // use Validate.
 func (pri *Private) DeriveSecret(pub *Public) *big.Int {
 	if pub == nil {
-		panic("dh: public part is nil")
+		panic("public part is nil")
 	}
 
 	return new(big.Int).Exp(pub.Value, pri.Value, pub.P)
