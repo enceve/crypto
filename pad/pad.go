@@ -15,7 +15,7 @@ import (
 type LengthError int
 
 func (p LengthError) Error() string {
-	return "pad: illegal padding length: " + strconv.Itoa(int(p))
+	return "illegal padding length: " + strconv.Itoa(int(p))
 }
 
 // A ByteError indicates, that at least one byte
@@ -23,46 +23,48 @@ func (p LengthError) Error() string {
 type ByteError int
 
 func (p ByteError) Error() string {
-	return "pad: illegal padding byte: " + strconv.Itoa(int(p))
+	return "illegal padding byte: " + strconv.Itoa(int(p))
 }
 
 // The Padding interface represents a padding scheme.
 type Padding interface {
-	// Calculates the padding overhead.
-	// The block argument is the unpadded block.
-	// The size argument is the size of a full block.
-	// The overhead is defined through:
-	// len(paddedBlock) - len(unpaddedBlock)
-	// E.g. the size argument is 16 and the length of the
-	// block argument is 12 - than the overhead will be 4.
-	Overhead(block []byte, size int) uint
 
-	// Expands an unpadded block (the block argument) to a
-	// block with the length of the size argument.
-	// This function returns a padded block (the size of the
-	// returned slice may be greater than the size argument).
-	// If len(block) is greater than the size argument, this
-	// function panics.
-	Pad(block []byte, size int) []byte
+	// BlockSize returns the block size for which
+	// the padding can be used.
+	BlockSize() int
 
-	// Removes the padding bytes from the given block argument.
-	// If the padding is somehow incorrect this function returns
-	// an nil for the slice and an error. The returned slice is
-	// the unpadded block. If the padding could removed successfully
-	// the returned error is nil.
-	// The len(block) must be equal to the size argument!
-	Unpad(block []byte, size int) ([]byte, error)
+	// Calculates the overhead, the padding will cause
+	// by padding the given byte slice.
+	// The overhead will always between 1 and BlockSize().
+	Overhead(src []byte) int
+
+	// Expands the last (may incomplete) block of the src slice
+	// to a padded and complete block.
+	Pad(src []byte) []byte
+
+	// Takes a slice and tries to remove the padding bytes
+	// form the last block. Therefore the length of the
+	// src argument must be a multiply of the blocksize.
+	// If the return error is nil, the padding could be
+	// removed successfully.
+	Unpad(src []byte) ([]byte, error)
 }
 
 // Creates a new Padding implementing the ANSI X.923 scheme.
-func NewX923() Padding {
-	pad := x923Padding(0)
+func NewX923(blocksize int) Padding {
+	if blocksize <= 0 || blocksize > 255 {
+		panic("illegal blocksize - size must between 0 and 256")
+	}
+	pad := x923Padding(blocksize)
 	return pad
 }
 
 // Creates a new Padding implementing the PKCS 7 scheme.
-func NewPkcs7() Padding {
-	pad := pkcs7Padding(0)
+func NewPkcs7(blocksize int) Padding {
+	if blocksize <= 0 || blocksize > 255 {
+		panic("illegal blocksize - size must between 0 and 256")
+	}
+	pad := pkcs7Padding(blocksize)
 	return pad
 }
 
@@ -70,9 +72,19 @@ func NewPkcs7() Padding {
 // described in ISO 10126. The padding bytes are taken
 // form the given rand argument. This reader should return
 // random data.
-func NewRandom(rand io.Reader) Padding {
-	pad := &randomPadding{
+func NewIso10126(blocksize int, rand io.Reader) Padding {
+	if blocksize <= 0 || blocksize > 255 {
+		panic("illegal blocksize - size must between 0 and 256")
+	}
+	pad := &isoPadding{
 		random: rand,
 	}
+	pad.blocksize = blocksize
 	return pad
+}
+
+// Utility functions
+
+func generalOverhead(blocksize int, src []byte) int {
+	return blocksize - (len(src) % blocksize)
 }

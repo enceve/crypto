@@ -5,51 +5,96 @@ import (
 	"testing"
 )
 
-const blockSize = 16
+const blocksize = 16
 
-var paddings = []Padding{
-	NewX923(),
-	NewPkcs7(),
-	NewRandom(rand.Reader),
+var paddings []Padding = []Padding{
+	NewPkcs7(blocksize),
+	NewX923(blocksize),
+	NewIso10126(blocksize, rand.Reader),
 }
 
-func TestPadding(t *testing.T) {
-	partBlock := make([]byte, blockSize-3)
-	fullBlock := make([]byte, blockSize)
-
-	for _, pad := range paddings {
-		generalPaddingTest(t, pad, partBlock, fullBlock)
+func TestPkcs7(t *testing.T) {
+	p := NewPkcs7(blocksize)
+	padded := p.Pad(make([]byte, blocksize-4))
+	for i := blocksize - 4; i < blocksize; i++ {
+		if padded[i] != 4 {
+			t.Fatal("PKCS 7 padding failed while padding a block")
+		}
 	}
-}
-
-func generalPaddingTest(t *testing.T, p Padding, partBlock, fullBlock []byte) {
-	if o := p.Overhead(partBlock, blockSize); o != 3 {
-		t.Fatalf("pad: Expected overhead of 3 but found %d", o)
-	}
-	if o := p.Overhead(fullBlock, blockSize); o != 2*blockSize {
-		t.Fatalf("pad: Expected overhead of %d but found %d", (2 * blockSize), o)
-	}
-
-	padBlock := p.Pad(partBlock, blockSize)
-	if len(padBlock) != blockSize {
-		t.Fatal("pad: padded block has not the given blocksize")
-	}
-	unpadBlock, err := p.Unpad(padBlock, blockSize)
+	_, err := p.Unpad(padded)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(unpadBlock) != len(partBlock) {
-		t.Fatal("pad: length of unpadded block differs form the original")
+}
+
+func TestX923(t *testing.T) {
+	p := NewX923(blocksize)
+	padded := p.Pad(make([]byte, blocksize-4))
+	for i := blocksize - 4; i < blocksize-1; i++ {
+		if padded[i] != 0 {
+			t.Fatal("ANSI X923 padding failed while padding a block")
+		}
 	}
-	padBlock = p.Pad(fullBlock, blockSize)
-	if len(padBlock) != 2*blockSize {
-		t.Fatal("pad: length of padded full block is not twice the blocksize")
-	}
-	unpadBlock, err = p.Unpad(padBlock[blockSize:], blockSize)
+	_, err := p.Unpad(padded)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(unpadBlock) != 0 {
-		t.Fatal("pad: length of unpadded full block is not 0")
+}
+
+func TestPaddings(t *testing.T) {
+	for i := range paddings {
+		generalPaddingTest(t, paddings[i])
+	}
+}
+
+func generalPaddingTest(t *testing.T, p Padding) {
+	empty := make([]byte, 0)
+	partEmpty := make([]byte, blocksize-3)
+	full := make([]byte, blocksize)
+	partLarge := make([]byte, 3*blocksize+5)
+	large := make([]byte, 3*blocksize)
+
+	// overhead test
+	overheadTest(t, p, empty, blocksize)
+	overheadTest(t, p, partEmpty, 3)
+	overheadTest(t, p, full, blocksize)
+	overheadTest(t, p, partLarge, blocksize-5)
+	overheadTest(t, p, large, blocksize)
+
+	// pad test
+	paddedEmpty := padTest(t, p, empty)
+	paddedPartEmpty := padTest(t, p, partEmpty)
+	paddedFull := padTest(t, p, full)
+	paddedPartLarge := padTest(t, p, partLarge)
+	paddedLarge := padTest(t, p, large)
+
+	// unpad test
+	unpadTest(t, p, paddedEmpty)
+	unpadTest(t, p, paddedPartEmpty)
+	unpadTest(t, p, paddedFull)
+	unpadTest(t, p, paddedPartLarge)
+	unpadTest(t, p, paddedLarge)
+}
+
+func overheadTest(t *testing.T, p Padding, src []byte, expOverhead int) {
+	overhead := p.Overhead(src)
+	if overhead != expOverhead {
+		t.Fatalf("%s : overhead does not match expected overhead: found %d , expected %d", p, overhead, expOverhead)
+	}
+}
+
+func padTest(t *testing.T, p Padding, src []byte) []byte {
+	padded := p.Pad(src)
+	if len(padded) != blocksize {
+		t.Fatalf("%s : length of padded block is not the blocksize", p)
+		t.FailNow()
+	}
+	return padded
+}
+
+func unpadTest(t *testing.T, p Padding, src []byte) {
+	_, err := p.Unpad(src)
+	if err != nil {
+		t.Fatalf("%s : %s", p, err)
 	}
 }

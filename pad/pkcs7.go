@@ -1,77 +1,74 @@
 package pad
 
-type pkcs7Padding uint
+import (
+	"errors"
+)
 
-func (p pkcs7Padding) Overhead(block []byte, size int) uint {
-	if size <= 0 || size > 255 {
-		panic("pad: illegal blocksize - size must between 0 and 256")
-	}
-	length := len(block)
-	if length > size {
-		panic("pad: len of block must be smaller than or equal to the blocksize")
-	}
-	if length == size {
-		return uint(2 * size)
-	} else {
-		return uint(size - length)
-	}
+type pkcs7Padding int
+
+func (p pkcs7Padding) String() string {
+	return "PKCS7-Padding"
 }
 
-func (p pkcs7Padding) Pad(block []byte, size int) []byte {
-	if size <= 0 || size > 255 {
-		panic("pad: illegal blocksize - size must between 0 and 256")
-	}
-	length := len(block)
-	if length > size {
-		panic("pad: len of block must be smaller than or equal to the blocksize")
-	}
-	var dst []byte
-	var padByte byte
-	var padLen int
-	if length == size {
-		dst = make([]byte, 2*size)
-		padByte = byte(length)
-		padLen = length
+func (p pkcs7Padding) BlockSize() int {
+	return int(p)
+}
+
+func (p pkcs7Padding) Overhead(src []byte) int {
+	return generalOverhead(p.BlockSize(), src)
+}
+
+func (p pkcs7Padding) Pad(src []byte) []byte {
+	length := len(src)
+	overhead := p.Overhead(src)
+
+	var block []byte
+	if length >= p.BlockSize() {
+		block = src[length+overhead-p.BlockSize():]
 	} else {
-		dst = make([]byte, size)
-		padByte = byte(size - length)
-		padLen = length
+		block = src
 	}
+
+	dst := make([]byte, p.BlockSize())
 	copy(dst, block)
-	for i := int(padLen); i < len(dst); i++ {
-		dst[i] = padByte
+	for i := range dst {
+		if i < p.BlockSize()-overhead {
+			dst[i] = block[i]
+		} else {
+			dst[i] = byte(overhead)
+		}
 	}
 	return dst
 }
 
-func (p pkcs7Padding) Unpad(block []byte, size int) ([]byte, error) {
-	if size <= 0 || size > 255 {
-		panic("pad: illegal blocksize - size must between 0 and 256")
+func (p pkcs7Padding) Unpad(src []byte) ([]byte, error) {
+	length := len(src)
+	if length == 0 || length%p.BlockSize() != 0 {
+		return nil, errors.New("src length must be a multiply of the padding blocksize")
 	}
-	length := len(block)
-	if length != size {
-		panic("pad: len of block must be equal to the blocksize")
-	}
-	unLen, err := verifyPkcs7(block, length)
+
+	block := src[(length - p.BlockSize()):]
+	unLen, err := verifyPkcs7(block, p.BlockSize())
 	if err != nil {
 		return nil, err
 	}
+
 	dst := make([]byte, unLen)
 	copy(dst, block[:unLen])
 	return dst, nil
 }
 
-func verifyPkcs7(block []byte, length int) (uint, error) {
+func verifyPkcs7(block []byte, blocksize int) (int, error) {
 	var err error = nil
-	padLen := block[length-1]
-	if padLen == 0 || int(padLen) > length {
+	padLen := block[blocksize-1]
+	if padLen <= 0 || int(padLen) > blocksize {
 		err = LengthError(padLen)
 	}
-	padStart := length - int(padLen)
-	for i := padStart; i < length-1; i++ {
-		if block[i] != padLen && err == nil {
-			err = ByteError(block[i])
+	padStart := blocksize - int(padLen)
+	for _, b := range block[padStart:] {
+		if b != padLen && err == nil {
+			err = ByteError(b)
 		}
 	}
-	return uint(padStart), err
+	return int(padStart), err
 }
