@@ -36,7 +36,7 @@ func testSingleVector(t *testing.T, vec *testVector) {
 		t.Fatal(err)
 	}
 
-	h := New(key)
+	h, _ := New(key)
 	h.Write(src)
 
 	sum := h.Sum64()
