@@ -11,7 +11,10 @@
 // recommended parameters: c = 2 and d = 4.
 package siphash
 
-import "hash"
+import (
+	"github.com/enceve/crypto"
+	"hash"
+)
 
 // The size of the secret key for SipHash.
 const KeySize = 16
@@ -116,10 +119,11 @@ func (h *siphash) Sum(in []byte) []byte {
 
 // Creates a new hash instance with the given secret key.
 // The length of the key argument must be equal to the
-// KeySize constant.
-func New(key []byte) hash.Hash64 {
+// KeySize constant - otherwise the returned error is
+// not nil.
+func New(key []byte) (hash.Hash64, error) {
 	if k := len(key); k != KeySize {
-		panic("")
+		return nil, crypto.KeySizeError(k)
 	}
 	h := new(siphash)
 	h.k0 = uint64(key[0]) | uint64(key[1])<<8 | uint64(key[2])<<16 | uint64(key[3])<<24 |
@@ -127,5 +131,5 @@ func New(key []byte) hash.Hash64 {
 	h.k1 = uint64(key[8]) | uint64(key[9])<<8 | uint64(key[10])<<16 | uint64(key[11])<<24 |
 		uint64(key[12])<<32 | uint64(key[13])<<40 | uint64(key[14])<<48 | uint64(key[15])<<56
 	h.Reset()
-	return h
+	return h, nil
 }
