@@ -9,7 +9,7 @@ func update2b(b *blake2b, in []byte) {
 	ctrH := b.ctrH
 
 	length := len(in)
-	for i := 0; i < length; i += BlockSize {
+	for i, j := 0, 0; i < length; i += BlockSize {
 		ctrL += BlockSize
 		if ctrL < BlockSize {
 			ctrH++
@@ -21,15 +21,14 @@ func update2b(b *blake2b, in []byte) {
 		v13 ^= ctrH
 		v14 ^= b.f
 
-		j := 0
-		for i := range m {
-			m[i] = uint64(in[j]) | uint64(in[j+1])<<8 | uint64(in[j+2])<<16 | uint64(in[j+3])<<24 |
+		for k := range m {
+			m[k] = uint64(in[j]) | uint64(in[j+1])<<8 | uint64(in[j+2])<<16 | uint64(in[j+3])<<24 |
 				uint64(in[j+4])<<32 | uint64(in[j+5])<<40 | uint64(in[j+6])<<48 | uint64(in[j+7])<<56
 			j += 8
 		}
 
-		for i := range precomputed {
-			s := &(precomputed[i])
+		for k := range precomputed {
+			s := &(precomputed[k])
 
 			v0 += m[s[0]]
 			v0 += v4
