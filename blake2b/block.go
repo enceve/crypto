@@ -1,14 +1,19 @@
 package blake2b
 
-func update2b(b *blake2b, in []byte) {
-	h0, h1, h2, h3 := b.hVal[0], b.hVal[1], b.hVal[2], b.hVal[3]
-	h4, h5, h6, h7 := b.hVal[4], b.hVal[5], b.hVal[6], b.hVal[7]
+// the core blake2b function taking:
+//  - the 8 64 bit chan vales
+//  - the 2 64 counters
+//  - the final block flag
+//  - the message (multiply of the blocksize)
+func update(hVal *[8]uint64, ctr *[2]uint64, f uint64, msg []byte) {
+	h0, h1, h2, h3 := hVal[0], hVal[1], hVal[2], hVal[3]
+	h4, h5, h6, h7 := hVal[4], hVal[5], hVal[6], hVal[7]
 	var m [16]uint64
 
-	ctrL := b.ctrL
-	ctrH := b.ctrH
+	ctrL := ctr[0]
+	ctrH := ctr[1]
 
-	length := len(in)
+	length := len(msg)
 	for i, j := 0, 0; i < length; i += BlockSize {
 		ctrL += BlockSize
 		if ctrL < BlockSize {
@@ -19,11 +24,11 @@ func update2b(b *blake2b, in []byte) {
 		v12, v13, v14, v15 := iv[4], iv[5], iv[6], iv[7]
 		v12 ^= ctrL
 		v13 ^= ctrH
-		v14 ^= b.f
+		v14 ^= f
 
 		for k := range m {
-			m[k] = uint64(in[j]) | uint64(in[j+1])<<8 | uint64(in[j+2])<<16 | uint64(in[j+3])<<24 |
-				uint64(in[j+4])<<32 | uint64(in[j+5])<<40 | uint64(in[j+6])<<48 | uint64(in[j+7])<<56
+			m[k] = uint64(msg[j]) | uint64(msg[j+1])<<8 | uint64(msg[j+2])<<16 | uint64(msg[j+3])<<24 |
+				uint64(msg[j+4])<<32 | uint64(msg[j+5])<<40 | uint64(msg[j+6])<<48 | uint64(msg[j+7])<<56
 			j += 8
 		}
 
@@ -153,9 +158,9 @@ func update2b(b *blake2b, in []byte) {
 		h6 ^= v6 ^ v14
 		h7 ^= v7 ^ v15
 	}
-	b.hVal[0], b.hVal[1], b.hVal[2], b.hVal[3] = h0, h1, h2, h3
-	b.hVal[4], b.hVal[5], b.hVal[6], b.hVal[7] = h4, h5, h6, h7
+	hVal[0], hVal[1], hVal[2], hVal[3] = h0, h1, h2, h3
+	hVal[4], hVal[5], hVal[6], hVal[7] = h4, h5, h6, h7
 
-	b.ctrL = ctrL
-	b.ctrH = ctrH
+	ctr[0] = ctrL
+	ctr[1] = ctrH
 }

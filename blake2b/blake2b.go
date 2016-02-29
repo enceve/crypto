@@ -3,9 +3,11 @@
 
 // The blake2b package implements the blake2b hash function
 // based on the RFC 7693 (https://tools.ietf.org/html/rfc7693).
-// This package supports 160, 256, 384 and 512 bit hash values.
-// Furthermore the the blake2b MAC, personalized hashing and salting
-// are supported.
+// (blake2b is the 64 bit version of the blake2 hash function)
+// The package API directly supports 160, 256, 384 and 512 bit
+// hash values, but custom sizes can be used as well.
+// Furthermore the blake2b MAC and salting are supported.
+// Personalization and Tree-hashing are not supported.
 package blake2b
 
 import (
@@ -16,16 +18,16 @@ import (
 
 // the blake2b hash struct
 type blake2b struct {
-	hVal       [8]uint64
-	ctrL, ctrH uint64
-	f          uint64
-	buf        [BlockSize]byte
-	off        byte
+	hVal [8]uint64       // the chain values
+	ctr  [2]uint64       // the counter (max 2^128 bytes)
+	f    uint64          // the final block flag
+	buf  [BlockSize]byte // the buffer
+	off  byte            // the buffer offset
 
-	initVal [8]uint64 // initial chain values
-	keyed   bool
-	key     [BlockSize]byte
-	hsize   byte
+	initVal [8]uint64       // initial chain values
+	keyed   bool            // flag whether a key is used (MAC)
+	key     [BlockSize]byte // the key for MAC
+	hsize   byte            // the hash size in bytes
 }
 
 // The parameters for configuring the blake2b hash function.
@@ -37,8 +39,6 @@ type Params struct {
 	Key []byte
 	// The salt (if < 16 bytes, padded with zeros)
 	Salt []byte
-	// The personalization string(if < 16 bytes, padded with zeros)
-	Person []byte
 }
 
 func verifyParams(p *Params) error {
@@ -54,12 +54,10 @@ func verifyParams(p *Params) error {
 	if len(p.Salt) > SaltSize {
 		return errors.New("salt is too large")
 	}
-	if len(p.Person) > PersonSize {
-		return errors.New("personalization is too large")
-	}
 	return nil
 }
 
+// predefined parameters for the common hash sizes 160, 256, 384 and 512 bit
 var (
 	params512 *Params = &Params{HashSize: HashSize}
 	params384 *Params = &Params{HashSize: 48}
@@ -130,13 +128,9 @@ func NewMAC(size int, key []byte) hash.Hash {
 	return d
 }
 
-func (b *blake2b) BlockSize() int {
-	return BlockSize
-}
+func (b *blake2b) BlockSize() int { return BlockSize }
 
-func (b *blake2b) Size() int {
-	return int(b.hsize)
-}
+func (b *blake2b) Size() int { return int(b.hsize) }
 
 func (b *blake2b) Write(src []byte) (int, error) {
 	n := len(src)
@@ -146,7 +140,7 @@ func (b *blake2b) Write(src []byte) (int, error) {
 	if n > diff {
 		// process buffer.
 		copy(b.buf[b.off:], in[:diff])
-		update2b(b, b.buf[:])
+		update(&(b.hVal), &(b.ctr), b.f, b.buf[:])
 		b.off = 0
 
 		in = in[diff:]
@@ -158,7 +152,7 @@ func (b *blake2b) Write(src []byte) (int, error) {
 		if nn == length {
 			nn -= BlockSize
 		}
-		update2b(b, in[:nn])
+		update(&(b.hVal), &(b.ctr), b.f, in[:nn])
 		in = in[nn:]
 	}
 	b.off += byte(copy(b.buf[b.off:], in))
@@ -166,8 +160,8 @@ func (b *blake2b) Write(src []byte) (int, error) {
 }
 
 func (b *blake2b) Reset() {
-	copy(b.hVal[:], b.initVal[:])
-	b.ctrL, b.ctrH = 0, 0
+	b.hVal = b.initVal
+	b.ctr[0], b.ctr[1] = 0, 0
 	b.f = 0
 	for i := range b.buf {
 		b.buf[i] = 0
@@ -191,10 +185,10 @@ func (b *blake2b) Sum(in []byte) []byte {
 func (b *blake2b) finalize(out []byte) {
 	// sub the padding length form the counter
 	diff := BlockSize - uint64(b.off)
-	if b.ctrL < diff {
-		b.ctrH--
+	if b.ctr[0] < diff {
+		b.ctr[1]--
 	}
-	b.ctrL -= diff
+	b.ctr[0] -= diff
 
 	// pad the buffer
 	for i := b.off; i < BlockSize; i++ {
@@ -204,7 +198,7 @@ func (b *blake2b) finalize(out []byte) {
 	b.f = uint64(0xffffffffffffffff)
 
 	// process last block
-	update2b(b, b.buf[:])
+	update(&(b.hVal), &(b.ctr), b.f, b.buf[:])
 
 	// extract hash
 	j := 0
@@ -232,9 +226,6 @@ func (b *blake2b) initialize(conf *Params) {
 	if conf.Salt != nil {
 		copy(p[32:], conf.Salt)
 	}
-	if conf.Person != nil {
-		copy(p[48:], conf.Person)
-	}
 
 	// initialize hash values
 	b.hsize = conf.HashSize
@@ -250,5 +241,5 @@ func (b *blake2b) initialize(conf *Params) {
 	}
 
 	// save the initialized state.
-	copy(b.initVal[:], b.hVal[:])
+	b.initVal = b.hVal
 }
