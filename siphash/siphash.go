@@ -12,7 +12,7 @@
 package siphash
 
 import (
-	"github.com/enceve/crypto"
+	"github.com/EncEve/crypto"
 	"hash"
 )
 

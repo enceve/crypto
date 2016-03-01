@@ -10,7 +10,7 @@ package serpent
 
 import (
 	"crypto/cipher"
-	"github.com/enceve/crypto"
+	"github.com/EncEve/crypto"
 )
 
 const (

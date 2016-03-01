@@ -8,7 +8,7 @@ package hc
 
 import (
 	"crypto/cipher"
-	"github.com/enceve/crypto"
+	"github.com/EncEve/crypto"
 )
 
 const (

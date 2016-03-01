@@ -10,7 +10,7 @@ package chacha
 
 import (
 	"errors"
-	"github.com/enceve/crypto"
+	"github.com/EncEve/crypto"
 )
 
 // The default number of rounds
