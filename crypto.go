@@ -13,3 +13,9 @@ type NonceSizeError int
 func (n NonceSizeError) Error() string {
 	return "invalid nonce size " + strconv.Itoa(int(n))
 }
+
+type TweakSizeError int
+
+func (t TweakSizeError) Error() string {
+	return "invalid tweak size " + strconv.Itoa(int(t))
+}
