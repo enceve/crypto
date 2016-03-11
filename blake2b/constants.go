@@ -7,8 +7,6 @@ const (
 	HashSize = 64
 	// The max. key size of blake2b.
 	KeySize = 64
-	// The max. personalization string size.
-	PersonSize = 16
 	// The max. salt size.
 	SaltSize = 16
 )

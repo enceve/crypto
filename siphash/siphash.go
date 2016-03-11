@@ -92,20 +92,18 @@ func (h *siphash) Write(src []byte) (int, error) {
 }
 
 func (h *siphash) Sum64() uint64 {
-	for i := h.off; i < BlockSize-1; i++ {
-		h.buf[i] = 0
+	h0 := *h
+	for i := h0.off; i < BlockSize-1; i++ {
+		h0.buf[i] = 0
 	}
-	h.buf[7] = h.ctr
-	return finalize(h)
+	h0.buf[7] = h0.ctr
+	return finalize(&h0)
 }
 
 func (h *siphash) Sum(in []byte) []byte {
-	if in != nil {
-		h.Write(in)
-	}
 	r := h.Sum64()
 
-	out := make([]byte, HashSize64)
+	var out [HashSize64]byte
 	out[0] = byte(r)
 	out[1] = byte(r >> 8)
 	out[2] = byte(r >> 16)
@@ -114,10 +112,11 @@ func (h *siphash) Sum(in []byte) []byte {
 	out[5] = byte(r >> 40)
 	out[6] = byte(r >> 48)
 	out[7] = byte(r >> 56)
-	return out
+	return append(in, out[:]...)
 }
 
-// Creates a new hash instance with the given secret key.
+// Creates a new hash instance,implementing the Hash64 interface,
+// with the given secret key.
 // The length of the key argument must be equal to the
 // KeySize constant - otherwise the returned error is
 // not nil.
@@ -132,4 +131,32 @@ func New(key []byte) (hash.Hash64, error) {
 		uint64(key[12])<<32 | uint64(key[13])<<40 | uint64(key[14])<<48 | uint64(key[15])<<56
 	h.Reset()
 	return h, nil
+}
+
+// Calculates the siphash MAC for the given key and
+// the specified message.
+// The length of the key argument must be equal to the
+// KeySize constant - otherwise the returned error is
+// not nil.
+func Sum(key, msg []byte) ([]byte, error) {
+	h, err := New(key)
+	if err != nil {
+		return nil, err
+	}
+	h.Write(msg)
+	return h.Sum(nil), nil
+}
+
+// Calculates the siphash MAC for the given key and
+// the specified message.
+// The length of the key argument must be equal to the
+// KeySize constant - otherwise the returned error is
+// not nil.
+func Sum64(key, msg []byte) (uint64, error) {
+	h, err := New(key)
+	if err != nil {
+		return 0, err
+	}
+	h.Write(msg)
+	return h.Sum64(), nil
 }

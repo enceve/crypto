@@ -43,4 +43,11 @@ func testSingleVector(t *testing.T, vec *testVector) {
 	if sum != vec.value {
 		t.Fatalf("Hash values don't match - found %x expected %x", sum, vec.value)
 	}
+	sum, err = Sum64(key, src)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if sum != vec.value {
+		t.Fatalf("Hash values don't match - found %x expected %x", sum, vec.value)
+	}
 }

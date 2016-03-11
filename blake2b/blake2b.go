@@ -22,19 +22,19 @@ type blake2b struct {
 	ctr  [2]uint64       // the counter (max 2^128 bytes)
 	f    uint64          // the final block flag
 	buf  [BlockSize]byte // the buffer
-	off  byte            // the buffer offset
+	off  int             // the buffer offset
 
 	initVal [8]uint64       // initial chain values
 	keyed   bool            // flag whether a key is used (MAC)
 	key     [BlockSize]byte // the key for MAC
-	hsize   byte            // the hash size in bytes
+	hsize   int             // the hash size in bytes
 }
 
 // The parameters for configuring the blake2b hash function.
 // All values are optional.
 type Params struct {
 	// The hash size of blake2b in bytes (default and max. is 64)
-	HashSize byte
+	HashSize int
 	// The key for MAC (padded with zeros)
 	Key []byte
 	// The salt (if < 16 bytes, padded with zeros)
@@ -130,7 +130,7 @@ func NewMAC(size int, key []byte) hash.Hash {
 
 func (b *blake2b) BlockSize() int { return BlockSize }
 
-func (b *blake2b) Size() int { return int(b.hsize) }
+func (b *blake2b) Size() int { return b.hsize }
 
 func (b *blake2b) Write(src []byte) (int, error) {
 	n := len(src)
@@ -155,7 +155,7 @@ func (b *blake2b) Write(src []byte) (int, error) {
 		update(&(b.hVal), &(b.ctr), b.f, in[:nn])
 		in = in[nn:]
 	}
-	b.off += byte(copy(b.buf[b.off:], in))
+	b.off += copy(b.buf[b.off:], in)
 	return n, nil
 }
 
@@ -173,13 +173,10 @@ func (b *blake2b) Reset() {
 }
 
 func (b *blake2b) Sum(in []byte) []byte {
-	if in != nil {
-		b.Write(in)
-	}
-	out := make([]byte, int(b.hsize))
-	b.finalize(out)
-	b.Reset()
-	return out
+	b0 := *b
+	out := make([]byte, b0.hsize)
+	b0.finalize(out)
+	return append(in, out...)
 }
 
 func (b *blake2b) finalize(out []byte) {
