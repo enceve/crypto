@@ -49,7 +49,7 @@ func testSingleVector(t *testing.T, vec *testVector) {
 		}
 	}
 
-	h, err := New(&Params{HashSize: byte(vec.hashsize), Key: keyBin})
+	h, err := New(&Params{HashSize: vec.hashsize, Key: keyBin})
 	if err != nil {
 		t.Fatal(err)
 	}

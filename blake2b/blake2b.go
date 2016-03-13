@@ -121,7 +121,7 @@ func New160() hash.Hash {
 // as a MAC function with the given key.
 // The size argument specifies the size of the MAC in bytes.
 func NewMAC(size int, key []byte) hash.Hash {
-	d, err := New(&Params{HashSize: byte(size), Key: key})
+	d, err := New(&Params{HashSize: size, Key: key})
 	if err != nil {
 		panic(err.Error())
 	}
@@ -216,7 +216,7 @@ func (b *blake2b) finalize(out []byte) {
 func (b *blake2b) initialize(conf *Params) {
 	// create parameter block.
 	var p [BlockSize]byte
-	p[0] = conf.HashSize
+	p[0] = byte(conf.HashSize)
 	p[1] = uint8(len(conf.Key))
 	p[2] = 1
 	p[3] = 1
