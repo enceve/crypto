@@ -1,10 +1,11 @@
 // Use of this source code is governed by a license
 // that can be found in the LICENSE file.
 
-// The chacha package implements Bernstein's Chacha stream cipher algorithm.
-// http://cr.yp.to/chacha/chacha-20080128.pdf
-// There are two variants of this cipher: the original by Bernstein and one
-// version described in RFC 7539 (https://tools.ietf.org/html/rfc7539).
+// The chacha package implements D J Bernstein's Chacha stream cipher algorithm.
+// See: http://cr.yp.to/chacha/chacha-20080128.pdf
+// There are two variants of this cipher:
+//		- the original by Bernstein
+// 		- the version described in RFC 7539 (https://tools.ietf.org/html/rfc7539).
 // Both are implemented here.
 package chacha
 
@@ -42,8 +43,12 @@ type ChachaRFC struct {
 }
 
 // Create a new chacha instance from the key (128 or 256 bit),
-// the nonce (64 bit) and the number of rounds (common values are 20 or 12).
+// the nonce (64 bit wich must be unique for every key for all time)
+// and the number of rounds (common values are 20 or 12).
 // The initial counter (64 bit) will be set to 0.
+// If the key is not 128 or 256 bit or the nonce is not at least
+// 64 bit a nonnil error is returned.
+// Although a nonnil error is returned, when the nRounds is not even.
 func New(key, nonce []byte, nRounds uint) (*Chacha, error) {
 	if k := len(key); k != 16 && k != 32 {
 		return nil, crypto.KeySizeError(k)
@@ -65,6 +70,8 @@ func New(key, nonce []byte, nRounds uint) (*Chacha, error) {
 // Create a new chacha instance from the key (256 bit) and
 // the nonce (96 bit). The number of rounds is fixed to 20.
 // The initial counter (32 bit) will be set to 0.
+// If the key is not 128 or 256 bit or the nonce is not at least
+// 96 bit a nonnil error is returned.
 func NewRFC(key, nonce []byte) (*ChachaRFC, error) {
 	if k := len(key); k != 32 {
 		return nil, crypto.KeySizeError(k)

@@ -131,9 +131,7 @@ func testChachaRFCVector(t *testing.T, vec *testVector) {
 func checkKeyStream(t *testing.T, buf, exp []byte) {
 	for i := range buf {
 		if buf[i] != exp[i] {
-			f := hex.EncodeToString(buf)
-			t.Log(f)
-			t.Fatalf("Unexpected keystream byte at %d: found: %x expected: %x", i, buf[i], exp[i])
+			t.Fatalf("Unexpected keystream:\nFound:    %v\nExpected: %v", hex.EncodeToString(buf), hex.EncodeToString(exp))
 		}
 	}
 }

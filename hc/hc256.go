@@ -1,3 +1,6 @@
+// Use of this source code is governed by a license
+// that can be found in the LICENSE file.
+
 package hc
 
 // key & iv setup and initialization
@@ -33,6 +36,8 @@ func (c *hc256) initialize(key, nonce []byte) {
 	c.ctr = 0
 }
 
+// XORKeyStream XORs each byte in the given slice with a byte from the
+// cipher's key stream.
 func (c *hc256) XORKeyStream(dst, src []byte) {
 	n := len(src)
 	if len(dst) < n {

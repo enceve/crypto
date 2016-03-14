@@ -1,3 +1,6 @@
+// Use of this source code is governed by a license
+// that can be found in the LICENSE file.
+
 package blake2s
 
 import (
@@ -6,27 +9,38 @@ import (
 )
 
 type testVector struct {
-	hashsize      int
-	key, src, exp string
+	p        *Params
+	src, exp string
+}
+
+func decodeHex(t *testing.T, s string) []byte {
+	b, err := hex.DecodeString(s)
+	if err != nil {
+		if t == nil {
+			panic(err)
+		}
+		t.Fatal(err)
+	}
+	return b
 }
 
 var vectors []testVector = []testVector{
 	// Test vectors from https://blake2.net/blake2s-test.txt
 	testVector{
-		hashsize: HashSize,
-		key:      "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
-		src:      hex.EncodeToString([]byte("")),
-		exp:      "48a8997da407876b3d79c0d92325ad3b89cbb754d86ab71aee047ad345fd2c49",
+		// without explicit hash size (check if default is used)
+		p:   &Params{Key: decodeHex(nil, "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f")},
+		src: hex.EncodeToString([]byte("")),
+		exp: "48a8997da407876b3d79c0d92325ad3b89cbb754d86ab71aee047ad345fd2c49",
 	},
 	testVector{
-		hashsize: HashSize,
-		key:      "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
-		src:      "00",
-		exp:      "40d15fee7c328830166ac3f918650f807e7e01e177258cdc0a39b11f598066f1",
+		p: &Params{HashSize: 32,
+			Key: decodeHex(nil, "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f")},
+		src: "00",
+		exp: "40d15fee7c328830166ac3f918650f807e7e01e177258cdc0a39b11f598066f1",
 	},
 	testVector{
-		hashsize: HashSize,
-		key:      "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+		p: &Params{HashSize: 32,
+			Key: decodeHex(nil, "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f")},
 		src: "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f" +
 			"202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f40414" +
 			"2434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f6061626364" +
@@ -39,17 +53,9 @@ var vectors []testVector = []testVector{
 	},
 }
 
-func testSingleVector(t *testing.T, vec *testVector) {
-	var keyBin []byte = nil
-	if vec.key != "" {
-		var err error
-		keyBin, err = hex.DecodeString(vec.key)
-		if err != nil {
-			t.Fatal(err)
-		}
-	}
-
-	h, err := New(&Params{HashSize: vec.hashsize, Key: keyBin})
+func testSingleVector(t *testing.T, i int) {
+	vec := &vectors[i]
+	h, err := New(vec.p)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -57,22 +63,22 @@ func testSingleVector(t *testing.T, vec *testVector) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	h.Write(srcBin)
 
+	h.Write(srcBin)
 	sum := h.Sum(nil)
 	expSum, _ := hex.DecodeString(vec.exp)
 	if len(sum) != len(expSum) {
-		t.Fatal("length of hash is not expected")
+		t.Fatalf("Test vector %d : Hash size does not match expected - found %d expected %d", i, len(sum), len(expSum))
 	}
-	for i := range sum {
-		if sum[i] != expSum[i] {
-			t.Fatalf("Hash does not match expected - found %d expected %d", sum[i], expSum[i])
+	for j := range sum {
+		if sum[j] != expSum[j] {
+			t.Fatalf("Test vector %d : Hash does not match:\nFound:    %v\nExpected: %v", i, hex.EncodeToString(sum), hex.EncodeToString(expSum))
 		}
 	}
 }
 
 func TestBlake2s(t *testing.T) {
 	for i := range vectors {
-		testSingleVector(t, &vectors[i])
+		testSingleVector(t, i)
 	}
 }

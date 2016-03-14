@@ -2,10 +2,10 @@
 // that can be found in the LICENSE file.
 
 // The package siphash implements a hash / MAC function
-// developed Jean-Philippe Aumasson and Daniel J. Bernstein
+// developed Jean-Philippe Aumasson and Daniel J Bernstein
 // in 2012. SipHash computes 64-bit message authentication
-// code from a variable-length message and 128-bit secret key.
-// It was designed to be efficient even for short inputs,
+// code from a variable-length message and a 128-bit secret
+// key. It was designed to be efficient even for short inputs,
 // with performance comparable to non-cryptographic hash
 // functions. This package implements SipHash with the
 // recommended parameters: c = 2 and d = 4.
@@ -16,14 +16,11 @@ import (
 	"hash"
 )
 
-// The size of the secret key for SipHash.
-const KeySize = 16
+const KeySize = 16 // The size of the secret key for SipHash.
 
-// The block size of SipHash.
-const BlockSize = 8
+const BlockSize = 8 // The block size of SipHash.
 
-// The size of hash / MAC of SipHash.
-const HashSize64 = 8
+const HashSize64 = 8 // The size of hash / MAC of SipHash.
 
 // The four initialization constants
 const (
@@ -33,6 +30,7 @@ const (
 	c3 = uint64(0x7465646279746573)
 )
 
+// the siphash struct
 type siphash struct {
 	v0, v1, v2, v3 uint64
 	k0, k1         uint64
@@ -41,14 +39,13 @@ type siphash struct {
 	ctr            byte
 }
 
-func (h *siphash) BlockSize() int {
-	return BlockSize
-}
+// Returns the block size of sipash in bytes.
+func (h *siphash) BlockSize() int { return BlockSize }
 
-func (h *siphash) Size() int {
-	return HashSize64
-}
+// Returns the hash size of siphash in bytes.
+func (h *siphash) Size() int { return HashSize64 }
 
+// Reset resets the Hash to its initial state.
 func (h *siphash) Reset() {
 	h.v0 = h.k0 ^ c0
 	h.v1 = h.k1 ^ c1
@@ -59,6 +56,8 @@ func (h *siphash) Reset() {
 	h.ctr = 0
 }
 
+// Write (via the embedded io.Writer interface) adds more
+// data to the running hash. It never returns an error.
 func (h *siphash) Write(src []byte) (int, error) {
 	in := src
 	n := len(in)
@@ -91,6 +90,8 @@ func (h *siphash) Write(src []byte) (int, error) {
 	return n, nil
 }
 
+// Sum64 returns the current hash as 64 bit value.
+// It does not change the underlying hash state.
 func (h *siphash) Sum64() uint64 {
 	h0 := *h
 	for i := h0.off; i < BlockSize-1; i++ {
@@ -100,7 +101,9 @@ func (h *siphash) Sum64() uint64 {
 	return finalize(&h0)
 }
 
-func (h *siphash) Sum(in []byte) []byte {
+// Sum appends the current hash to b and returns the resulting slice.
+// It does not change the underlying hash state.
+func (h *siphash) Sum(b []byte) []byte {
 	r := h.Sum64()
 
 	var out [HashSize64]byte
@@ -112,7 +115,7 @@ func (h *siphash) Sum(in []byte) []byte {
 	out[5] = byte(r >> 40)
 	out[6] = byte(r >> 48)
 	out[7] = byte(r >> 56)
-	return append(in, out[:]...)
+	return append(b, out[:]...)
 }
 
 // Creates a new hash instance,implementing the Hash64 interface,

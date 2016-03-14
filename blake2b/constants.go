@@ -1,14 +1,13 @@
+// Use of this source code is governed by a license
+// that can be found in the LICENSE file.
+
 package blake2b
 
 const (
-	// The block size of blake2b in bytes.
-	BlockSize = 128
-	// The max. hash size of blake2b in bytes.
-	HashSize = 64
-	// The max. key size of blake2b.
-	KeySize = 64
-	// The max. salt size.
-	SaltSize = 16
+	BlockSize = 128 // The block size of blake2b in bytes.
+	HashSize  = 64  // The max. hash size of blake2b in bytes.
+	KeySize   = 64  // The max. key size of blake2b.
+	SaltSize  = 16  // The max. salt size.
 )
 
 // the blake2b iv constants

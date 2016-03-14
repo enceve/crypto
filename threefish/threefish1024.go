@@ -1,3 +1,6 @@
+// Use of this source code is governed by a license
+// that can be found in the LICENSE file.
+
 package threefish
 
 // Encrypt1024 does a threefish-1024 encryption operation

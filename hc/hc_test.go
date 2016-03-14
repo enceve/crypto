@@ -1,3 +1,6 @@
+// Use of this source code is governed by a license
+// that can be found in the LICENSE file.
+
 package hc
 
 import (
@@ -10,7 +13,7 @@ import (
 func checkKeyStream(t *testing.T, buf, exp []byte) {
 	for i, v := range buf {
 		if v != exp[i] {
-			t.Fatalf("Unexpected keystream byte: found: %d expected: %d", v, exp[i])
+			t.Fatalf("Unexpected keystream:\nFound:    %v\nExpected: %v", hex.EncodeToString(buf), hex.EncodeToString(exp))
 		}
 	}
 }

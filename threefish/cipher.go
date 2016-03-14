@@ -17,6 +17,7 @@ package threefish
 import (
 	"crypto/cipher"
 	"github.com/EncEve/crypto"
+	"strconv"
 )
 
 const (
@@ -40,26 +41,26 @@ const (
 // length of the tweak is not 16 this function returns an error.
 func New(key []byte, tweak []byte) (cipher.Block, error) {
 	if t := len(tweak); t != TweakSize {
-		return nil, crypto.TweakSizeError(t)
+		return nil, TweakSizeError(t)
 	}
 	switch k := len(key); k {
 	case KeySize256:
 		{
-			c := new(Treefish256)
+			c := new(treefish256)
 			scheduleTweak(&(c.tweak), tweak)
 			scheduleKey256(&(c.sk), key)
 			return c, nil
 		}
 	case KeySize512:
 		{
-			c := new(Treefish512)
+			c := new(treefish512)
 			scheduleTweak(&(c.tweak), tweak)
 			scheduleKey512(&(c.sk), key)
 			return c, nil
 		}
 	case KeySize1024:
 		{
-			c := new(Treefish1024)
+			c := new(treefish1024)
 			scheduleTweak(&(c.tweak), tweak)
 			scheduleKey1024(&(c.sk), key)
 			return c, nil
@@ -72,15 +73,15 @@ func New(key []byte, tweak []byte) (cipher.Block, error) {
 // Creates a new threefish-256 cipher. The key must be 256
 // and the tweak 128 bit. If the length of key or tweak does
 // not match, an error is returned.
-func New256(key []byte, tweak []byte) (*Treefish256, error) {
+func New256(key []byte, tweak []byte) (cipher.Block, error) {
 	if t := len(tweak); t != TweakSize {
-		return nil, crypto.TweakSizeError(t)
+		return nil, TweakSizeError(t)
 	}
 	if k := len(key); k != KeySize256 {
 		return nil, crypto.KeySizeError(k)
 	}
 
-	c := new(Treefish256)
+	c := new(treefish256)
 	scheduleTweak(&(c.tweak), tweak)
 	scheduleKey256(&(c.sk), key)
 	return c, nil
@@ -89,15 +90,15 @@ func New256(key []byte, tweak []byte) (*Treefish256, error) {
 // Creates a new threefish-512 cipher. The key must be 512
 // and the tweak 128 bit. If the length of key or tweak does
 // not match, an error is returned.
-func New512(key []byte, tweak []byte) (*Treefish512, error) {
+func New512(key []byte, tweak []byte) (cipher.Block, error) {
 	if t := len(tweak); t != TweakSize {
-		return nil, crypto.TweakSizeError(t)
+		return nil, TweakSizeError(t)
 	}
 	if k := len(key); k != KeySize512 {
 		return nil, crypto.KeySizeError(k)
 	}
 
-	c := new(Treefish512)
+	c := new(treefish512)
 	scheduleTweak(&(c.tweak), tweak)
 	scheduleKey512(&(c.sk), key)
 	return c, nil
@@ -106,45 +107,58 @@ func New512(key []byte, tweak []byte) (*Treefish512, error) {
 // Creates a new threefish-1024 cipher. The key must be 1024
 // and the tweak 128 bit. If the length of key or tweak does
 // not match, an error is returned.
-func New1024(key []byte, tweak []byte) (*Treefish1024, error) {
+func New1024(key []byte, tweak []byte) (cipher.Block, error) {
 	if t := len(tweak); t != TweakSize {
-		return nil, crypto.TweakSizeError(t)
+		return nil, TweakSizeError(t)
 	}
 	if k := len(key); k != KeySize1024 {
 		return nil, crypto.KeySizeError(k)
 	}
 
-	c := new(Treefish1024)
+	c := new(treefish1024)
 	scheduleTweak(&(c.tweak), tweak)
 	scheduleKey1024(&(c.sk), key)
 	return c, nil
 }
 
+// A TweakSizeError indicates, that the actual size of a given
+// tweak does not match the expected size.
+type TweakSizeError int
+
+func (t TweakSizeError) Error() string {
+	return "invalid tweak size " + strconv.Itoa(int(t))
+}
+
 // The threefish-256 tweakable blockcipher
-type Treefish256 struct {
+type treefish256 struct {
 	sk    [5]uint64
 	tweak [3]uint64
 }
 
 // The threefish-512 tweakable blockcipher
-type Treefish512 struct {
+type treefish512 struct {
 	sk    [9]uint64
 	tweak [3]uint64
 }
 
 // The threefish-1024 tweakable blockcipher
-type Treefish1024 struct {
+type treefish1024 struct {
 	sk    [17]uint64
 	tweak [3]uint64
 }
 
-func (t *Treefish256) BlockSize() int { return BlockSize256 }
+// Returns the threefish-256 block size in bytes.
+func (t *treefish256) BlockSize() int { return BlockSize256 }
 
-func (t *Treefish512) BlockSize() int { return BlockSize512 }
+// Returns the threefish-512 block size in bytes.
+func (t *treefish512) BlockSize() int { return BlockSize512 }
 
-func (t *Treefish1024) BlockSize() int { return BlockSize1024 }
+// Returns the threefish-1024 block size in bytes.
+func (t *treefish1024) BlockSize() int { return BlockSize1024 }
 
-func (t *Treefish256) Encrypt(dst, src []byte) {
+// Encrypt encrypts the first block in src into dst.
+// Dst and src may point at the same memory.
+func (t *treefish256) Encrypt(dst, src []byte) {
 	var msg [4]uint64
 	for i := range msg {
 		j := i * 8
@@ -167,7 +181,9 @@ func (t *Treefish256) Encrypt(dst, src []byte) {
 	}
 }
 
-func (t *Treefish512) Encrypt(dst, src []byte) {
+// Encrypt encrypts the first block in src into dst.
+// Dst and src may point at the same memory.
+func (t *treefish512) Encrypt(dst, src []byte) {
 	var msg [8]uint64
 	for i := range msg {
 		j := i * 8
@@ -190,7 +206,9 @@ func (t *Treefish512) Encrypt(dst, src []byte) {
 	}
 }
 
-func (t *Treefish1024) Encrypt(dst, src []byte) {
+// Encrypt encrypts the first block in src into dst.
+// Dst and src may point at the same memory.
+func (t *treefish1024) Encrypt(dst, src []byte) {
 	var msg [16]uint64
 	for i := range msg {
 		j := i * 8
@@ -213,7 +231,9 @@ func (t *Treefish1024) Encrypt(dst, src []byte) {
 	}
 }
 
-func (t *Treefish256) Decrypt(dst, src []byte) {
+// Decrypt decrypts the first block in src into dst.
+// Dst and src may point at the same memory.
+func (t *treefish256) Decrypt(dst, src []byte) {
 	var msg [4]uint64
 	for i := range msg {
 		j := i * 8
@@ -236,7 +256,9 @@ func (t *Treefish256) Decrypt(dst, src []byte) {
 	}
 }
 
-func (t *Treefish512) Decrypt(dst, src []byte) {
+// Decrypt decrypts the first block in src into dst.
+// Dst and src may point at the same memory.
+func (t *treefish512) Decrypt(dst, src []byte) {
 	var msg [8]uint64
 	for i := range msg {
 		j := i * 8
@@ -259,7 +281,9 @@ func (t *Treefish512) Decrypt(dst, src []byte) {
 	}
 }
 
-func (t *Treefish1024) Decrypt(dst, src []byte) {
+// Decrypt decrypts the first block in src into dst.
+// Dst and src may point at the same memory.
+func (t *treefish1024) Decrypt(dst, src []byte) {
 	var msg [16]uint64
 	for i := range msg {
 		j := i * 8
@@ -286,9 +310,9 @@ func (t *Treefish1024) Decrypt(dst, src []byte) {
 // The tweak must be 128 bit long, otherwise an
 // error is returned and the tweak of the cipher
 // will NOT be changed.
-func (t *Treefish256) Tweak(tweak []byte) error {
+func (t *treefish256) Tweak(tweak []byte) error {
 	if t := len(tweak); t != TweakSize {
-		return crypto.TweakSizeError(t)
+		return TweakSizeError(t)
 	}
 	scheduleTweak(&(t.tweak), tweak)
 	return nil
@@ -298,9 +322,9 @@ func (t *Treefish256) Tweak(tweak []byte) error {
 // The tweak must be 128 bit long, otherwise an
 // error is returned and the tweak of the cipher
 // will NOT be changed.
-func (t *Treefish512) Tweak(tweak []byte) error {
+func (t *treefish512) Tweak(tweak []byte) error {
 	if t := len(tweak); t != TweakSize {
-		return crypto.TweakSizeError(t)
+		return TweakSizeError(t)
 	}
 	scheduleTweak(&(t.tweak), tweak)
 	return nil
@@ -310,9 +334,9 @@ func (t *Treefish512) Tweak(tweak []byte) error {
 // The tweak must be 128 bit long, otherwise an
 // error is returned and the tweak of the cipher
 // will NOT be changed.
-func (t *Treefish1024) Tweak(tweak []byte) error {
+func (t *treefish1024) Tweak(tweak []byte) error {
 	if t := len(tweak); t != TweakSize {
-		return crypto.TweakSizeError(t)
+		return TweakSizeError(t)
 	}
 	scheduleTweak(&(t.tweak), tweak)
 	return nil

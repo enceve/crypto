@@ -1,14 +1,13 @@
+// Use of this source code is governed by a license
+// that can be found in the LICENSE file.
+
 package blake2s
 
 const (
-	// The block size in bytes.
-	BlockSize = 64
-	// The max. hash size in bytes.
-	HashSize = 32
-	// The max. key size in bytes.
-	KeySize = 32
-	// The max. salt size in bytes.
-	SaltSize = 8
+	BlockSize = 64 // The block size in bytes.
+	HashSize  = 32 // The max. hash size in bytes.
+	KeySize   = 32 // The max. key size in bytes.
+	SaltSize  = 8  // The max. salt size in bytes.
 )
 
 // the blake2s iv constants
@@ -23,7 +22,7 @@ var iv = [8]uint32{
 	0x5be0cd19,
 }
 
-// the precomputed values for blake2b
+// the precomputed values for blake2s
 // there are 12 16-byte arrays - one for each round
 // the entries are calculated from the sigma constants.
 var precomputed [10][16]byte = [10][16]byte{

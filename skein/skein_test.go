@@ -1,3 +1,6 @@
+// Use of this source code is governed by a license
+// that can be found in the LICENSE file
+
 package skein
 
 import (
@@ -38,12 +41,12 @@ func toHex(t *testing.T, s string) []byte {
 var vectors = []testVector{
 	// test vectors for Skein-256
 	testVector{
-		p:   &Params{HashSize: StateSize256, BlockSize: StateSize256},
+		p:   &Params{BlockSize: StateSize256}, // without explicit hash size (check if default is used)
 		in:  "",
 		ref: "C8877087DA56E072870DAA843F176E9453115929094C3A40C463A196C29BF7BA",
 	},
 	testVector{
-		p: &Params{HashSize: StateSize256, BlockSize: StateSize256,
+		p: &Params{BlockSize: StateSize256, // without explicit hash size (check if default is used)
 			Key: toHex(nil, "CB41F1706CDE09651203C2D0EFBADDF8")},
 		in:  "",
 		ref: "886E4EFEFC15F06AA298963971D7A25398FFFE5681C84DB39BD00851F64AE29D",
@@ -61,13 +64,13 @@ var vectors = []testVector{
 
 	// test vectors for Skein-512
 	testVector{
-		p:  &Params{HashSize: StateSize512, BlockSize: StateSize512},
+		p:  &Params{BlockSize: StateSize512}, // without explicit hash size (check if default is used)
 		in: "",
 		ref: "BC5B4C50925519C290CC634277AE3D6257212395CBA733BBAD37A4AF0FA06AF4" +
 			"1FCA7903D06564FEA7A2D3730DBDB80C1F85562DFCC070334EA4D1D9E72CBA7A",
 	},
 	testVector{
-		p: &Params{HashSize: StateSize512, BlockSize: StateSize512,
+		p: &Params{BlockSize: StateSize512, // without explicit hash size (check if default is used)
 			Key: toHex(nil, "CB41F1706CDE09651203C2D0EFBADDF847A0D315CB2E53FF8BAC41DA0002672E"+
 				"920244C66E02D5F0DAD3E94C42BB65F0D14157DECF4105EF5609D5B0984457C1"+
 				"935DF3061FF06E9F204192BA11E5BB2CAC0430C1C370CB3D113FEA5EC1021EB8"+
@@ -93,7 +96,7 @@ var vectors = []testVector{
 
 	// test vectors for Skein-1024
 	testVector{
-		p:  &Params{HashSize: StateSize1024, BlockSize: StateSize1024},
+		p:  &Params{BlockSize: StateSize1024}, // without explicit hash size (check if default is used)
 		in: "",
 		ref: "0FFF9563BB3279289227AC77D319B6FFF8D7E9F09DA1247B72A0A265CD6D2A62" +
 			"645AD547ED8193DB48CFF847C06494A03F55666D3B47EB4C20456C9373C86297" +
@@ -101,7 +104,7 @@ var vectors = []testVector{
 			"BEC1B189B7F52CB2A783EBB7D823D725B0B4A71F6824E88F68F982EEFC6D19C6",
 	},
 	testVector{
-		p: &Params{HashSize: StateSize1024, BlockSize: StateSize1024,
+		p: &Params{BlockSize: StateSize1024, // without explicit hash size (check if default is used)
 			Key: toHex(nil, "CB41F1706CDE09651203C2D0EFBADDF847A0D315CB2E53FF8BAC41DA0002672E"+
 				"920244C66E02D5F0DAD3E94C42BB65F0D14157DECF4105EF5609D5B0984457C1"+
 				"935DF3061FF06E9F204192BA11E5BB2CAC0430C1C370CB3D113FEA5EC1021EB8"+
@@ -165,7 +168,7 @@ func TestSkein(t *testing.T) {
 				}
 				checkHashes(t, h, in, ref, i)
 			} else {
-				h, err := New256(p.HashSize)
+				h := New256(p.HashSize)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -181,7 +184,7 @@ func TestSkein(t *testing.T) {
 				}
 				checkHashes(t, h, in, ref, i)
 			} else {
-				h, err := New512(p.HashSize)
+				h := New512(p.HashSize)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -209,7 +212,7 @@ func TestSkein(t *testing.T) {
 				}
 				checkHashes(t, h, in, ref, i)
 			} else {
-				h, err := New1024(p.HashSize)
+				h := New1024(p.HashSize)
 				if err != nil {
 					t.Fatal(err)
 				}

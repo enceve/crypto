@@ -1,12 +1,19 @@
+// Use of this source code is governed by a license
+// that can be found in the LICENSE file
+
 package skein
 
 import "github.com/EncEve/crypto/threefish"
 
-func (s *Skein256) BlockSize() int { return StateSize256 }
+// Returns the block size of skein-256 in bytes.
+func (s *skein256) BlockSize() int { return StateSize256 }
 
-func (s *Skein256) Size() int { return s.hsize }
+// Returns the hash size of skein-256 in bytes wich
+// is between 1 and 32.
+func (s *skein256) Size() int { return s.hsize }
 
-func (s *Skein256) Reset() {
+// Reset resets the Hash to its initial state.
+func (s *skein256) Reset() {
 	s.off = 0
 	s.msg = false
 	copy(s.hVal[:4], s.initVal[:])
@@ -14,7 +21,9 @@ func (s *Skein256) Reset() {
 	s.tweak[1] = messageParam<<56 | firstBlock
 }
 
-func (s *Skein256) Write(in []byte) (int, error) {
+// Write (via the embedded io.Writer interface) adds more
+// data to the running hash. It never returns an error.
+func (s *skein256) Write(in []byte) (int, error) {
 	s.msg = true
 	n := len(in)
 
@@ -41,7 +50,9 @@ func (s *Skein256) Write(in []byte) (int, error) {
 	return n, nil
 }
 
-func (s *Skein256) Sum(in []byte) []byte {
+// Sum appends the current hash to b and returns the resulting slice.
+// It does not change the underlying hash state.
+func (s *skein256) Sum(in []byte) []byte {
 	s0 := *s // make a copy
 	if s0.msg {
 		s0.finalize()
@@ -52,7 +63,8 @@ func (s *Skein256) Sum(in []byte) []byte {
 	return append(in, out[:s0.hsize]...)
 }
 
-func (s *Skein256) hashMessage(blocks []byte) {
+// Update the hash with the given full blocks.
+func (s *skein256) hashMessage(blocks []byte) {
 	var message, msg [4]uint64
 	var block [StateSize256]byte
 	for i := 0; i < len(blocks); i += StateSize256 {
@@ -76,7 +88,7 @@ func (s *Skein256) hashMessage(blocks []byte) {
 }
 
 // Finalize the hash function with the last message block
-func (s *Skein256) finalize() {
+func (s *skein256) finalize() {
 	var message, msg [4]uint64
 	// flush the buffer
 	for i := s.off; i < len(s.buf); i++ {
@@ -98,7 +110,7 @@ func (s *Skein256) finalize() {
 }
 
 // Extract the output from the hash function
-func (s *Skein256) output(dst *[StateSize256]byte, ctr uint64) {
+func (s *skein256) output(dst *[StateSize256]byte, ctr uint64) {
 	var message, msg [4]uint64
 	msg[0], message[0] = ctr, ctr
 
@@ -121,7 +133,7 @@ func (s *Skein256) output(dst *[StateSize256]byte, ctr uint64) {
 }
 
 // Add a parameter (secret key, nonce etc.) to the hash function
-func (s *Skein256) addParam(ptype uint64, param []byte) {
+func (s *skein256) addParam(ptype uint64, param []byte) {
 	s.tweak[0] = 0
 	s.tweak[1] = ptype<<56 | firstBlock
 	s.Write(param)
@@ -129,7 +141,7 @@ func (s *Skein256) addParam(ptype uint64, param []byte) {
 }
 
 // Add the configuration block to the hash function
-func (s *Skein256) addConfig(hashsize int) {
+func (s *skein256) addConfig(hashsize int) {
 	var c [32]byte
 	copy(c[:], schemaId)
 

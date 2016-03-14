@@ -40,6 +40,9 @@ type Padding interface {
 
 	// Expands the last (may incomplete) block of the src slice
 	// to a padded and complete block.
+	// The src slice can be longer than the block size of the
+	// padding. Only the last (incomplete) block will be padded.
+	// The function returns the padded block in a new slice.
 	Pad(src []byte) []byte
 
 	// Takes a slice and tries to remove the padding bytes
@@ -47,10 +50,14 @@ type Padding interface {
 	// src argument must be a multiply of the blocksize.
 	// If the return error is nil, the padding could be
 	// removed successfully.
+	// The returned slice holds the unpadded block.
 	Unpad(src []byte) ([]byte, error)
 }
 
 // Creates a new Padding implementing the ANSI X.923 scheme.
+// Only block sizes between 1 and 255 are legal.
+// This function panics if the blocksize is smaller than 1
+// or greater than 255.
 func NewX923(blocksize int) Padding {
 	if blocksize <= 0 || blocksize > 255 {
 		panic("illegal blocksize - size must between 0 and 256")
@@ -60,6 +67,9 @@ func NewX923(blocksize int) Padding {
 }
 
 // Creates a new Padding implementing the PKCS 7 scheme.
+// Only block sizes between 1 and 255 are legal.
+// This function panics if the blocksize is smaller than 1
+// or greater than 255.
 func NewPkcs7(blocksize int) Padding {
 	if blocksize <= 0 || blocksize > 255 {
 		panic("illegal blocksize - size must between 0 and 256")
@@ -72,6 +82,9 @@ func NewPkcs7(blocksize int) Padding {
 // described in ISO 10126. The padding bytes are taken
 // form the given rand argument. This reader should return
 // random data.
+// Only block sizes between 1 and 255 are legal.
+// This function panics if the blocksize is smaller than 1
+// or greater than 255.
 func NewIso10126(blocksize int, rand io.Reader) Padding {
 	if blocksize <= 0 || blocksize > 255 {
 		panic("illegal blocksize - size must between 0 and 256")

@@ -49,7 +49,7 @@ import (
 // The skein-256 hash function with a state size
 // of 256 bit. Skein-256 can produce hash values
 // from 1 to 32 byte.
-type Skein256 struct {
+type skein256 struct {
 	initVal [4]uint64
 	hVal    [5]uint64
 	tweak   [3]uint64
@@ -64,7 +64,7 @@ type Skein256 struct {
 // from 1 to 64 byte.
 // Skein-512 is recommended by the
 // skein authors for most use cases.
-type Skein512 struct {
+type skein512 struct {
 	initVal [8]uint64
 	hVal    [9]uint64
 	tweak   [3]uint64
@@ -78,7 +78,7 @@ type Skein512 struct {
 // of 1024 bit. Skein-1024 can produce hash values
 // from 1 to 128 byte.
 // Skein-1024 is the very conservative skein variant.
-type Skein1024 struct {
+type skein1024 struct {
 	initVal [16]uint64
 	hVal    [17]uint64
 	tweak   [3]uint64
@@ -89,12 +89,14 @@ type Skein1024 struct {
 }
 
 // The configuration parameters for skein.
-// The BlockSize and HashSize fields are required
-// and must be set to valid values.
-// All other fields are optional and can be nil.
+// The BlockSize field is required and must be set
+// to a valid value (32, 64, 128). If the HashSize
+// is not set, the default value is equal to the
+// block size. All other fields are optional
+// and can be nil.
 type Params struct {
 	BlockSize int    // Required: The block size of the skein variant (32 , 64 or 128)
-	HashSize  int    // Required: The hash size - between 1 and the block size
+	HashSize  int    // Optional: The hash size - valid are values between 1 and the block size (default is the block size)
 	Key       []byte // Optional: The secret key for MAC
 	PublicKey []byte // Optional: The public key for key-bound hashing
 	KeyID     []byte // Optional: The key id for key derivation
@@ -104,11 +106,7 @@ type Params struct {
 // Calculates a 256 bit (32 byte) hash value from the given msg
 // with the Skein-512 hash function.
 func Sum256(msg []byte) []byte {
-	s, err := New512(HashSize256)
-	if err != nil {
-		// This should never happen
-		panic(err)
-	}
+	s := New512(HashSize256)
 	s.Write(msg)
 	return s.Sum(nil)
 }
@@ -116,11 +114,7 @@ func Sum256(msg []byte) []byte {
 // Calculates a 384 bit (48 byte) hash value from the given msg
 // with the Skein-512 hash function.
 func Sum384(msg []byte) []byte {
-	s, err := New512(48)
-	if err != nil {
-		// This should never happen
-		panic(err)
-	}
+	s := New512(48)
 	s.Write(msg)
 	return s.Sum(nil)
 }
@@ -128,11 +122,7 @@ func Sum384(msg []byte) []byte {
 // Calculates a 512 bit (64 byte) hash value from the given msg
 // with the Skein-512 hash function.
 func Sum512(msg []byte) []byte {
-	s, err := New512(HashSize512)
-	if err != nil {
-		// This should never happen
-		panic(err)
-	}
+	s := New512(HashSize512)
 	s.Write(msg)
 	return s.Sum(nil)
 }
@@ -140,23 +130,27 @@ func Sum512(msg []byte) []byte {
 // Creates a new skein hash function from the given
 // parameters. The BlockSize of the params argument
 // specifies the skein variant (256, 512 or 1024).
-// If the parameters are invalid, an non-nil error
+// If the BlockSize parameter is invalid, an non-nil error
 // is returned.
+// If the HashSize parameter is not set, the BlockSize is
+// used as hash size.
 func New(p *Params) (hash.Hash, error) {
 	if p == nil {
-		return nil, errors.New("nil is invalid params argument")
+		return nil, errors.New("p argument must not be nil")
 	}
 
 	if p.BlockSize == StateSize256 {
+		s := new(skein256)
 		if p.HashSize <= 0 || p.HashSize > StateSize256 {
-			return nil, errors.New("invalid hash size for skein-256")
+			s.hsize = HashSize256
+		} else {
+			s.hsize = p.HashSize
 		}
-		s := new(Skein256)
-		s.hsize = p.HashSize
+
 		if p.Key != nil {
 			s.addParam(keyParam, p.Key)
 		}
-		s.addConfig(p.HashSize)
+		s.addConfig(s.hsize)
 		if p.PublicKey != nil {
 			s.addParam(publicKeyParam, p.PublicKey)
 		}
@@ -172,15 +166,17 @@ func New(p *Params) (hash.Hash, error) {
 		return s, nil
 	}
 	if p.BlockSize == StateSize512 {
+		s := new(skein512)
 		if p.HashSize <= 0 || p.HashSize > StateSize512 {
-			return nil, errors.New("invalid hash size for skein-512")
+			s.hsize = HashSize512
+		} else {
+			s.hsize = p.HashSize
 		}
-		s := new(Skein512)
-		s.hsize = p.HashSize
+
 		if p.Key != nil {
 			s.addParam(keyParam, p.Key)
 		}
-		s.addConfig(p.HashSize)
+		s.addConfig(s.hsize)
 		if p.PublicKey != nil {
 			s.addParam(publicKeyParam, p.PublicKey)
 		}
@@ -196,15 +192,17 @@ func New(p *Params) (hash.Hash, error) {
 		return s, nil
 	}
 	if p.BlockSize == StateSize1024 {
+		s := new(skein1024)
 		if p.HashSize <= 0 || p.HashSize > StateSize1024 {
-			return nil, errors.New("invalid hash size for skein-1024")
+			s.hsize = HashSize1024
+		} else {
+			s.hsize = p.HashSize
 		}
-		s := new(Skein1024)
-		s.hsize = p.HashSize
+
 		if p.Key != nil {
 			s.addParam(keyParam, p.Key)
 		}
-		s.addConfig(p.HashSize)
+		s.addConfig(s.hsize)
 		if p.PublicKey != nil {
 			s.addParam(publicKeyParam, p.PublicKey)
 		}
@@ -223,57 +221,21 @@ func New(p *Params) (hash.Hash, error) {
 	return nil, errors.New("invalid block size for skein")
 }
 
-// Creates a new simple skein hash function with the
-// given hash and block size. The blocksize argument
-// specifies the skein variant (256, 512 or 1024).
-// If the hash or block size is invalid, an
-// non-nil error is returned.
-func NewHash(hashsize int, blocksize int) (hash.Hash, error) {
-	switch blocksize {
-	default:
-		return nil, errors.New("invalid block size for skein")
-	case StateSize256:
-		return New256(hashsize)
-	case StateSize512:
-		return New512(hashsize)
-	case StateSize1024:
-		return New1024(hashsize)
-	}
-}
-
-// Creates a new skein MAC with the given
-// secret key and  hash and block size.
-// The blocksize argument specifies the skein
-// variant (256, 512 or 1024).
-// If the key, the hash size or block size is
-// invalid, an non-nil error is returned.
-func NewMAC(hashsize int, blocksize int, key []byte) (hash.Hash, error) {
-	switch blocksize {
-	default:
-		return nil, errors.New("invalid block size for skein")
-	case StateSize256:
-		return NewMAC256(hashsize, key)
-	case StateSize512:
-		return NewMAC512(hashsize, key)
-	case StateSize1024:
-		return NewMAC1024(hashsize, key)
-	}
-}
-
 // Creates a new simple skein-256 hash function
 // with the given hash size.
-// If the hash size is invalid, an non-nil error
-// is returned.
-func New256(hashsize int) (*Skein256, error) {
+// If the hash size is not between 1 and 32, the
+// hash size is set to 32.
+func New256(hashsize int) hash.Hash {
+	s := new(skein256)
 	if hashsize <= 0 || hashsize > StateSize256 {
-		return nil, errors.New("invalid hash size for skein-256")
+		s.hsize = StateSize256
+	} else {
+		s.hsize = hashsize
 	}
-	s := new(Skein256)
-	s.hsize = hashsize
 
-	switch hashsize {
+	switch s.hsize {
 	default:
-		s.addConfig(hashsize)
+		s.addConfig(s.hsize)
 		copy(s.initVal[:], s.hVal[:4])
 	case 16:
 		s.initVal = iv256_128
@@ -286,23 +248,24 @@ func New256(hashsize int) (*Skein256, error) {
 	}
 
 	s.Reset()
-	return s, nil
+	return s
 }
 
 // Creates a new simple skein-512 hash function
 // with the given hash size.
-// If the hash size is invalid, an non-nil error
-// is returned.
-func New512(hashsize int) (*Skein512, error) {
+// If the hash size is not between 1 and 64, the
+// hash size is set to 64.
+func New512(hashsize int) hash.Hash {
+	s := new(skein512)
 	if hashsize <= 0 || hashsize > StateSize512 {
-		return nil, errors.New("invalid hash size for skein-512")
+		s.hsize = StateSize512
+	} else {
+		s.hsize = hashsize
 	}
-	s := new(Skein512)
-	s.hsize = hashsize
 
-	switch hashsize {
+	switch s.hsize {
 	default:
-		s.addConfig(hashsize)
+		s.addConfig(s.hsize)
 		copy(s.initVal[:], s.hVal[:8])
 	case 16:
 		s.initVal = iv512_128
@@ -319,23 +282,24 @@ func New512(hashsize int) (*Skein512, error) {
 	}
 
 	s.Reset()
-	return s, nil
+	return s
 }
 
 // Creates a new simple skein-1024 hash function
 // with the given hash size.
-// If the hash size is invalid, an non-nil error
-// is returned.
-func New1024(hashsize int) (*Skein1024, error) {
+// If the hash size is not between 1 and 128, the
+// hash size is set to 128.
+func New1024(hashsize int) hash.Hash {
+	s := new(skein1024)
 	if hashsize <= 0 || hashsize > StateSize1024 {
-		return nil, errors.New("invalid hash size for skein-1024")
+		s.hsize = StateSize1024
+	} else {
+		s.hsize = hashsize
 	}
-	s := new(Skein1024)
-	s.hsize = hashsize
 
-	switch hashsize {
+	switch s.hsize {
 	default:
-		s.addConfig(hashsize)
+		s.addConfig(s.hsize)
 		copy(s.initVal[:], s.hVal[:16])
 	case 48:
 		s.initVal = iv1024_384
@@ -346,25 +310,27 @@ func New1024(hashsize int) (*Skein1024, error) {
 	}
 
 	s.Reset()
-	return s, nil
+	return s
 }
 
 // Creates a new skein-256 MAC with the
 // given secret key and hash size.
-// If the hash size is invalid, an
-// non-nil error is returned.
-func NewMAC256(hashsize int, key []byte) (*Skein256, error) {
-	if hashsize <= 0 || hashsize > StateSize256 {
-		return nil, errors.New("invalid hash size for skein-256")
-	}
+// If the hash size is not between 1 and 32, the
+// hash size is set to 32.
+func NewMAC256(hashsize int, key []byte) (hash.Hash, error) {
 	if key == nil {
-		return nil, errors.New("nil key is invalid")
+		return nil, errors.New("key argument must not be nil")
 	}
-	s := new(Skein256)
-	s.hsize = hashsize
+
+	s := new(skein256)
+	if hashsize <= 0 || hashsize > StateSize256 {
+		s.hsize = StateSize256
+	} else {
+		s.hsize = hashsize
+	}
 
 	s.addParam(keyParam, key)
-	s.addConfig(hashsize)
+	s.addConfig(s.hsize)
 	copy(s.initVal[:], s.hVal[:4])
 
 	s.Reset()
@@ -373,20 +339,22 @@ func NewMAC256(hashsize int, key []byte) (*Skein256, error) {
 
 // Creates a new skein-512 MAC with the
 // given secret key and hash size.
-// If the hash size is invalid, an
-// non-nil error is returned.
-func NewMAC512(hashsize int, key []byte) (*Skein512, error) {
-	if hashsize <= 0 || hashsize > StateSize512 {
-		return nil, errors.New("invalid hash size for skein-512")
-	}
+// If the hash size is not between 1 and 64, the
+// hash size is set to 64.
+func NewMAC512(hashsize int, key []byte) (hash.Hash, error) {
 	if key == nil {
-		return nil, errors.New("nil key is invalid")
+		return nil, errors.New("key argument must not be nil")
 	}
-	s := new(Skein512)
-	s.hsize = hashsize
+
+	s := new(skein512)
+	if hashsize <= 0 || hashsize > StateSize512 {
+		s.hsize = StateSize512
+	} else {
+		s.hsize = hashsize
+	}
 
 	s.addParam(keyParam, key)
-	s.addConfig(hashsize)
+	s.addConfig(s.hsize)
 	copy(s.initVal[:], s.hVal[:8])
 
 	s.Reset()
@@ -395,20 +363,22 @@ func NewMAC512(hashsize int, key []byte) (*Skein512, error) {
 
 // Creates a new skein-1024 MAC with the
 // given secret key and hash size.
-// If the hash size is invalid, an
-// non-nil error is returned.
-func NewMAC1024(hashsize int, key []byte) (*Skein1024, error) {
-	if hashsize <= 0 || hashsize > StateSize1024 {
-		return nil, errors.New("invalid hash size for skein-1024")
-	}
+// If the hash size is not between 1 and 128, the
+// hash size is set to 128.
+func NewMAC1024(hashsize int, key []byte) (hash.Hash, error) {
 	if key == nil {
-		return nil, errors.New("nil key is invalid")
+		return nil, errors.New("key argument must not be nil")
 	}
-	s := new(Skein1024)
-	s.hsize = hashsize
+
+	s := new(skein1024)
+	if hashsize <= 0 || hashsize > StateSize1024 {
+		s.hsize = StateSize1024
+	} else {
+		s.hsize = hashsize
+	}
 
 	s.addParam(keyParam, key)
-	s.addConfig(hashsize)
+	s.addConfig(s.hsize)
 	copy(s.initVal[:], s.hVal[:16])
 
 	s.Reset()

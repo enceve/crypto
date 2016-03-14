@@ -42,8 +42,11 @@ func New(key []byte) (cipher.Block, error) {
 	return s, nil
 }
 
+// Returns the serpent block size in bytes.
 func (s *serpent) BlockSize() int { return BlockSize }
 
+// Encrypt encrypts the first block in src into dst.
+// Dst and src may point at the same memory.
 func (s *serpent) Encrypt(dst, src []byte) {
 	if len(src) < BlockSize {
 		panic("input to small")
@@ -54,6 +57,8 @@ func (s *serpent) Encrypt(dst, src []byte) {
 	encryptBlock(dst, src, &s.sk)
 }
 
+// Encrypt encrypts the first block in src into dst.
+// Dst and src may point at the same memory.
 func (s *serpent) Decrypt(dst, src []byte) {
 	if len(src) < BlockSize {
 		panic("input to small")

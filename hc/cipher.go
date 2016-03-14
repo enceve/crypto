@@ -34,14 +34,16 @@ type hc256 struct {
 }
 
 // New128 creates and returns a new cipher.Stream.
-// The key argument must be 128 bit (16 byte),
-// The nonce argument must be 128 bit (16 byte),
+// The key argument must be 128 bit (16 byte).
+// The nonce argument must be at least 128 bit (16 byte).
 // The returned cipher.Stream implements the HC128 cipher.
+// If the key is not 128 bit or the nonce is not at least
+// 128 bit, this function returns an nonnil error.
 func New128(key, nonce []byte) (cipher.Stream, error) {
 	if k := len(key); k != 16 {
 		return nil, crypto.KeySizeError(k)
 	}
-	if n := len(nonce); n != 16 {
+	if n := len(nonce); n < 16 {
 		return nil, crypto.NonceSizeError(n)
 	}
 	c := &hc128{
@@ -58,13 +60,15 @@ func New128(key, nonce []byte) (cipher.Stream, error) {
 
 // New256 creates and returns a new cipher.Stream.
 // The key argument must be 256 bit (32 byte),
-// The nonce argument must be 256 bit (32 byte),
+// The nonce argument must be at least 256 bit (32 byte),
 // The returned cipher.Stream implements the HC256 cipher.
+// If the key is not 256 bit or the nonce is not at least
+// 256 bit, this function returns an nonnil error.
 func New256(key, nonce []byte) (cipher.Stream, error) {
 	if k := len(key); k != 32 {
 		return nil, crypto.KeySizeError(k)
 	}
-	if n := len(nonce); n != 32 {
+	if n := len(nonce); n < 32 {
 		return nil, crypto.NonceSizeError(n)
 	}
 	c := &hc256{

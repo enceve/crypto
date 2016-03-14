@@ -1,5 +1,10 @@
+// Use of this source code is governed by a license
+// that can be found in the LICENSE file.
+
 package chacha
 
+// XORKeyStream XORs each byte in the given slice with a byte from the
+// cipher's key stream.
 func (c *Chacha) XORKeyStream(dst, src []byte) {
 	n := len(src)
 	if len(dst) < n {
@@ -80,7 +85,7 @@ func count(state *[16]uint32) {
 	}
 }
 
-// Set the counter to an given ctr argument.
+// Set the counter to the given ctr argument.
 func (c *Chacha) Counter(ctr uint64) {
 	c.state[12] = uint32(ctr >> 32)
 	c.state[13] = uint32(ctr)

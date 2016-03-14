@@ -3,10 +3,17 @@
 
 // The blake2b package implements the blake2b hash function
 // based on the RFC 7693 (https://tools.ietf.org/html/rfc7693).
-// (blake2b is the 64 bit version of the blake2 hash function)
+// Blake2b is the 64 bit version of the blake2 hash function
+// and supports hash values from 8 to 512 bit (1 to 64 byte).
 // The package API directly supports 160, 256, 384 and 512 bit
 // hash values, but custom sizes can be used as well.
-// Furthermore the blake2b MAC and salting are supported.
+// Furthermore blake2b can be used for:
+// 		- simple, randomized and personalized hashing
+//		- MACs (builtin)
+//		- tree hashing
+// This package supports:
+//	    - simple and randomized hashing
+//		- MACs
 // Personalization and Tree-hashing are not supported.
 package blake2b
 
@@ -33,12 +40,9 @@ type blake2b struct {
 // The parameters for configuring the blake2b hash function.
 // All values are optional.
 type Params struct {
-	// The hash size of blake2b in bytes (default and max. is 64)
-	HashSize int
-	// The key for MAC (padded with zeros)
-	Key []byte
-	// The salt (if < 16 bytes, padded with zeros)
-	Salt []byte
+	HashSize int    // The hash size of blake2b in bytes (default and max. is 64)
+	Key      []byte // The key for MAC (padded with zeros)
+	Salt     []byte // The salt (if < 16 bytes, padded with zeros)
 }
 
 func verifyParams(p *Params) error {
@@ -66,11 +70,11 @@ var (
 )
 
 // Creates a new blake2b hash function from the given
-// parameters. If the parameters are invalid, an error
-// is returned.
+// parameters. If the parameter argument is nil, or
+// parameters are invalid, an error nonnil is returned.
 func New(p *Params) (hash.Hash, error) {
 	if p == nil {
-		p = params512
+		return nil, errors.New("p argument must not be nil")
 	} else {
 		if p.HashSize == 0 {
 			p.HashSize = HashSize
@@ -118,30 +122,36 @@ func New160() hash.Hash {
 }
 
 // Creates a new blake2b hash function configured
-// as a MAC function with the given key.
-// The size argument specifies the size of the MAC in bytes.
-func NewMAC(size int, key []byte) hash.Hash {
-	d, err := New(&Params{HashSize: size, Key: key})
-	if err != nil {
-		panic(err.Error())
-	}
-	return d
+// as a MAC with the given key. The size argument
+// specifies the size of the MAC in bytes. If the
+// length of the key is greater than the max. key
+// size or the size argument is greater than the
+// max. hash size, this function returns a nonnil
+// error
+func NewMAC(size int, key []byte) (hash.Hash, error) {
+	h, err := New(&Params{HashSize: size, Key: key})
+	return h, err
 }
 
-func (b *blake2b) BlockSize() int { return BlockSize }
+// Returns the block size of blake2b in bytes.
+func (h *blake2b) BlockSize() int { return BlockSize }
 
-func (b *blake2b) Size() int { return b.hsize }
+// Returns the hash size of blake2b in bytes wich
+// is between 1 and 64.
+func (h *blake2b) Size() int { return h.hsize }
 
-func (b *blake2b) Write(src []byte) (int, error) {
+// Write (via the embedded io.Writer interface) adds more
+// data to the running hash. It never returns an error.
+func (h *blake2b) Write(src []byte) (int, error) {
 	n := len(src)
 	in := src
 
-	diff := BlockSize - int(b.off)
+	diff := BlockSize - int(h.off)
 	if n > diff {
 		// process buffer.
-		copy(b.buf[b.off:], in[:diff])
-		update(&(b.hVal), &(b.ctr), b.f, b.buf[:])
-		b.off = 0
+		copy(h.buf[h.off:], in[:diff])
+		update(&(h.hVal), &(h.ctr), h.f, h.buf[:])
+		h.off = 0
 
 		in = in[diff:]
 	}
@@ -152,55 +162,59 @@ func (b *blake2b) Write(src []byte) (int, error) {
 		if nn == length {
 			nn -= BlockSize
 		}
-		update(&(b.hVal), &(b.ctr), b.f, in[:nn])
+		update(&(h.hVal), &(h.ctr), h.f, in[:nn])
 		in = in[nn:]
 	}
-	b.off += copy(b.buf[b.off:], in)
+	h.off += copy(h.buf[h.off:], in)
 	return n, nil
 }
 
-func (b *blake2b) Reset() {
-	b.hVal = b.initVal
-	b.ctr[0], b.ctr[1] = 0, 0
-	b.f = 0
-	for i := range b.buf {
-		b.buf[i] = 0
+// Reset resets the Hash to its initial state.
+func (h *blake2b) Reset() {
+	h.hVal = h.initVal
+	h.ctr[0], h.ctr[1] = 0, 0
+	h.f = 0
+	for i := range h.buf {
+		h.buf[i] = 0
 	}
-	b.off = 0
-	if b.keyed {
-		b.Write(b.key[:])
+	h.off = 0
+	if h.keyed {
+		h.Write(h.key[:])
 	}
 }
 
-func (b *blake2b) Sum(in []byte) []byte {
-	b0 := *b
-	out := make([]byte, b0.hsize)
-	b0.finalize(out)
-	return append(in, out...)
+// Sum appends the current hash to b and returns the resulting slice.
+// It does not change the underlying hash state.
+func (h *blake2b) Sum(b []byte) []byte {
+	h0 := *h
+	var out [HashSize]byte
+	h0.finalize(&out)
+	return append(b, out[:h0.hsize]...)
 }
 
-func (b *blake2b) finalize(out []byte) {
+// Finalize the hash by adding padding bytes (if necessary)
+// and extract the hash to a byte array.
+func (h *blake2b) finalize(out *[HashSize]byte) {
 	// sub the padding length form the counter
-	diff := BlockSize - uint64(b.off)
-	if b.ctr[0] < diff {
-		b.ctr[1]--
+	diff := BlockSize - uint64(h.off)
+	if h.ctr[0] < diff {
+		h.ctr[1]--
 	}
-	b.ctr[0] -= diff
+	h.ctr[0] -= diff
 
 	// pad the buffer
-	for i := b.off; i < BlockSize; i++ {
-		b.buf[i] = 0
+	for i := h.off; i < BlockSize; i++ {
+		h.buf[i] = 0
 	}
 	// set the last block flag
-	b.f = uint64(0xffffffffffffffff)
+	h.f = uint64(0xffffffffffffffff)
 
 	// process last block
-	update(&(b.hVal), &(b.ctr), b.f, b.buf[:])
+	update(&(h.hVal), &(h.ctr), h.f, h.buf[:])
 
 	// extract hash
 	j := 0
-	hRange := (b.hsize-1)/8 + 1
-	for _, s := range b.hVal[:hRange] {
+	for _, s := range h.hVal {
 		out[j+0] = byte(s >> 0)
 		out[j+1] = byte(s >> 8)
 		out[j+2] = byte(s >> 16)
@@ -213,7 +227,9 @@ func (b *blake2b) finalize(out []byte) {
 	}
 }
 
-func (b *blake2b) initialize(conf *Params) {
+// Initialize the hash function with the given
+// parameters
+func (h *blake2b) initialize(conf *Params) {
 	// create parameter block.
 	var p [BlockSize]byte
 	p[0] = byte(conf.HashSize)
@@ -225,18 +241,18 @@ func (b *blake2b) initialize(conf *Params) {
 	}
 
 	// initialize hash values
-	b.hsize = conf.HashSize
+	h.hsize = conf.HashSize
 	for i := range iv {
-		b.hVal[i] = iv[i] ^ binary.LittleEndian.Uint64(p[i*8:])
+		h.hVal[i] = iv[i] ^ binary.LittleEndian.Uint64(p[i*8:])
 	}
 
 	// process key
 	if conf.Key != nil {
-		copy(b.key[:], conf.Key)
-		b.Write(b.key[:])
-		b.keyed = true
+		copy(h.key[:], conf.Key)
+		h.Write(h.key[:])
+		h.keyed = true
 	}
 
 	// save the initialized state.
-	b.initVal = b.hVal
+	h.initVal = h.hVal
 }
