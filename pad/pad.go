@@ -39,10 +39,9 @@ type Padding interface {
 	Overhead(src []byte) int
 
 	// Expands the last (may incomplete) block of the src slice
-	// to a padded and complete block.
-	// The src slice can be longer than the block size of the
-	// padding. Only the last (incomplete) block will be padded.
-	// The function returns the padded block in a new slice.
+	// to a padded and complete block, appends the padding bytes
+	// to the src slice and returns this slice.
+	// The length of the returned slice is len(src) + Overhead(src)
 	Pad(src []byte) []byte
 
 	// Takes a slice and tries to remove the padding bytes
@@ -50,7 +49,7 @@ type Padding interface {
 	// src argument must be a multiply of the blocksize.
 	// If the return error is nil, the padding could be
 	// removed successfully.
-	// The returned slice holds the unpadded block.
+	// The returned slice holds the unpadded src bytes.
 	Unpad(src []byte) ([]byte, error)
 }
 

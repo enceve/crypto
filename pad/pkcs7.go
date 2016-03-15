@@ -22,26 +22,13 @@ func (p pkcs7Padding) Overhead(src []byte) int {
 }
 
 func (p pkcs7Padding) Pad(src []byte) []byte {
-	length := len(src)
 	overhead := p.Overhead(src)
 
-	var block []byte
-	if length >= p.BlockSize() {
-		block = src[length+overhead-p.BlockSize():]
-	} else {
-		block = src
-	}
-
-	dst := make([]byte, p.BlockSize())
-	copy(dst, block)
+	dst := make([]byte, overhead)
 	for i := range dst {
-		if i < p.BlockSize()-overhead {
-			dst[i] = block[i]
-		} else {
-			dst[i] = byte(overhead)
-		}
+		dst[i] = byte(overhead)
 	}
-	return dst
+	return append(src, dst...)
 }
 
 func (p pkcs7Padding) Unpad(src []byte) ([]byte, error) {
@@ -55,10 +42,7 @@ func (p pkcs7Padding) Unpad(src []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	dst := make([]byte, unLen)
-	copy(dst, block[:unLen])
-	return dst, nil
+	return src[:(length - p.BlockSize() + unLen)], nil
 }
 
 func verifyPkcs7(block []byte, blocksize int) (int, error) {

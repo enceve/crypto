@@ -26,28 +26,18 @@ func (p *isoPadding) Overhead(src []byte) int {
 }
 
 func (p *isoPadding) Pad(src []byte) []byte {
-	length := len(src)
 	overhead := p.Overhead(src)
 
-	var block []byte
-	if length >= p.blocksize {
-		block = src[length+overhead-p.blocksize:]
-		length = len(block)
-	} else {
-		block = src
-	}
-
-	dst := make([]byte, p.blocksize)
+	dst := make([]byte, overhead)
 	n, e := p.random.Read(dst)
-	if e != nil || n != p.blocksize {
+	if e != nil || n != overhead {
 		// if random fails, do a pkcs7 padding
-		for i := range dst[p.blocksize-overhead:] {
+		for i := range dst {
 			dst[i] = byte(overhead)
 		}
-	} else {
-		dst[p.blocksize-1] = byte(overhead)
 	}
-	return dst
+	dst[overhead-1] = byte(overhead)
+	return append(src, dst...)
 }
 
 func (p *isoPadding) Unpad(src []byte) ([]byte, error) {
@@ -60,18 +50,15 @@ func (p *isoPadding) Unpad(src []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	dst := make([]byte, unLen)
-	copy(dst, block[:unLen])
-	return dst, nil
+	return src[:(length - p.BlockSize() + unLen)], nil
 }
 
-func verifyISO(block []byte, length int) (uint, error) {
+func verifyISO(block []byte, length int) (int, error) {
 	var err error = nil
 	padLen := block[length-1]
 	if padLen <= 0 || int(padLen) > length {
 		err = LengthError(padLen)
 	}
 	padStart := length - int(padLen)
-	return uint(padStart), err
+	return int(padStart), err
 }

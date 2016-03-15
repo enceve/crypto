@@ -65,11 +65,13 @@ func generalPaddingTest(t *testing.T, p Padding) {
 	overheadTest(t, p, large, blocksize)
 
 	// pad test
+
 	paddedEmpty := padTest(t, p, empty)
 	paddedPartEmpty := padTest(t, p, partEmpty)
 	paddedFull := padTest(t, p, full)
 	paddedPartLarge := padTest(t, p, partLarge)
 	paddedLarge := padTest(t, p, large)
+	t.Logf("Large: %v\nPaddedLarge:   %v", large, paddedLarge)
 
 	// unpad test
 	unpadTest(t, p, paddedEmpty)
@@ -88,8 +90,12 @@ func overheadTest(t *testing.T, p Padding, src []byte, expOverhead int) {
 
 func padTest(t *testing.T, p Padding, src []byte) []byte {
 	padded := p.Pad(src)
-	if len(padded) != blocksize {
-		t.Fatalf("%s : length of padded block is not the blocksize", p)
+	if len(padded)%blocksize != 0 {
+		t.Fatalf("%s : length of padded slice is not a multiply the blocksize", p)
+		t.FailNow()
+	}
+	if len(padded) != p.Overhead(src)+len(src) {
+		t.Fatalf("%s : length of padded slice is not a src length + overhead", p)
 		t.FailNow()
 	}
 	return padded

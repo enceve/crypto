@@ -22,21 +22,11 @@ func (p x923Padding) Overhead(src []byte) int {
 }
 
 func (p x923Padding) Pad(src []byte) []byte {
-	length := len(src)
 	overhead := p.Overhead(src)
 
-	var block []byte
-	if length >= int(p) {
-		block = src[length+overhead-p.BlockSize():]
-		length = len(block)
-	} else {
-		block = src
-	}
-
-	dst := make([]byte, int(p))
-	copy(dst, block)
-	dst[int(p)-1] = byte(overhead)
-	return dst
+	dst := make([]byte, overhead)
+	dst[overhead-1] = byte(overhead)
+	return append(src, dst...)
 }
 
 func (p x923Padding) Unpad(src []byte) ([]byte, error) {
@@ -50,13 +40,10 @@ func (p x923Padding) Unpad(src []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-
-	dst := make([]byte, unLen)
-	copy(dst, block[:unLen])
-	return dst, nil
+	return src[:(length - p.BlockSize() + unLen)], nil
 }
 
-func verifyX923(block []byte, blocksize int) (uint, error) {
+func verifyX923(block []byte, blocksize int) (int, error) {
 	var err error = nil
 	padLen := block[blocksize-1]
 	if padLen <= 0 || int(padLen) > blocksize {
@@ -68,5 +55,5 @@ func verifyX923(block []byte, blocksize int) (uint, error) {
 			err = ByteError(b)
 		}
 	}
-	return uint(padStart), err
+	return int(padStart), err
 }
