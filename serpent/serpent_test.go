@@ -14,7 +14,9 @@ func TestSBox0(t *testing.T) {
 	for i := 0; i < 16; i++ {
 		v0, v1, v2, v3 = v3+v0+uint32(i), v0+v1, v1+v2, v2+v3
 
-		i0, i1, i2, i3 := sb0Inv(sb0(v0, v1, v2, v3))
+		i0, i1, i2, i3 := v0, v1, v2, v3
+		sb0(&v0, &v1, &v2, &v3)
+		sb0Inv(&v0, &v1, &v2, &v3)
 
 		if i0 != v0 || i1 != v1 || i2 != v2 || i3 != v3 {
 			t.Fatal("Sbox 0 failed")
@@ -28,7 +30,9 @@ func TestSBox1(t *testing.T) {
 	for i := 0; i < 16; i++ {
 		v0, v1, v2, v3 = v3+v0+uint32(i), v0+v1, v1+v2, v2+v3
 
-		i0, i1, i2, i3 := sb1Inv(sb1(v0, v1, v2, v3))
+		i0, i1, i2, i3 := v0, v1, v2, v3
+		sb1(&v0, &v1, &v2, &v3)
+		sb1Inv(&v0, &v1, &v2, &v3)
 
 		if i0 != v0 || i1 != v1 || i2 != v2 || i3 != v3 {
 			t.Fatal("sbox 1 failed")
@@ -42,7 +46,9 @@ func TestSBox2(t *testing.T) {
 	for i := 0; i < 16; i++ {
 		v0, v1, v2, v3 = v3+v0+uint32(i), v0+v1, v1+v2, v2+v3
 
-		i0, i1, i2, i3 := sb2Inv(sb2(v0, v1, v2, v3))
+		i0, i1, i2, i3 := v0, v1, v2, v3
+		sb2(&v0, &v1, &v2, &v3)
+		sb2Inv(&v0, &v1, &v2, &v3)
 
 		if i0 != v0 || i1 != v1 || i2 != v2 || i3 != v3 {
 			t.Fatal("sbox 2 failed")
@@ -56,7 +62,9 @@ func TestSBox3(t *testing.T) {
 	for i := 0; i < 16; i++ {
 		v0, v1, v2, v3 = v3+v0+uint32(i), v0+v1, v1+v2, v2+v3
 
-		i0, i1, i2, i3 := sb3Inv(sb3(v0, v1, v2, v3))
+		i0, i1, i2, i3 := v0, v1, v2, v3
+		sb3(&v0, &v1, &v2, &v3)
+		sb3Inv(&v0, &v1, &v2, &v3)
 
 		if i0 != v0 || i1 != v1 || i2 != v2 || i3 != v3 {
 			t.Fatal("sbox 3 failed")
@@ -70,7 +78,9 @@ func TestSBox4(t *testing.T) {
 	for i := 0; i < 16; i++ {
 		v0, v1, v2, v3 = v3+v0+uint32(i), v0+v1, v1+v2, v2+v3
 
-		i0, i1, i2, i3 := sb4Inv(sb4(v0, v1, v2, v3))
+		i0, i1, i2, i3 := v0, v1, v2, v3
+		sb4(&v0, &v1, &v2, &v3)
+		sb4Inv(&v0, &v1, &v2, &v3)
 
 		if i0 != v0 || i1 != v1 || i2 != v2 || i3 != v3 {
 			t.Fatal("sbox 4 failed")
@@ -84,7 +94,9 @@ func TestSBox5(t *testing.T) {
 	for i := 0; i < 16; i++ {
 		v0, v1, v2, v3 = v3+v0+uint32(i), v0+v1, v1+v2, v2+v3
 
-		i0, i1, i2, i3 := sb5Inv(sb5(v0, v1, v2, v3))
+		i0, i1, i2, i3 := v0, v1, v2, v3
+		sb5(&v0, &v1, &v2, &v3)
+		sb5Inv(&v0, &v1, &v2, &v3)
 
 		if i0 != v0 || i1 != v1 || i2 != v2 || i3 != v3 {
 			t.Fatal("sbox 5 failed")
@@ -98,7 +110,9 @@ func TestSBox6(t *testing.T) {
 	for i := 0; i < 16; i++ {
 		v0, v1, v2, v3 = v3+v0+uint32(i), v0+v1, v1+v2, v2+v3
 
-		i0, i1, i2, i3 := sb6Inv(sb6(v0, v1, v2, v3))
+		i0, i1, i2, i3 := v0, v1, v2, v3
+		sb6(&v0, &v1, &v2, &v3)
+		sb6Inv(&v0, &v1, &v2, &v3)
 
 		if i0 != v0 || i1 != v1 || i2 != v2 || i3 != v3 {
 			t.Fatal("sbox 6 failed")
@@ -112,7 +126,9 @@ func TestSBox7(t *testing.T) {
 	for i := 0; i < 16; i++ {
 		v0, v1, v2, v3 = v3+v0+uint32(i), v0+v1, v1+v2, v2+v3
 
-		i0, i1, i2, i3 := sb7Inv(sb7(v0, v1, v2, v3))
+		i0, i1, i2, i3 := v0, v1, v2, v3
+		sb7(&v0, &v1, &v2, &v3)
+		sb7Inv(&v0, &v1, &v2, &v3)
 
 		if i0 != v0 || i1 != v1 || i2 != v2 || i3 != v3 {
 			t.Fatal("sbox 7 failed")
@@ -125,8 +141,9 @@ func TestLinear(t *testing.T) {
 	v0, v1, v2, v3 := uint32(0), uint32(0), uint32(0), uint32(0)
 	for i := 0; i < 16; i++ {
 		v0, v1, v2, v3 = v3+v0+uint32(i), v0+v1, v1+v2, v2+v3
-
-		i0, i1, i2, i3 := linearInv(linear(v0, v1, v2, v3))
+		i0, i1, i2, i3 := v0, v1, v2, v3
+		linear(&v0, &v1, &v2, &v3)
+		linearInv(&v0, &v1, &v2, &v3)
 
 		if i0 != v0 || i1 != v1 || i2 != v2 || i3 != v3 {
 			t.Fatal("linear function failed")
