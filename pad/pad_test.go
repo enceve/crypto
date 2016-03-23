@@ -71,7 +71,6 @@ func generalPaddingTest(t *testing.T, p Padding) {
 	paddedFull := padTest(t, p, full)
 	paddedPartLarge := padTest(t, p, partLarge)
 	paddedLarge := padTest(t, p, large)
-	t.Logf("Large: %v\nPaddedLarge:   %v", large, paddedLarge)
 
 	// unpad test
 	unpadTest(t, p, paddedEmpty)
