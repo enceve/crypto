@@ -22,3 +22,12 @@ type NonceSizeError int
 func (n NonceSizeError) Error() string {
 	return "invalid nonce size " + strconv.Itoa(int(n))
 }
+
+// A AuthenticationError indicates, that an authentication
+// process failed. E.g. the message authentication of a AEAD
+// cipher.
+type AuthenticationError struct{}
+
+func (a AuthenticationError) Error() string {
+	return "authentication failed"
+}
