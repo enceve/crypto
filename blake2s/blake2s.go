@@ -70,7 +70,7 @@ var (
 
 // Creates a new blake2b hash function from the given
 // parameters. If the parameter argument is nil, or
-// parameters are invalid, an error nonnil is returned.
+// parameters are invalid, an error non-nil is returned.
 func New(p *Params) (hash.Hash, error) {
 	if p == nil {
 		return nil, errors.New("parameter arg must not be nil")

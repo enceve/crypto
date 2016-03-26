@@ -2,8 +2,13 @@
 // that can be found in the LICENSE file.
 
 // The hc package implements the both stream ciphers
-// HC128 and HC256 from the eSTREAM portfolio (software).
+// HC-128 and HC-256 from the eSTREAM portfolio (software).
 // Both ciphers were designed by Hongjun Wu.
+// HC-128 and HC-256 are fast stream ciphers after[!]
+// initialization. This may not be an issue, but if keys
+// change too often, both ciphers spend a lot of time in
+// initialization. In this case another cipher may perform
+// better.
 package hc
 
 import (
@@ -37,13 +42,13 @@ type hc256 struct {
 // The key argument must be 128 bit (16 byte).
 // The nonce argument must be at least 128 bit (16 byte).
 // The returned cipher.Stream implements the HC128 cipher.
-// If the key is not 128 bit or the nonce is not at least
-// 128 bit, this function returns an nonnil error.
+// If the key is not 128 bit or the nonce is not 128 bit,
+// this function returns an non-nil error.
 func New128(key, nonce []byte) (cipher.Stream, error) {
 	if k := len(key); k != 16 {
 		return nil, crypto.KeySizeError(k)
 	}
-	if n := len(nonce); n < 16 {
+	if n := len(nonce); n != 16 {
 		return nil, crypto.NonceSizeError(n)
 	}
 	c := &hc128{
@@ -62,13 +67,13 @@ func New128(key, nonce []byte) (cipher.Stream, error) {
 // The key argument must be 256 bit (32 byte),
 // The nonce argument must be at least 256 bit (32 byte),
 // The returned cipher.Stream implements the HC256 cipher.
-// If the key is not 256 bit or the nonce is not at least
-// 256 bit, this function returns an nonnil error.
+// If the key is not 256 bit or the nonce is 256 bit,
+// this function returns an non-nil error.
 func New256(key, nonce []byte) (cipher.Stream, error) {
 	if k := len(key); k != 32 {
 		return nil, crypto.KeySizeError(k)
 	}
-	if n := len(nonce); n < 32 {
+	if n := len(nonce); n != 32 {
 		return nil, crypto.NonceSizeError(n)
 	}
 	c := &hc256{

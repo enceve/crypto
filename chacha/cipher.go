@@ -9,7 +9,7 @@
 // This package implements the version described in RFC 7539.
 // Furthermore the AEAD cipher ChaCha20-Poly1305 (RFC 7539) is implemented here.
 // Notice, that this implementation of ChaCha20 can only process 64 x 2^32 bytes
-// for one specific key and nonce combination. So the amount data, en / decrypted by one
+// for one specific key and nonce combination. So the amount of data, en / decrypted by one
 // key-nonce combination, is limited by 256 GB.
 package chacha
 
@@ -34,11 +34,14 @@ type chacha20 struct {
 	off    uint
 }
 
-// XORKeyStream XORs each byte in the given src with a byte from the
+// XORKeyStream xor`s each byte in the given src with a byte from the
 // ChaCha20 key stream. The key must be 256 bit (32 byte), otherwise this
 // function panics. The nonce must be 96 bit (12 byte) and unique for one
 // key for all time. If the nonce is not 96 bit long, this function panics.
 // The ctr argument sets the counter for the ChaCha20 key stream generation.
+// If len(dst) < len(src), XORKeyStream panics. It is acceptable
+// to pass a dst bigger than src, and in that case, XORKeyStream will
+// only update dst[:len(src)] and will not touch the rest of dst.
 func XORKeyStream(dst, key, nonce []byte, ctr uint32, src []byte) {
 	if k := len(key); k != 32 {
 		panic(crypto.KeySizeError(k))
@@ -74,8 +77,6 @@ func New(key, nonce []byte) (cipher.Stream, error) {
 	return c, nil
 }
 
-// XORKeyStream XORs each byte in the given slice with a byte from the
-// cipher's key stream.
 func (c *chacha20) XORKeyStream(dst, src []byte) {
 	n := len(src)
 	if len(dst) < n {

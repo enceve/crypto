@@ -1,3 +1,6 @@
+// Use of this source code is governed by a license
+// that can be found in the LICENSE file.
+
 package chacha
 
 import (
@@ -7,10 +10,16 @@ import (
 	"golang.org/x/crypto/poly1305"
 )
 
+// The AEAD cipher ChaCha20-Poly1305
 type aeadCipher struct {
 	key [32]byte
 }
 
+// NewAEAD creates a new cipher implementing the
+// ChaCha20-Poly1305 construction specified in
+// RFC 7539. The key argument must be 256 bit
+// (32 byte) - otherwise a non-nil error is
+// returned.
 func NewAEAD(key []byte) (cipher.AEAD, error) {
 	if k := len(key); k != 32 {
 		return nil, crypto.KeySizeError(k)

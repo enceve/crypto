@@ -3,6 +3,9 @@
 ### Introduction
 
 The `crypto` package implements some additional cryptographic functionality, currently not supported by the standard or additional [golang packages](https://golang.org/pkg/ "Offical golang packages").
+Notice:
+This code should currently NOT used in productive environments!
+The public API is not stable and backward compatibility is currently NOT guaranteed.
 
 This cryptographic functionality can be:
 
@@ -16,7 +19,7 @@ This repository should not replace or somehow compete with the [golang-crypto pa
 
 ### Aim
 
-The aim of this project / repository is a powerful, fexible and esay to use cryptographic library, 
+The aim of this project / repository is a powerful, flexible and easy to use cryptographic library,
 which can be easily integrated into Go applications.  
 
 ### Contribute

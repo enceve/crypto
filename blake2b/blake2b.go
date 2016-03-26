@@ -12,8 +12,8 @@
 //		- MACs (builtin)
 //		- tree hashing
 // This package supports:
-//	    - simple and randomized hashing
-//		- MACs
+//	- simple and randomized hashing
+//	- MACs
 // Personalization and Tree-hashing are not supported.
 package blake2b
 
@@ -71,7 +71,7 @@ var (
 
 // Creates a new blake2b hash function from the given
 // parameters. If the parameter argument is nil, or
-// parameters are invalid, an error nonnil is returned.
+// parameters are invalid, an error non-nil is returned.
 func New(p *Params) (hash.Hash, error) {
 	if p == nil {
 		return nil, errors.New("p argument must not be nil")
@@ -126,7 +126,7 @@ func New160() hash.Hash {
 // specifies the size of the MAC in bytes. If the
 // length of the key is greater than the max. key
 // size or the size argument is greater than the
-// max. hash size, this function returns a nonnil
+// max. hash size, this function returns a non-nil
 // error
 func NewMAC(size int, key []byte) (hash.Hash, error) {
 	h, err := New(&Params{HashSize: size, Key: key})

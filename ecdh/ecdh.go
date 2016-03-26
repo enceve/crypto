@@ -2,7 +2,9 @@
 // that can be found in the LICENSE file.
 
 // The ecdh package implements the Diffie-Hellman key
-// exchange with elliptic curves.
+// exchange with elliptic curves. This implementation
+// can be used with any elliptic curve. Recommened are
+// the Curve25529 and the Edward`s curve Ed25519.
 package ecdh
 
 import (
