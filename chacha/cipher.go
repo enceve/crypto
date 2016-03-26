@@ -1,87 +1,139 @@
 // Use of this source code is governed by a license
 // that can be found in the LICENSE file.
 
-// The chacha package implements D J Bernstein's Chacha stream cipher algorithm.
+// The chacha package implements D J Bernstein's Chacha20 stream cipher algorithm.
 // See: http://cr.yp.to/chacha/chacha-20080128.pdf
 // There are two variants of this cipher:
 //		- the original by Bernstein
-// 		- the version described in RFC 7539 (https://tools.ietf.org/html/rfc7539).
-// Both are implemented here.
+// 		- the version described in RFC 7539.
+// This package implements the version described in RFC 7539.
+// Furthermore the AEAD cipher ChaCha20-Poly1305 (RFC 7539) is implemented here.
+// Notice, that this implementation of ChaCha20 can only process 64 x 2^32 bytes
+// for one specific key and nonce combination. So the amount data, en / decrypted by one
+// key-nonce combination, is limited by 256 GB.
 package chacha
 
 import (
-	"errors"
+	"crypto/cipher"
 	"github.com/EncEve/crypto"
 )
 
-// The default number of rounds
-// Another common value is 12
-const DefaultRounds = 20
+const NonceSize = 12 // The size of the nonce for ChaCha20 in bytes
 
-// The default start value for the counter part
-const Zero = 0
+// The four RFC 7539 constants
+const (
+	const0 = 0x61707865
+	const1 = 0x3320646e
+	const2 = 0x79622d32
+	const3 = 0x6b206574
+)
 
-// The constants for a 256 bit key
-var sigma = []byte{'e', 'x', 'p', 'a', 'n', 'd', ' ', '3', '2', '-', 'b', 'y', 't', 'e', ' ', 'k'}
-
-// The constants for a 128 bit key
-var tau = []byte{'e', 'x', 'p', 'a', 'n', 'd', ' ', '1', '6', '-', 'b', 'y', 't', 'e', ' ', 'k'}
-
-// Chacha describs an instance of the orig. chacha cipher.
-type Chacha struct {
-	state  [16]uint32
-	stream [64]byte
-	off    uint
-	rounds uint
-}
-
-// ChachaRFC describs an instance of the RFC version of the chacha cipher.
-type ChachaRFC struct {
+type chacha20 struct {
 	state  [16]uint32
 	stream [64]byte
 	off    uint
 }
 
-// Create a new chacha instance from the key (128 or 256 bit),
-// the nonce (64 bit wich must be unique for every key for all time)
-// and the number of rounds (common values are 20 or 12).
-// The initial counter (64 bit) will be set to 0.
-// If the key is not 128 or 256 bit or the nonce is not at least
-// 64 bit a nonnil error is returned.
-// Although a nonnil error is returned, when the nRounds is not even.
-func New(key, nonce []byte, nRounds uint) (*Chacha, error) {
-	if k := len(key); k != 16 && k != 32 {
+// XORKeyStream XORs each byte in the given src with a byte from the
+// ChaCha20 key stream. The key must be 256 bit (32 byte), otherwise this
+// function panics. The nonce must be 96 bit (12 byte) and unique for one
+// key for all time. If the nonce is not 96 bit long, this function panics.
+// The ctr argument sets the counter for the ChaCha20 key stream generation.
+func XORKeyStream(dst, key, nonce []byte, ctr uint32, src []byte) {
+	if k := len(key); k != 32 {
+		panic(crypto.KeySizeError(k))
+	}
+	if n := len(nonce); n != NonceSize {
+		panic(crypto.NonceSizeError(n))
+	}
+	c := &chacha20{
+		off: 64,
+	}
+	initialize(key, nonce, &(c.state))
+	c.state[12] = ctr
+	c.XORKeyStream(dst, src)
+}
+
+// Create a new ChaCha20 instance from the key and
+// the nonce. The nonce must be unique for one key for
+// all time.
+// The key must be exactly 256 bit (32 byte) and the
+// nonce must be exactly 96 bit (12 byte). Otherwise
+// a non-nil error is returned.
+func New(key, nonce []byte) (cipher.Stream, error) {
+	if k := len(key); k != 32 {
 		return nil, crypto.KeySizeError(k)
 	}
-	if n := len(nonce); n < 8 {
+	if n := len(nonce); n != NonceSize {
 		return nil, crypto.NonceSizeError(n)
 	}
-	if nRounds%2 != 0 {
-		return nil, errors.New("the number of rounds must be even")
-	}
-	c := &Chacha{
-		off:    64,
-		rounds: nRounds,
+	c := &chacha20{
+		off: 64,
 	}
 	initialize(key, nonce, &(c.state))
 	return c, nil
 }
 
-// Create a new chacha instance from the key (256 bit) and
-// the nonce (96 bit). The number of rounds is fixed to 20.
-// The initial counter (32 bit) will be set to 0.
-// If the key is not 128 or 256 bit or the nonce is not at least
-// 96 bit a nonnil error is returned.
-func NewRFC(key, nonce []byte) (*ChachaRFC, error) {
-	if k := len(key); k != 32 {
-		return nil, crypto.KeySizeError(k)
+// XORKeyStream XORs each byte in the given slice with a byte from the
+// cipher's key stream.
+func (c *chacha20) XORKeyStream(dst, src []byte) {
+	n := len(src)
+	if len(dst) < n {
+		panic("output buffer to small")
 	}
-	if n := len(nonce); n < 12 {
-		return nil, crypto.NonceSizeError(n)
+	dOff, sOff := 0, 0
+	if c.off < 64 {
+		for n > 0 && c.off < 64 {
+			dst[dOff] = src[sOff] ^ c.stream[c.off]
+			dOff, sOff, c.off = dOff+1, sOff+1, c.off+1
+			n--
+		}
 	}
-	c := &ChachaRFC{
-		off: 64,
+	for n >= 64 {
+		core(&(c.stream), &(c.state))
+		c.state[12]++ // inc. counter
+		for i := range c.stream {
+			dst[dOff+i] = src[sOff+i] ^ c.stream[i]
+		}
+		dOff += 64
+		sOff += 64
+		n -= 64
 	}
-	initializeRFC(key, nonce, &(c.state))
-	return c, nil
+	if n > 0 {
+		c.off = 0
+		core(&(c.stream), &(c.state))
+		c.state[12]++ // inc. counter
+		for i := 0; n > 0; i++ {
+			dst[dOff+i] = src[sOff+i] ^ c.stream[i]
+			c.off++
+			n--
+		}
+	}
+}
+
+// Initialize the cipher with the key and the nonce
+func initialize(key, nonce []byte, state *[16]uint32) {
+	// The four rfc constants
+	state[0] = const0
+	state[1] = const1
+	state[2] = const2
+	state[3] = const3
+
+	// The 256 bit key
+	state[4] = uint32(key[0]) | uint32(key[1])<<8 | uint32(key[2])<<16 | uint32(key[3])<<24
+	state[5] = uint32(key[4]) | uint32(key[5])<<8 | uint32(key[6])<<16 | uint32(key[7])<<24
+	state[6] = uint32(key[8]) | uint32(key[9])<<8 | uint32(key[10])<<16 | uint32(key[11])<<24
+	state[7] = uint32(key[12]) | uint32(key[13])<<8 | uint32(key[14])<<16 | uint32(key[15])<<24
+	state[8] = uint32(key[16]) | uint32(key[17])<<8 | uint32(key[18])<<16 | uint32(key[19])<<24
+	state[9] = uint32(key[20]) | uint32(key[21])<<8 | uint32(key[22])<<16 | uint32(key[23])<<24
+	state[10] = uint32(key[24]) | uint32(key[25])<<8 | uint32(key[26])<<16 | uint32(key[27])<<24
+	state[11] = uint32(key[28]) | uint32(key[29])<<8 | uint32(key[30])<<16 | uint32(key[31])<<24
+
+	// The counter
+	state[12] = 0
+
+	// The 96 bit nonce
+	state[13] = uint32(nonce[0]) | uint32(nonce[1])<<8 | uint32(nonce[2])<<16 | uint32(nonce[3])<<24
+	state[14] = uint32(nonce[4]) | uint32(nonce[5])<<8 | uint32(nonce[6])<<16 | uint32(nonce[7])<<24
+	state[15] = uint32(nonce[8]) | uint32(nonce[9])<<8 | uint32(nonce[10])<<16 | uint32(nonce[11])<<24
 }

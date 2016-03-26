@@ -5,13 +5,13 @@ package chacha
 
 // The chacha core function for updating
 // the state and extract the keystream.
-func core(dst *[64]byte, state *[16]uint32, rounds uint) {
+func core(dst *[64]byte, state *[16]uint32) {
 	v00, v01, v02, v03 := state[0], state[1], state[2], state[3]
 	v04, v05, v06, v07 := state[4], state[5], state[6], state[7]
 	v08, v09, v10, v11 := state[8], state[9], state[10], state[11]
 	v12, v13, v14, v15 := state[12], state[13], state[14], state[15]
 
-	for i := uint(0); i < rounds; i += 2 {
+	for i := 0; i < 20; i += 2 {
 		v00 += v04
 		v12 ^= v00
 		v12 = (v12 << 16) | (v12 >> (16))

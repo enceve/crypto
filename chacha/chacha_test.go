@@ -1,137 +1,154 @@
+// Use of this source code is governed by a license
+// that can be found in the LICENSE file.
+
 package chacha
 
 import (
 	"encoding/hex"
+	"github.com/EncEve/crypto"
 	"testing"
 )
 
-// A test vector consisting of a key, nonce, reference keystream,
-// the number of rounds and the start counter.
 type testVector struct {
-	key, nonce, keystream string
-	nRounds               uint
-	startCtr              uint64
-}
-
-// Test vectors from:
-// https://tools.ietf.org/html/draft-agl-tls-chacha20poly1305-04#section-7
-
-// 96 bit nonce is for RFC chacha, the original chacha algorithm
-// will use only 64 bit and ignore the other 32 bit.
-var generalVectors = []testVector{
-	testVector{
-		key:       "0000000000000000000000000000000000000000000000000000000000000000",
-		nonce:     "000000000000000000000000",
-		keystream: "76b8e0ada0f13d90405d6ae55386bd28bdd219b8a08ded1aa836efcc8b770dc7",
-		nRounds:   DefaultRounds,
-		startCtr:  Zero,
-	},
-	testVector{
-		key:       "0000000000000000000000000000000000000000000000000000000000000001",
-		nonce:     "000000000000000000000000",
-		keystream: "4540f05a9f1fb296d7736e7b208e3c96eb4fe1834688d2604f450952ed432d41",
-		nRounds:   DefaultRounds,
-		startCtr:  Zero,
-	},
-}
-
-// Test vectors from:
-// https://tools.ietf.org/html/draft-agl-tls-chacha20poly1305-04#section-7
-var chachaVectors = []testVector{
-	testVector{
-		key:   "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
-		nonce: "0001020304050607",
-		keystream: "f798a189f195e66982105ffb640bb7757f579da31602fc93ec01ac56" +
-			"f85ac3c134a4547b733b46413042c9440049176905d3be59ea1c53f1" +
-			"5916155c2be8241a38008b9a26bc35941e2444177c8ade6689de9526" +
-			"4986d95889fb60e84629c9bd9a5acb1cc118be563eb9b3a4a472f82e" +
-			"09a7e778492b562ef7130e88dfe031c79db9d4f7c7a899151b9a4750" +
-			"32b63fc385245fe054e3dd5a97a5f576fe064025d3ce042c566ab2c5" +
-			"07b138db853e3d6959660996546cc9c4a6eafdc777c040d70eaf46f7" +
-			"6dad3979e5c5360c3317166a1c894c94a371876a94df7628fe4eaaf2" +
-			"ccb27d5aaae0ad7ad0f9d4b6ad3b54098746d4524d38407a6deb3ab78fab78c9",
-		nRounds:  DefaultRounds,
-		startCtr: Zero,
-	},
-	testVector{
-		key:   "0000000000000000000000000000000000000000000000000000000000000000",
-		nonce: "0000000000000001",
-		keystream: "de9cba7bf3d69ef5e786dc63973f653a0b49e015adbff7134fcb7df137821031e85a050278a7084527214f73efc7" +
-			"fa5b5277062eb7a0433e445f41e3",
-		nRounds:  DefaultRounds,
-		startCtr: Zero,
-	},
+	key, nonce, msg, keystream, ciphertext string
+	ctr                                    uint32
 }
 
 // Test vector from:
 // https://tools.ietf.org/html/rfc7539#section-2.4.2
-var rfcVectors = []testVector{
+var chachaVectors = []testVector{
 	testVector{
 		key:   "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
 		nonce: "000000000000004a00000000",
-		keystream: "224f51f3401bd9e12fde276fb8631ded8c131f823d2c06e27e4fcaec9ef3cf788a3b0aa372600a92b57974cded2b" +
-			"9334794cba40c63e34cdea212c4cf07d41b769a6749f3f630f4122cafe28ec4dc47e26d4346d70b98c73f3e9c53a" +
+		msg: "4c616469657320616e642047656e746c656d656e206f662074686520636c6173" +
+			"73206f66202739393a204966204920636f756c64206f6666657220796f75206f" +
+			"6e6c79206f6e652074697020666f7220746865206675747572652c2073756e73" +
+			"637265656e20776f756c642062652069742e",
+		keystream: "224f51f3401bd9e12fde276fb8631ded8c131f823d2c06" +
+			"e27e4fcaec9ef3cf788a3b0aa372600a92b57974cded2b" +
+			"9334794cba40c63e34cdea212c4cf07d41b769a6749f3f" +
+			"630f4122cafe28ec4dc47e26d4346d70b98c73f3e9c53a" +
 			"c40c5945398b6eda1a832c89c167eacd901d7e2bf363",
-		nRounds:  DefaultRounds,
-		startCtr: 1,
+		ciphertext: "6e2e359a2568f98041ba0728dd0d6981" +
+			"e97e7aec1d4360c20a27afccfd9fae0b" +
+			"f91b65c5524733ab8f593dabcd62b357" +
+			"1639d624e65152ab8f530c359f0861d8" +
+			"07ca0dbf500d6a6156a38e088a22b65e" +
+			"52bc514d16ccf806818ce91ab7793736" +
+			"5af90bbf74a35be6b40b8eedf2785e42" +
+			"874d",
+		ctr: 1,
 	},
 }
 
-// Test all vectors for both chacha variants;
-// the original and the RFC one.
-func TestChachaGeneral(t *testing.T) {
-	for _, v := range generalVectors {
-		testChachaVector(t, &v)
-		testChachaRFCVector(t, &v)
+type aeadTestVector struct {
+	key, nonce, data, msg, ciphertext string
+}
+
+// Test vector from:
+// https://tools.ietf.org/html/rfc7539#section-2.8.2
+var aeadVectors = []aeadTestVector{
+	aeadTestVector{
+		key: "808182838485868788898a8b8c8d8e8f" +
+			"909192939495969798999a9b9c9d9e9f",
+		nonce: "070000004041424344454647",
+		data:  "50515253c0c1c2c3c4c5c6c7",
+		msg: "4c616469657320616e642047656e746c656d656e206f662074686520636c6173" +
+			"73206f66202739393a204966204920636f756c64206f6666657220796f75206f" +
+			"6e6c79206f6e652074697020666f7220746865206675747572652c2073756e73" +
+			"637265656e20776f756c642062652069742e",
+		ciphertext: "d31a8d34648e60db7b86afbc53ef7ec2" +
+			"a4aded51296e08fea9e2b5a736ee62d6" +
+			"3dbea45e8ca9671282fafb69da92728b" +
+			"1a71de0a9e060b2905d6a5b67ecd3b36" +
+			"92ddbd7f2d778b8c9803aee328091b58" +
+			"fab324e4fad675945585808b4831d7bc" +
+			"3ff4def08e4b7a9de576d26586cec64b" +
+			"6116" +
+			"1ae10b594f09e26a7e902ecbd0600691", // poly 1305 tag
+	},
+}
+
+func TestChacha20(t *testing.T) {
+	for i, vec := range chachaVectors {
+		key, err := hex.DecodeString(vec.key)
+		if err != nil {
+			t.Fatalf("Test vector %d: %s", i, err)
+		}
+		nonce, err := hex.DecodeString(vec.nonce)
+		if err != nil {
+			t.Fatalf("Test vector %d: %s", i, err)
+		}
+		msg, err := hex.DecodeString(vec.msg)
+		if err != nil {
+			t.Fatalf("Test vector %d: %s", i, err)
+		}
+		keystream, err := hex.DecodeString(vec.keystream)
+		if err != nil {
+			t.Fatalf("Test vector %d: %s", i, err)
+		}
+		ciphertext, err := hex.DecodeString(vec.ciphertext)
+		if err != nil {
+			t.Fatalf("Test vector %d: %s", i, err)
+		}
+		c, err := New(key, nonce)
+		if err != nil {
+			t.Fatalf("Test vector %d: %s", i, err)
+		}
+		ch := c.(*chacha20)
+		ch.state[12] = vec.ctr
+
+		buf := make([]byte, len(keystream))
+		c.XORKeyStream(buf, msg)
+
+		for j := range buf {
+			if buf[j] != ciphertext[j] {
+				t.Fatalf("Test vector %d :\nUnexpected keystream:\nFound:    %v\nExpected: %v", i, hex.EncodeToString(buf), hex.EncodeToString(ciphertext))
+			}
+		}
+		crypto.XOR(buf, buf, msg)
+		for j := range buf {
+			if buf[j] != keystream[j] {
+				t.Fatalf("Test vector %d :\nUnexpected keystream:\nFound:    %v\nExpected: %v", i, hex.EncodeToString(buf), hex.EncodeToString(keystream))
+			}
+		}
 	}
 }
 
-// Test all vectors for the original chacha.
-func TestChacha(t *testing.T) {
-	for _, v := range chachaVectors {
-		testChachaVector(t, &v)
-	}
-}
+func TestChacha20Poly1305(t *testing.T) {
+	for i, vec := range aeadVectors {
+		key, err := hex.DecodeString(vec.key)
+		if err != nil {
+			t.Fatalf("Test vector %d: %s", i, err)
+		}
+		nonce, err := hex.DecodeString(vec.nonce)
+		if err != nil {
+			t.Fatalf("Test vector %d: %s", i, err)
+		}
+		msg, err := hex.DecodeString(vec.msg)
+		if err != nil {
+			t.Fatalf("Test vector %d: %s", i, err)
+		}
+		data, err := hex.DecodeString(vec.data)
+		if err != nil {
+			t.Fatalf("Test vector %d: %s", i, err)
+		}
+		ciphertext, err := hex.DecodeString(vec.ciphertext)
+		if err != nil {
+			t.Fatalf("Test vector %d: %s", i, err)
+		}
+		c, err := NewAEAD(key)
+		if err != nil {
+			t.Fatalf("Test vector %d: %s", i, err)
+		}
 
-// Test all vectors for the RFC chacha.
-func TestChachaRFC(t *testing.T) {
-	for _, v := range rfcVectors {
-		testChachaRFCVector(t, &v)
-	}
-}
+		buf := make([]byte, len(ciphertext))
+		c.Seal(buf, nonce, msg, data)
 
-func testChachaVector(t *testing.T, vec *testVector) {
-	key, _ := hex.DecodeString(vec.key)
-	nonce, _ := hex.DecodeString(vec.nonce)
-	keystream, _ := hex.DecodeString(vec.keystream)
-
-	c, _ := New(key, nonce, vec.nRounds)
-	c.Counter(vec.startCtr)
-	buf := make([]byte, len(keystream))
-
-	c.XORKeyStream(buf, buf)
-
-	checkKeyStream(t, buf, keystream)
-}
-
-func testChachaRFCVector(t *testing.T, vec *testVector) {
-	key, _ := hex.DecodeString(vec.key)
-	nonce, _ := hex.DecodeString(vec.nonce)
-	keystream, _ := hex.DecodeString(vec.keystream)
-
-	c, _ := NewRFC(key, nonce)
-	c.Counter(uint32(vec.startCtr))
-	buf := make([]byte, len(keystream))
-
-	c.XORKeyStream(buf, buf)
-
-	checkKeyStream(t, buf, keystream)
-}
-
-func checkKeyStream(t *testing.T, buf, exp []byte) {
-	for i := range buf {
-		if buf[i] != exp[i] {
-			t.Fatalf("Unexpected keystream:\nFound:    %v\nExpected: %v", hex.EncodeToString(buf), hex.EncodeToString(exp))
+		for j := range buf {
+			if buf[j] != ciphertext[j] {
+				t.Fatalf("Test vector %d :\nUnexpected keystream:\nFound:    %v\nExpected: %v", i, hex.EncodeToString(buf), hex.EncodeToString(ciphertext))
+			}
 		}
 	}
 }
