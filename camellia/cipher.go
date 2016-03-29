@@ -53,6 +53,13 @@ func (c *camellia) BlockSize() int { return BlockSize }
 // Encrypt encrypts the first block in src into dst.
 // Dst and src may point at the same memory.
 func (c *camellia128) Encrypt(dst, src []byte) {
+	if len(src) < BlockSize {
+		panic("src buffer to small")
+	}
+	if len(dst) < BlockSize {
+		panic("dst buffer to small")
+	}
+
 	r0 := uint32(src[0])<<24 | uint32(src[1])<<16 | uint32(src[2])<<8 | uint32(src[3])
 	r1 := uint32(src[4])<<24 | uint32(src[5])<<16 | uint32(src[6])<<8 | uint32(src[7])
 	r2 := uint32(src[8])<<24 | uint32(src[9])<<16 | uint32(src[10])<<8 | uint32(src[11])
@@ -126,6 +133,13 @@ func (c *camellia128) Encrypt(dst, src []byte) {
 // Encrypt encrypts the first block in src into dst.
 // Dst and src may point at the same memory.
 func (c *camellia) Encrypt(dst, src []byte) {
+	if len(src) < BlockSize {
+		panic("input to small")
+	}
+	if len(dst) < BlockSize {
+		panic("output to small")
+	}
+
 	r0 := uint32(src[0])<<24 | uint32(src[1])<<16 | uint32(src[2])<<8 | uint32(src[3])
 	r1 := uint32(src[4])<<24 | uint32(src[5])<<16 | uint32(src[6])<<8 | uint32(src[7])
 	r2 := uint32(src[8])<<24 | uint32(src[9])<<16 | uint32(src[10])<<8 | uint32(src[11])
@@ -214,6 +228,13 @@ func (c *camellia) Encrypt(dst, src []byte) {
 // Decrypt decrypts the first block in src into dst.
 // Dst and src may point at the same memory.
 func (c *camellia128) Decrypt(dst, src []byte) {
+	if len(src) < BlockSize {
+		panic("input to small")
+	}
+	if len(dst) < BlockSize {
+		panic("output to small")
+	}
+
 	r0 := uint32(src[0])<<24 | uint32(src[1])<<16 | uint32(src[2])<<8 | uint32(src[3])
 	r1 := uint32(src[4])<<24 | uint32(src[5])<<16 | uint32(src[6])<<8 | uint32(src[7])
 	r2 := uint32(src[8])<<24 | uint32(src[9])<<16 | uint32(src[10])<<8 | uint32(src[11])
@@ -287,6 +308,13 @@ func (c *camellia128) Decrypt(dst, src []byte) {
 // Decrypt decrypts the first block in src into dst.
 // Dst and src may point at the same memory.
 func (c *camellia) Decrypt(dst, src []byte) {
+	if len(src) < BlockSize {
+		panic("input to small")
+	}
+	if len(dst) < BlockSize {
+		panic("output to small")
+	}
+
 	r0 := uint32(src[0])<<24 | uint32(src[1])<<16 | uint32(src[2])<<8 | uint32(src[3])
 	r1 := uint32(src[4])<<24 | uint32(src[5])<<16 | uint32(src[6])<<8 | uint32(src[7])
 	r2 := uint32(src[8])<<24 | uint32(src[9])<<16 | uint32(src[10])<<8 | uint32(src[11])

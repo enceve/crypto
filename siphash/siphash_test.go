@@ -9,48 +9,50 @@ import (
 )
 
 type testVector struct {
-	key, src string
-	value    uint64
+	key, msg string
+	hash     uint64
 }
 
 var vectors []testVector = []testVector{
 	// Test vector from https://131002.net/siphash/siphash.pdf
 	testVector{
-		key:   "000102030405060708090a0b0c0d0e0f",
-		src:   "000102030405060708090a0b0c0d0e",
-		value: uint64(0xa129ca6149be45e5),
+		key:  "000102030405060708090a0b0c0d0e0f",
+		msg:  "000102030405060708090a0b0c0d0e",
+		hash: uint64(0xa129ca6149be45e5),
 	},
 }
 
 // Tests the SipHash implementation
 func TestSipHash(t *testing.T) {
-	for i := range vectors {
-		testSingleVector(t, &vectors[i])
-	}
-}
+	for i, v := range vectors {
+		key, err := hex.DecodeString(v.key)
+		if err != nil {
+			t.Fatalf("Test vector %d: Failed to decode hex key - Caused by: %s", i, err)
+		}
+		msg, err := hex.DecodeString(v.msg)
+		if err != nil {
+			t.Fatalf("Test vector %d: Failed to decode hex msg - Caused by: %s", i, err)
+		}
+		h, err := New(key)
+		if err != nil {
+			t.Fatalf("Test vector %d: Failed to create Siphash instance - Caused by: %s", i, err)
+		}
 
-func testSingleVector(t *testing.T, vec *testVector) {
-	key, err := hex.DecodeString(vec.key)
-	if err != nil {
-		t.Fatal(err)
-	}
-	src, err := hex.DecodeString(vec.src)
-	if err != nil {
-		t.Fatal(err)
-	}
+		_, err = h.Write(msg)
+		if err != nil {
+			t.Fatalf("Test vector %d: Spihash write failed - Caused by: %s", i, err)
+		}
 
-	h, _ := New(key)
-	h.Write(src)
-
-	sum := h.Sum64()
-	if sum != vec.value {
-		t.Fatalf("Hash values don't match - found %x expected %x", sum, vec.value)
-	}
-	sum, err = Sum64(key, src)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if sum != vec.value {
-		t.Fatalf("Hash values don't match - found %x expected %x", sum, vec.value)
+		sum := h.Sum64()
+		if sum != v.hash {
+			t.Fatalf("Test vector %d: Hash values don't match - found %x expected %x", i, sum, v.hash)
+		}
+		sum, err = Sum64(key, msg)
+		if err != nil {
+			t.Fatalf("Test vector %d: Failed to calculate MAC - Caused by: %s", i, err)
+		}
+		if sum != v.hash {
+			t.Fatalf("Hash values don't match - found %x expected %x", sum, v.hash)
+		}
 	}
 }

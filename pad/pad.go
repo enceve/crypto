@@ -97,6 +97,8 @@ func NewIso10126(blocksize int, rand io.Reader) Padding {
 
 // Utility functions
 
+// Returns the overhead for a given slice with a
+// specific block size.
 func generalOverhead(blocksize int, src []byte) int {
 	return blocksize - (len(src) % blocksize)
 }

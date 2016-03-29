@@ -57,7 +57,7 @@ func (s *serpent) Encrypt(dst, src []byte) {
 	encryptBlock(dst, src, &s.sk)
 }
 
-// Encrypt encrypts the first block in src into dst.
+// Decrypt deccrypts the first block in src into dst.
 // Dst and src may point at the same memory.
 func (s *serpent) Decrypt(dst, src []byte) {
 	if len(src) < BlockSize {

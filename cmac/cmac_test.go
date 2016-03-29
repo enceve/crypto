@@ -11,7 +11,7 @@ import (
 )
 
 type testVector struct {
-	key, in, mac string
+	key, msg, hash string
 }
 
 // Test vectors for CMac-AES from NIST
@@ -20,42 +20,42 @@ type testVector struct {
 var aesVectors = []testVector{
 	// AES-128 vectors
 	testVector{
-		key: "2b7e151628aed2a6abf7158809cf4f3c",
-		in:  "",
-		mac: "bb1d6929e95937287fa37d129b756746",
+		key:  "2b7e151628aed2a6abf7158809cf4f3c",
+		msg:  "",
+		hash: "bb1d6929e95937287fa37d129b756746",
+	},
+	testVector{
+		key:  "2b7e151628aed2a6abf7158809cf4f3c",
+		msg:  "6bc1bee22e409f96e93d7e117393172a",
+		hash: "070a16b46b4d4144f79bdd9dd04a287c",
 	},
 	testVector{
 		key: "2b7e151628aed2a6abf7158809cf4f3c",
-		in:  "6bc1bee22e409f96e93d7e117393172a",
-		mac: "070a16b46b4d4144f79bdd9dd04a287c",
-	},
-	testVector{
-		key: "2b7e151628aed2a6abf7158809cf4f3c",
-		in: "6bc1bee22e409f96e93d7e117393172a" +
+		msg: "6bc1bee22e409f96e93d7e117393172a" +
 			"ae2d8a571e03ac9c9eb76fac45af8e51" +
 			"30c81c46a35ce411",
-		mac: "dfa66747de9ae63030ca32611497c827",
+		hash: "dfa66747de9ae63030ca32611497c827",
 	},
 	// AES-256 vectors
 	testVector{
 		key: "603deb1015ca71be2b73aef0857d7781" +
 			"1f352c073b6108d72d9810a30914dff4",
-		in:  "",
-		mac: "028962f61b7bf89efc6b551f4667d983",
+		msg:  "",
+		hash: "028962f61b7bf89efc6b551f4667d983",
 	},
 	testVector{
 		key: "603deb1015ca71be2b73aef0857d7781" +
 			"1f352c073b6108d72d9810a30914dff4",
-		in:  "6bc1bee22e409f96e93d7e117393172a",
-		mac: "28a7023f452e8f82bd4bf28d8c37c35c",
+		msg:  "6bc1bee22e409f96e93d7e117393172a",
+		hash: "28a7023f452e8f82bd4bf28d8c37c35c",
 	},
 	testVector{
 		key: "603deb1015ca71be2b73aef0857d7781" +
 			"1f352c073b6108d72d9810a30914dff4",
-		in: "6bc1bee22e409f96e93d7e117393172a" +
+		msg: "6bc1bee22e409f96e93d7e117393172a" +
 			"ae2d8a571e03ac9c9eb76fac45af8e51" +
 			"30c81c46a35ce411",
-		mac: "aaf3d8f1de5640c232f5b169b9c911e6",
+		hash: "aaf3d8f1de5640c232f5b169b9c911e6",
 	},
 }
 
@@ -63,35 +63,35 @@ func TestCMac(t *testing.T) {
 	for i, v := range aesVectors {
 		key, err := hex.DecodeString(v.key)
 		if err != nil {
-			t.Fatalf("vector %d: %s", i, err)
+			t.Fatalf("Test vector %d: Failed to decode hex key - Caused by %s", i, err)
 		}
-		in, err := hex.DecodeString(v.in)
+		msg, err := hex.DecodeString(v.msg)
 		if err != nil {
-			t.Fatalf("vector %d: %s", i, err)
+			t.Fatalf("Test vector %d: Failed to decode hex msg - Caused by %s", i, err)
 		}
-		mac, err := hex.DecodeString(v.mac)
+		hash, err := hex.DecodeString(v.hash)
 		if err != nil {
-			t.Fatalf("vector %d: %s", i, err)
+			t.Fatalf("Test vector %d: Failed to decode hex hash - Caused by %s", i, err)
 		}
 
 		c, err := aes.NewCipher(key)
 		if err != nil {
-			t.Fatalf("vector %d: %s", i, err)
+			t.Fatalf("Test vector %d: Failed to create AES instance - Caused by: %s", i, err)
 		}
 		h, err := New(c)
 		if err != nil {
-			t.Fatalf("vector %d: %s", i, err)
+			t.Fatalf("Test vector %d: Failed to create CMac instance - Caused by: %s", i, err)
 		}
-		_, err = h.Write(in)
+		_, err = h.Write(msg)
 		if err != nil {
-			t.Fatalf("vector %d: %s", i, err)
+			t.Fatalf("Test vector %d: CMac write failed - Caused by: %s", i, err)
 		}
 		sum := h.Sum(nil)
-		if !bytes.Equal(sum, mac) {
-			t.Fatalf("vector %d: mac are not equal", i)
+		if !bytes.Equal(sum, hash) {
+			t.Fatalf("Test vector %d : MAC does not match:\nFound:    %v\nExpected: %v", i, hex.EncodeToString(sum), hex.EncodeToString(hash))
 		}
-		if !Verify(mac, in, c) {
-			t.Fatalf("vector %d: verification of mac failed", i)
+		if !Verify(hash, msg, c) {
+			t.Fatalf("Test vector %d: verification of MAC failed", i)
 		}
 	}
 }

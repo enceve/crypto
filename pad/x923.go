@@ -36,14 +36,15 @@ func (p x923Padding) Unpad(src []byte) ([]byte, error) {
 	}
 
 	block := src[length-p.BlockSize():]
-	unLen, err := verifyX923(block, p.BlockSize())
+	unLen, err := verifyX923ConstTime(block, p.BlockSize())
 	if err != nil {
 		return nil, err
 	}
 	return src[:(length - p.BlockSize() + unLen)], nil
 }
 
-func verifyX923(block []byte, blocksize int) (int, error) {
+// verify the X923 padding in (nearly) constant time
+func verifyX923ConstTime(block []byte, blocksize int) (int, error) {
 	var err error = nil
 	padLen := block[blocksize-1]
 	if padLen <= 0 || int(padLen) > blocksize {

@@ -38,14 +38,15 @@ func (p pkcs7Padding) Unpad(src []byte) ([]byte, error) {
 	}
 
 	block := src[(length - p.BlockSize()):]
-	unLen, err := verifyPkcs7(block, p.BlockSize())
+	unLen, err := verifyPkcs7ConstTime(block, p.BlockSize())
 	if err != nil {
 		return nil, err
 	}
 	return src[:(length - p.BlockSize() + unLen)], nil
 }
 
-func verifyPkcs7(block []byte, blocksize int) (int, error) {
+// verify the pkcs7 padding in (nearly) constant time
+func verifyPkcs7ConstTime(block []byte, blocksize int) (int, error) {
 	var err error = nil
 	padLen := block[blocksize-1]
 	if padLen <= 0 || int(padLen) > blocksize {

@@ -70,33 +70,33 @@ var aeadVectors = []aeadTestVector{
 }
 
 func TestChacha20(t *testing.T) {
-	for i, vec := range chachaVectors {
-		key, err := hex.DecodeString(vec.key)
+	for i, v := range chachaVectors {
+		key, err := hex.DecodeString(v.key)
 		if err != nil {
-			t.Fatalf("Test vector %d: %s", i, err)
+			t.Fatalf("Test vector %d: Failed to decode hex key - Caused by: %s", i, err)
 		}
-		nonce, err := hex.DecodeString(vec.nonce)
+		nonce, err := hex.DecodeString(v.nonce)
 		if err != nil {
-			t.Fatalf("Test vector %d: %s", i, err)
+			t.Fatalf("Test vector %d: Failed to decode hex nonce - Caused by: %s", i, err)
 		}
-		msg, err := hex.DecodeString(vec.msg)
+		msg, err := hex.DecodeString(v.msg)
 		if err != nil {
-			t.Fatalf("Test vector %d: %s", i, err)
+			t.Fatalf("Test vector %d: Failed to decode hex msg - Caused by: %s", i, err)
 		}
-		keystream, err := hex.DecodeString(vec.keystream)
+		keystream, err := hex.DecodeString(v.keystream)
 		if err != nil {
-			t.Fatalf("Test vector %d: %s", i, err)
+			t.Fatalf("Test vector %d: Failed to decode hex keystream - Caused by: %s", i, err)
 		}
-		ciphertext, err := hex.DecodeString(vec.ciphertext)
+		ciphertext, err := hex.DecodeString(v.ciphertext)
 		if err != nil {
-			t.Fatalf("Test vector %d: %s", i, err)
+			t.Fatalf("Test vector %d: Failed to decode hex ciphertext - Caused by: %s", i, err)
 		}
 		c, err := New(key, nonce)
 		if err != nil {
-			t.Fatalf("Test vector %d: %s", i, err)
+			t.Fatalf("Test vector %d: Failed to create cipher instance - Caused by: %s", i, err)
 		}
 		ch := c.(*chacha20)
-		ch.state[12] = vec.ctr
+		ch.state[12] = v.ctr
 
 		buf := make([]byte, len(keystream))
 		c.XORKeyStream(buf, msg)
@@ -116,26 +116,26 @@ func TestChacha20(t *testing.T) {
 }
 
 func TestChacha20Poly1305(t *testing.T) {
-	for i, vec := range aeadVectors {
-		key, err := hex.DecodeString(vec.key)
+	for i, v := range aeadVectors {
+		key, err := hex.DecodeString(v.key)
 		if err != nil {
-			t.Fatalf("Test vector %d: %s", i, err)
+			t.Fatalf("Test vector %d: Failed to decode hex key - Caused by: %s", i, err)
 		}
-		nonce, err := hex.DecodeString(vec.nonce)
+		nonce, err := hex.DecodeString(v.nonce)
 		if err != nil {
-			t.Fatalf("Test vector %d: %s", i, err)
+			t.Fatalf("Test vector %d: Failed to decode hex nonce - Caused by: %s", i, err)
 		}
-		msg, err := hex.DecodeString(vec.msg)
+		msg, err := hex.DecodeString(v.msg)
 		if err != nil {
-			t.Fatalf("Test vector %d: %s", i, err)
+			t.Fatalf("Test vector %d: Failed to decode hex msg - Caused by: %s", i, err)
 		}
-		data, err := hex.DecodeString(vec.data)
+		data, err := hex.DecodeString(v.data)
 		if err != nil {
-			t.Fatalf("Test vector %d: %s", i, err)
+			t.Fatalf("Test vector %d: Failed to decode hex data - Caused by: %s", i, err)
 		}
-		ciphertext, err := hex.DecodeString(vec.ciphertext)
+		ciphertext, err := hex.DecodeString(v.ciphertext)
 		if err != nil {
-			t.Fatalf("Test vector %d: %s", i, err)
+			t.Fatalf("Test vector %d: Failed to decode hex ciphertext - Caused by: %s", i, err)
 		}
 		c, err := NewAEAD(key)
 		if err != nil {
@@ -145,9 +145,26 @@ func TestChacha20Poly1305(t *testing.T) {
 		buf := make([]byte, len(ciphertext))
 		c.Seal(buf, nonce, msg, data)
 
-		for j := range buf {
-			if buf[j] != ciphertext[j] {
-				t.Fatalf("Test vector %d :\nUnexpected keystream:\nFound:    %v\nExpected: %v", i, hex.EncodeToString(buf), hex.EncodeToString(ciphertext))
+		if len(buf) != len(ciphertext) {
+			t.Fatalf("Test vector %d Seal: length of buf and ciphertext does not match - found %d expected %d", i, len(buf), len(ciphertext))
+		}
+		for j, v := range ciphertext {
+			if v != buf[j] {
+				t.Fatalf("TestVector %d Seal failed:\nFound   : %s\nExpected: %s", i, hex.EncodeToString(buf), hex.EncodeToString(ciphertext))
+			}
+		}
+
+		buf, err = c.Open(buf, nonce, buf, data)
+
+		if err != nil {
+			t.Fatalf("TestVector %d: Open failed - Caused by: %s", i, err)
+		}
+		if len(buf) != len(msg) {
+			t.Fatalf("Test vector %d Open: length of buf and msg does not match - found %d expected %d", i, len(buf), len(msg))
+		}
+		for j, v := range msg {
+			if v != buf[j] {
+				t.Fatalf("TestVector %d Open failed:\nFound   : %s\nExpected: %s", i, hex.EncodeToString(buf), hex.EncodeToString(msg))
 			}
 		}
 	}
