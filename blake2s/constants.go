@@ -5,9 +5,12 @@ package blake2s
 
 const (
 	BlockSize = 64 // The block size in bytes.
-	HashSize  = 32 // The max. hash size in bytes.
-	KeySize   = 32 // The max. key size in bytes.
-	SaltSize  = 8  // The max. salt size in bytes.
+	Size      = 32 // The max. hash size in bytes.
+)
+
+const (
+	keySize  = 32 // The max. key size in bytes.
+	saltSize = 8  // The max. salt size in bytes.
 )
 
 // the blake2s iv constants

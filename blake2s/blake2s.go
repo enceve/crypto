@@ -37,110 +37,80 @@ type blake2s struct {
 }
 
 // The parameters for configuring the blake2s hash function.
-// All values are optional.
+// All values are optional. If the HashSize is not between 1
+// and 32 inclusively, it will be set to the default value.
 type Params struct {
 	HashSize int    // The hash size of blake2s in bytes (default and max. is 32)
-	Key      []byte // The key for MAC (padded with zeros)
-	Salt     []byte // The salt (if < 8 bytes, padded with zeros)
+	Key      []byte // The key for MAC (length must between 0 and 32)
+	Salt     []byte // The salt (length must between 0 and 8)
 }
 
 func verifyParams(p *Params) error {
-	if p.HashSize > HashSize {
-		return errors.New("hash size is too large")
+	if p.HashSize < 1 || p.HashSize > Size {
+		p.HashSize = Size
 	}
-	if p.HashSize < 1 {
-		return errors.New("hash size is too small")
-	}
-	if len(p.Key) > KeySize {
+	if len(p.Key) > keySize {
 		return errors.New("key is too large")
 	}
-	if len(p.Salt) > SaltSize {
+	if len(p.Salt) > saltSize {
 		return errors.New("salt is too large")
 	}
 	return nil
 }
 
-// predefined parameters for the common hash sizes 128, 160, 224 and 256 bit
+// predefined parameters for the common hash sizes 160 and 256 bit
 var (
-	params256 *Params = &Params{HashSize: HashSize}
-	params224 *Params = &Params{HashSize: 28}
+	params256 *Params = &Params{HashSize: Size}
 	params160 *Params = &Params{HashSize: 20}
-	params128 *Params = &Params{HashSize: 16}
 )
 
-// Creates a new blake2b hash function from the given
-// parameters. If the parameter argument is nil, or
-// parameters are invalid, an error non-nil is returned.
+// Sum256 returns the 256 bit blake2s checksum of the msg.
+func Sum256(msg []byte) []byte {
+	h := new(blake2s)
+	h.initialize(params256)
+	h.Write(msg)
+	return h.Sum(nil)
+}
+
+// Sum160 returns the 160 bit blake2s checksum of the msg.
+func Sum160(msg []byte) []byte {
+	h := new(blake2s)
+	h.initialize(params160)
+	h.Write(msg)
+	return h.Sum(nil)
+}
+
+// Sum returns the blake2s checksum of the msg.
+// The Params argument specifies the blake2s configuration
+// and if it's not valid a non-nil error is returned.
+func Sum(msg []byte, p *Params) ([]byte, error) {
+	h, err := New(p)
+	if err != nil {
+		return nil, err
+	}
+	h.Write(msg)
+	return h.Sum(nil), nil
+}
+
+// Returns a new hash.Hash computing the blake2s checksum.
+// The Params argument must not be nil and must contain valid
+// parameters.
 func New(p *Params) (hash.Hash, error) {
 	if p == nil {
-		return nil, errors.New("parameter arg must not be nil")
-	} else {
-		if p.HashSize == 0 {
-			p.HashSize = HashSize
-		}
-		if err := verifyParams(p); err != nil {
-			return nil, err
-		}
+		return nil, errors.New("p argument must not be nil")
 	}
-
+	if err := verifyParams(p); err != nil {
+		return nil, err
+	}
 	b := new(blake2s)
 	b.initialize(p)
 	return b, nil
 }
 
-// Creates a new blake2s hash function for
-// 256 bit hash values.
-func New256() hash.Hash {
-	b := new(blake2s)
-	b.initialize(params256)
-	return b
-}
-
-// Creates a new blake2s hash function for
-// 224 bit hash values.
-func New224() hash.Hash {
-	b := new(blake2s)
-	b.initialize(params224)
-	return b
-}
-
-// Creates a new blake2s hash function for
-// 160 bit hash values.
-func New160() hash.Hash {
-	b := new(blake2s)
-	b.initialize(params160)
-	return b
-}
-
-// Creates a new blake2s hash function for
-// 128 bit hash values.
-func New128() hash.Hash {
-	b := new(blake2s)
-	b.initialize(params128)
-	return b
-}
-
-// Creates a new blake2s hash function configured
-// as a MAC with the given key. The size argument
-// specifies the size of the MAC in bytes. If the
-// length of the key is greater than the max. key
-// size or the size argument is greater than the
-// max. hash size, this function returns a nonnil
-// error
-func NewMAC(size int, key []byte) (hash.Hash, error) {
-	h, err := New(&Params{HashSize: size, Key: key})
-	return h, err
-}
-
-// Returns the block size of blake2s in bytes.
 func (h *blake2s) BlockSize() int { return BlockSize }
 
-// Returns the hash size of blake2b in bytes wich
-// is between 1 and 32.
 func (b *blake2s) Size() int { return b.hsize }
 
-// Write (via the embedded io.Writer interface) adds more
-// data to the running hash. It never returns an error.
 func (h *blake2s) Write(src []byte) (int, error) {
 	n := len(src)
 	in := src
@@ -168,7 +138,6 @@ func (h *blake2s) Write(src []byte) (int, error) {
 	return n, nil
 }
 
-// Reset resets the Hash to its initial state.
 func (h *blake2s) Reset() {
 	h.hVal = h.initVal
 	h.ctr[0], h.ctr[1] = 0, 0
@@ -182,18 +151,16 @@ func (h *blake2s) Reset() {
 	}
 }
 
-// Sum appends the current hash to b and returns the resulting slice.
-// It does not change the underlying hash state.
 func (h *blake2s) Sum(b []byte) []byte {
 	h0 := *h
-	var out [HashSize]byte
+	var out [Size]byte
 	h0.finalize(&out)
 	return append(b, out[:h0.hsize]...)
 }
 
 // Finalize the hash by adding padding bytes (if necessary)
 // and extract the hash to a byte array.
-func (h *blake2s) finalize(out *[HashSize]byte) {
+func (h *blake2s) finalize(out *[Size]byte) {
 	// sub the padding length form the counter
 	diff := BlockSize - uint32(h.off)
 	if h.ctr[0] < diff {

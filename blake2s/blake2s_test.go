@@ -53,24 +53,77 @@ var vectors []testVector = []testVector{
 	},
 }
 
-func TestBlake2s(t *testing.T) {
+func TestVectors(t *testing.T) {
 	for i, v := range vectors {
 		h, err := New(v.params)
 		if err != nil {
-			t.Fatalf("Failed to create new blake2s hash - Caused by: %s", err)
+			t.Fatalf("Test vector %d : Failed to create new blake2s hash - Caused by: %s", i, err)
 		}
 		msg := decodeHex(t, v.msg)
-		h.Write(msg)
-
-		sum := h.Sum(nil)
 		expSum := decodeHex(t, v.hash)
+
+		h.Write(msg)
+		sum := h.Sum(nil)
 		if len(sum) != len(expSum) {
 			t.Fatalf("Test vector %d : Hash size does not match expected - found %d expected %d", i, len(sum), len(expSum))
 		}
 		for j := range sum {
 			if sum[j] != expSum[j] {
-				t.Fatalf("Test vector %d : Hash does not match:\nFound:    %v\nExpected: %v", i, hex.EncodeToString(sum), hex.EncodeToString(expSum))
+				t.Fatalf("Test vector %d : Hash does not match:\nFound:    %s\nExpected: %s", i, hex.EncodeToString(sum), hex.EncodeToString(expSum))
 			}
 		}
+
+		sum, err = Sum(msg, v.params)
+		if err != nil {
+			t.Fatalf("Test vector %d : funcion Sum failed - Cause: %s", i, err)
+		}
+		if len(sum) != len(expSum) {
+			t.Fatalf("Test vector %d : Hash size does not match expected - found %d expected %d", i, len(sum), len(expSum))
+		}
+		for j := range sum {
+			if sum[j] != expSum[j] {
+				t.Fatalf("Test vector %d : Hash does not match:\nFound:    %s\nExpected: %s", i, hex.EncodeToString(sum), hex.EncodeToString(expSum))
+			}
+		}
+	}
+}
+
+func TestVerifyParams(t *testing.T) {
+	p := new(Params)
+	if err := verifyParams(p); err != nil {
+		t.Fatalf("Verification of valid parameters failed - Cause: %s", err)
+	}
+	p = &Params{HashSize: 33}
+	if err := verifyParams(p); err != nil {
+		t.Fatalf("Verification of valid parameters failed - Cause: %s", err)
+	}
+	p = &Params{Key: make([]byte, 32)}
+	if err := verifyParams(p); err != nil {
+		t.Fatalf("Verification of valid parameters failed - Cause: %s", err)
+	}
+	p = &Params{Key: make([]byte, 32), Salt: make([]byte, 8)}
+	if err := verifyParams(p); err != nil {
+		t.Fatalf("Verification of valid parameters failed - Cause: %s", err)
+	}
+
+	p = &Params{Key: make([]byte, 33)}
+	if err := verifyParams(p); err == nil {
+		t.Fatalf("Verification of invalid parameters passed - Key length: %d", len(p.Key))
+	}
+	p = &Params{Salt: make([]byte, 9)}
+	if err := verifyParams(p); err == nil {
+		t.Fatalf("Verification of invalid parameters passed - Salt length: %d", len(p.Salt))
+	}
+}
+
+func BenchmarkWrite(b *testing.B) {
+	h, err := New(&Params{})
+	if err != nil {
+		b.Fatalf("Failed to create blake2s hash - Cause: %s", err)
+	}
+	buf := make([]byte, h.BlockSize())
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		h.Write(buf)
 	}
 }
