@@ -3,8 +3,7 @@
 
 package threefish
 
-// C240 is the key schedule constant
-const C240 = 0x1bd11bdaa9fc1a22
+const C240 = 0x1bd11bdaa9fc1a22 // C240 is the key schedule constant
 
 // expands the binary 128 bit tweak
 // to two 64 bit tweak words

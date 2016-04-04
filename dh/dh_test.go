@@ -50,27 +50,63 @@ func TestDHExample(t *testing.T) {
 	A := RFC3526_2048()
 	a, err := GenerateKey(A, rand.Reader)
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("Failed to generate alice's private / public value - Cause: %s", err)
 	}
 
 	// Bob
 	B := RFC3526_2048()
 	b, err := GenerateKey(B, rand.Reader)
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("Failed to generate bob's private / public value - Cause: %s", err)
 	}
 
 	if err := a.Validate(B); err != nil {
-		t.Fatal(err)
+		t.Fatalf("Alice failed to verify bob's public value - Cause: %s", err)
 	}
 	if err := b.Validate(A); err != nil {
-		t.Fatal(err)
+		t.Fatalf("Bob failed to verify alice's public value - Cause: %s", err)
 	}
 
 	skA := a.DeriveSecret(B)
 	skB := b.DeriveSecret(A)
 
 	if skA.Cmp(skB) != 0 {
-		t.Fatal("dh: key exchange failed - secrets not equal")
+		t.Fatalf("key exchange failed - secrets not equal\nAlice: %v\nBob  : %v", skA, skB)
+	}
+}
+
+func Benchmark2048(b *testing.B) {
+	pubAlice := RFC3526_2048()
+	priAlice, err := GenerateKey(pubAlice, rand.Reader)
+	if err != nil {
+		b.Fatalf("Failed to generate alice's private value - Cause: %s", err)
+	}
+	pubBob := RFC3526_2048()
+	_, err = GenerateKey(pubBob, rand.Reader)
+	if err != nil {
+		b.Fatalf("Failed to generate bob's private value - Cause: %s", err)
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		priAlice.DeriveSecret(pubBob)
+	}
+}
+
+func Benchmark4096(b *testing.B) {
+	pubAlice := RFC3526_4096()
+	priAlice, err := GenerateKey(pubAlice, rand.Reader)
+	if err != nil {
+		b.Fatalf("Failed to generate alice's private value - Cause: %s", err)
+	}
+	pubBob := RFC3526_4096()
+	_, err = GenerateKey(pubBob, rand.Reader)
+	if err != nil {
+		b.Fatalf("Failed to generate bob's private value - Cause: %s", err)
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		priAlice.DeriveSecret(pubBob)
 	}
 }

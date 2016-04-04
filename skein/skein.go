@@ -19,7 +19,7 @@
 //     - Skein-512 has a state size of 512 bit (64 byte)
 //     - Skein-1024 has a state size of 1024 bit (128 byte)
 // The max. hash size of a skein variant is the same as
-// the state size, but skein can produce hash values of
+// the state size (block size), but skein can produce hash values of
 // any length (limited by the state size).
 //
 // Using skein
@@ -33,12 +33,11 @@
 //	- key derivation
 //	- en and decryption (stream cipher)
 //	- tree hashing
-// The API of the skein package only supports:
+// The API of the skein package currently supports:
 //	- simple and randomized hashing
 //	- builtin MAC
 //	- public key bound hashing for dig. signatures
 //	- key derivation
-// Other functionality may be added in the future.
 package skein
 
 import (
@@ -47,42 +46,39 @@ import (
 )
 
 // The skein-256 hash function with a state size
-// of 256 bit. Skein-256 can produce hash values
-// from 1 to 32 byte.
+// of 256 bit.
 type skein256 struct {
 	initVal [4]uint64
 	hVal    [5]uint64
 	tweak   [3]uint64
-	buf     [StateSize256]byte
+	buf     [Size256]byte
 	off     int
 	hsize   int
 	msg     bool
 }
 
 // The skein-512 hash function with a state size
-// of 512 bit. Skein-512 can produce hash values
-// from 1 to 64 byte.
+// of 512 bit.
 // Skein-512 is recommended by the
 // skein authors for most use cases.
 type skein512 struct {
 	initVal [8]uint64
 	hVal    [9]uint64
 	tweak   [3]uint64
-	buf     [StateSize512]byte
+	buf     [Size512]byte
 	off     int
 	hsize   int
 	msg     bool
 }
 
 // The skein-1024 hash function with a state size
-// of 1024 bit. Skein-1024 can produce hash values
-// from 1 to 128 byte.
+// of 1024 bit.
 // Skein-1024 is the very conservative skein variant.
 type skein1024 struct {
 	initVal [16]uint64
 	hVal    [17]uint64
 	tweak   [3]uint64
-	buf     [StateSize1024]byte
+	buf     [Size1024]byte
 	off     int
 	hsize   int
 	msg     bool
@@ -91,9 +87,9 @@ type skein1024 struct {
 // The configuration parameters for skein.
 // The BlockSize field is required and must be set
 // to a valid value (32, 64, 128). If the HashSize
-// is not set, the default value is equal to the
-// block size. All other fields are optional
-// and can be nil.
+// is not set (or invalid), the default value, which
+// is equal to the block size, is used. All other
+// fields are optional  and can be nil.
 type Params struct {
 	BlockSize int    // Required: The block size of the skein variant (32 , 64 or 128)
 	HashSize  int    // Optional: The hash size - valid are values between 1 and the block size (default is the block size)
@@ -103,49 +99,35 @@ type Params struct {
 	Nonce     []byte // Optional: The nonce for randomized hashing
 }
 
-// Calculates a 256 bit (32 byte) hash value from the given msg
-// with the Skein-512 hash function.
+// Sum256 computes the Skein-512 256 bit (32 byte) checksum of the msg.
 func Sum256(msg []byte) []byte {
-	s := New512(HashSize256)
+	s := New512(Size256)
 	s.Write(msg)
 	return s.Sum(nil)
 }
 
-// Calculates a 384 bit (48 byte) hash value from the given msg
-// with the Skein-512 hash function.
-func Sum384(msg []byte) []byte {
-	s := New512(48)
-	s.Write(msg)
-	return s.Sum(nil)
-}
-
-// Calculates a 512 bit (64 byte) hash value from the given msg
-// with the Skein-512 hash function.
+// Sum512 computes the Skein-512 512 bit (64 byte) checksum of the msg.
 func Sum512(msg []byte) []byte {
-	s := New512(HashSize512)
+	s := New512(Size512)
 	s.Write(msg)
 	return s.Sum(nil)
 }
 
-// Creates a new skein hash function from the given
-// parameters. The BlockSize of the params argument
-// specifies the skein variant (256, 512 or 1024).
+// New returns a hash.Hash computing the Skein checksum.
 // If the BlockSize parameter is invalid, an non-nil error
-// is returned.
-// If the HashSize parameter is not set, the BlockSize is
-// used as hash size.
+// is returned. If the HashSize parameter is not set (or invalid),
+// the BlockSize is used as hash size.
 func New(p *Params) (hash.Hash, error) {
 	if p == nil {
-		return nil, errors.New("p argument must not be nil")
+		return nil, errors.New("Params argument must not be nil")
 	}
 
-	if p.BlockSize == StateSize256 {
+	if p.BlockSize == Size256 {
 		s := new(skein256)
-		if p.HashSize <= 0 || p.HashSize > StateSize256 {
-			s.hsize = HashSize256
-		} else {
-			s.hsize = p.HashSize
+		if p.HashSize < 1 || p.HashSize > Size256 {
+			p.HashSize = Size256
 		}
+		s.hsize = p.HashSize
 
 		if p.Key != nil {
 			s.addParam(keyParam, p.Key)
@@ -165,13 +147,12 @@ func New(p *Params) (hash.Hash, error) {
 		s.Reset()
 		return s, nil
 	}
-	if p.BlockSize == StateSize512 {
+	if p.BlockSize == Size512 {
 		s := new(skein512)
-		if p.HashSize <= 0 || p.HashSize > StateSize512 {
-			s.hsize = HashSize512
-		} else {
-			s.hsize = p.HashSize
+		if p.HashSize < 1 || p.HashSize > Size512 {
+			p.HashSize = Size512
 		}
+		s.hsize = p.HashSize
 
 		if p.Key != nil {
 			s.addParam(keyParam, p.Key)
@@ -191,13 +172,12 @@ func New(p *Params) (hash.Hash, error) {
 		s.Reset()
 		return s, nil
 	}
-	if p.BlockSize == StateSize1024 {
+	if p.BlockSize == Size1024 {
 		s := new(skein1024)
-		if p.HashSize <= 0 || p.HashSize > StateSize1024 {
-			s.hsize = HashSize1024
-		} else {
-			s.hsize = p.HashSize
+		if p.HashSize < 1 || p.HashSize > Size1024 {
+			p.HashSize = Size1024
 		}
+		s.hsize = p.HashSize
 
 		if p.Key != nil {
 			s.addParam(keyParam, p.Key)
@@ -221,46 +201,15 @@ func New(p *Params) (hash.Hash, error) {
 	return nil, errors.New("invalid block size for skein")
 }
 
-// Creates a new simple skein-256 hash function
-// with the given hash size.
-// If the hash size is not between 1 and 32, the
-// hash size is set to 32.
-func New256(hashsize int) hash.Hash {
-	s := new(skein256)
-	if hashsize <= 0 || hashsize > StateSize256 {
-		s.hsize = StateSize256
-	} else {
-		s.hsize = hashsize
-	}
-
-	switch s.hsize {
-	default:
-		s.addConfig(s.hsize)
-		copy(s.initVal[:], s.hVal[:4])
-	case 16:
-		s.initVal = iv256_128
-	case 20:
-		s.initVal = iv256_160
-	case 28:
-		s.initVal = iv256_224
-	case StateSize256:
-		s.initVal = iv256_256
-	}
-
-	s.Reset()
-	return s
-}
-
-// Creates a new simple skein-512 hash function
-// with the given hash size.
-// If the hash size is not between 1 and 64, the
-// hash size is set to 64.
-func New512(hashsize int) hash.Hash {
+// New512 returns a hash.Hash computing the Skein-512 checksum.
+// If the given size is not between 1 and 64 inclusively, the
+// default hash size (64) is used.
+func New512(size int) hash.Hash {
 	s := new(skein512)
-	if hashsize <= 0 || hashsize > StateSize512 {
-		s.hsize = StateSize512
+	if size < 1 || size > Size512 {
+		s.hsize = Size512
 	} else {
-		s.hsize = hashsize
+		s.hsize = size
 	}
 
 	switch s.hsize {
@@ -277,7 +226,7 @@ func New512(hashsize int) hash.Hash {
 		s.initVal = iv512_256
 	case 48:
 		s.initVal = iv512_384
-	case StateSize512:
+	case Size512:
 		s.initVal = iv512_512
 	}
 
@@ -285,110 +234,10 @@ func New512(hashsize int) hash.Hash {
 	return s
 }
 
-// Creates a new simple skein-1024 hash function
-// with the given hash size.
-// If the hash size is not between 1 and 128, the
-// hash size is set to 128.
-func New1024(hashsize int) hash.Hash {
-	s := new(skein1024)
-	if hashsize <= 0 || hashsize > StateSize1024 {
-		s.hsize = StateSize1024
-	} else {
-		s.hsize = hashsize
-	}
-
-	switch s.hsize {
-	default:
-		s.addConfig(s.hsize)
-		copy(s.initVal[:], s.hVal[:16])
-	case 48:
-		s.initVal = iv1024_384
-	case StateSize512:
-		s.initVal = iv1024_512
-	case StateSize1024:
-		s.initVal = iv1024_1024
-	}
-
-	s.Reset()
-	return s
-}
-
-// Creates a new skein-256 MAC with the
-// given secret key and hash size.
-// If the hash size is not between 1 and 32, the
-// hash size is set to 32.
-func NewMAC256(hashsize int, key []byte) (hash.Hash, error) {
-	if key == nil {
-		return nil, errors.New("key argument must not be nil")
-	}
-
-	s := new(skein256)
-	if hashsize <= 0 || hashsize > StateSize256 {
-		s.hsize = StateSize256
-	} else {
-		s.hsize = hashsize
-	}
-
-	s.addParam(keyParam, key)
-	s.addConfig(s.hsize)
-	copy(s.initVal[:], s.hVal[:4])
-
-	s.Reset()
-	return s, nil
-}
-
-// Creates a new skein-512 MAC with the
-// given secret key and hash size.
-// If the hash size is not between 1 and 64, the
-// hash size is set to 64.
-func NewMAC512(hashsize int, key []byte) (hash.Hash, error) {
-	if key == nil {
-		return nil, errors.New("key argument must not be nil")
-	}
-
-	s := new(skein512)
-	if hashsize <= 0 || hashsize > StateSize512 {
-		s.hsize = StateSize512
-	} else {
-		s.hsize = hashsize
-	}
-
-	s.addParam(keyParam, key)
-	s.addConfig(s.hsize)
-	copy(s.initVal[:], s.hVal[:8])
-
-	s.Reset()
-	return s, nil
-}
-
-// Creates a new skein-1024 MAC with the
-// given secret key and hash size.
-// If the hash size is not between 1 and 128, the
-// hash size is set to 128.
-func NewMAC1024(hashsize int, key []byte) (hash.Hash, error) {
-	if key == nil {
-		return nil, errors.New("key argument must not be nil")
-	}
-
-	s := new(skein1024)
-	if hashsize <= 0 || hashsize > StateSize1024 {
-		s.hsize = StateSize1024
-	} else {
-		s.hsize = hashsize
-	}
-
-	s.addParam(keyParam, key)
-	s.addConfig(s.hsize)
-	copy(s.initVal[:], s.hVal[:16])
-
-	s.Reset()
-	return s, nil
-}
-
 // Helper functions
 
 // Convert a 32 byte array to 4 64 bit words
-func toWords256(msg *[4]uint64, in *[StateSize256]byte) {
+func toWords256(msg *[4]uint64, in *[Size256]byte) {
 	msg[0] = uint64(in[0]) | uint64(in[1])<<8 | uint64(in[2])<<16 | uint64(in[3])<<24 |
 		uint64(in[4])<<32 | uint64(in[5])<<40 | uint64(in[6])<<48 | uint64(in[7])<<56
 
@@ -403,7 +252,7 @@ func toWords256(msg *[4]uint64, in *[StateSize256]byte) {
 }
 
 // Convert a 64 byte array to 8 64 bit words
-func toWords512(msg *[8]uint64, in *[StateSize512]byte) {
+func toWords512(msg *[8]uint64, in *[Size512]byte) {
 	msg[0] = uint64(in[0]) | uint64(in[1])<<8 | uint64(in[2])<<16 | uint64(in[3])<<24 |
 		uint64(in[4])<<32 | uint64(in[5])<<40 | uint64(in[6])<<48 | uint64(in[7])<<56
 
@@ -430,7 +279,7 @@ func toWords512(msg *[8]uint64, in *[StateSize512]byte) {
 }
 
 // Convert a 128 byte array to 16 64 bit words
-func toWords1024(msg *[16]uint64, in *[StateSize1024]byte) {
+func toWords1024(msg *[16]uint64, in *[Size1024]byte) {
 	msg[0] = uint64(in[0]) | uint64(in[1])<<8 | uint64(in[2])<<16 | uint64(in[3])<<24 |
 		uint64(in[4])<<32 | uint64(in[5])<<40 | uint64(in[6])<<48 | uint64(in[7])<<56
 

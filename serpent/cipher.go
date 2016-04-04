@@ -10,14 +10,13 @@ package serpent
 
 import (
 	"crypto/cipher"
+
 	"github.com/EncEve/crypto"
 )
 
 const (
-	// The Serpent block size in bytes
-	BlockSize = 16
-	// The Serpent phi constant (sqrt(5) - 1) * 2**31
-	phi = 0x9e3779b9
+	BlockSize = 16         // The Serpent block size in bytes.
+	phi       = 0x9e3779b9 // The Serpent phi constant (sqrt(5) - 1) * 2**31
 )
 
 // A serpent struct holds an array of 132 32 bit values.
@@ -26,7 +25,7 @@ type serpent struct {
 	sk [132]uint32
 }
 
-// New creates and returns a new cipher.Block.
+// New returns a new cipher.Block implementing the serpent cipher.
 // The key argument must be 128, 192 or 256 bit (16, 24, 32 byte).
 func New(key []byte) (cipher.Block, error) {
 	n := len(key)
@@ -42,29 +41,24 @@ func New(key []byte) (cipher.Block, error) {
 	return s, nil
 }
 
-// Returns the serpent block size in bytes.
 func (s *serpent) BlockSize() int { return BlockSize }
 
-// Encrypt encrypts the first block in src into dst.
-// Dst and src may point at the same memory.
 func (s *serpent) Encrypt(dst, src []byte) {
 	if len(src) < BlockSize {
-		panic("input to small")
+		panic("src buffer to small")
 	}
 	if len(dst) < BlockSize {
-		panic("output to small")
+		panic("dst buffer to small")
 	}
 	encryptBlock(dst, src, &s.sk)
 }
 
-// Decrypt deccrypts the first block in src into dst.
-// Dst and src may point at the same memory.
 func (s *serpent) Decrypt(dst, src []byte) {
 	if len(src) < BlockSize {
-		panic("input to small")
+		panic("src buffer to small")
 	}
 	if len(dst) < BlockSize {
-		panic("output to small")
+		panic("dst buffer to small")
 	}
 	decryptBlock(dst, src, &s.sk)
 }

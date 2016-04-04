@@ -3,7 +3,7 @@
 
 package hc
 
-// key & iv setup and initialization
+// key and nonce setup and initialization
 func (c *hc256) initialize(key, nonce []byte) {
 	w := make([]uint32, 2560)
 
@@ -16,7 +16,7 @@ func (c *hc256) initialize(key, nonce []byte) {
 		w[(i>>2)+8] |= uint32(v) << uint(8*(i%4))
 	}
 
-	// expand key and iv with the f1 and f2 functions
+	// expand key and nonce with the f1 and f2 functions
 	// (2.2 https://eprint.iacr.org/2004/092.pdf)
 	var f2, f1 uint32
 	for i := 16; i < 2560; i++ {
@@ -25,8 +25,8 @@ func (c *hc256) initialize(key, nonce []byte) {
 		f2 = ((f2 >> 17) | (f2 << 15)) ^ ((f2 >> 19) | (f2 << 13)) ^ (f2 >> 10)
 		w[i] = f1 + f2 + w[i-7] + w[i-16] + uint32(i)
 	}
-	copy(c.p, w[512:(512+1024)])
-	copy(c.q, w[1536:(1536+1024)])
+	copy(c.p[:], w[512:(512+1024)])
+	copy(c.q[:], w[1536:(1536+1024)])
 
 	// do 4096 iterations for initialization
 	c.ctr = 0
@@ -36,12 +36,10 @@ func (c *hc256) initialize(key, nonce []byte) {
 	c.ctr = 0
 }
 
-// XORKeyStream XORs each byte in the given slice with a byte from the
-// cipher's key stream.
 func (c *hc256) XORKeyStream(dst, src []byte) {
 	n := len(src)
 	if len(dst) < n {
-		panic("output buffer to small")
+		panic("dst buffer to small")
 	}
 	dOff, sOff := 0, 0
 	for n > 0 && c.off < 4 {
@@ -70,7 +68,7 @@ func (c *hc256) XORKeyStream(dst, src []byte) {
 	}
 }
 
-// The keystream generation function for HC128
+// The keystream generation function for HC256
 // Compare 2.3 at https://eprint.iacr.org/2004/092.pdf
 // The functions g1, g2, h1 and h2 are rolled out for optimisation
 func (c *hc256) keystream256() uint32 {

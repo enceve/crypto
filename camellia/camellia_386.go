@@ -7,7 +7,7 @@ package camellia
 
 // The camellia non-linear feistel function.
 // This is a special x86 version and tries to minimize the
-// number of registers. Therefore the k0 and k1 vars are reused.
+// number of registers. The k0 and k1 vars are reused.
 func f(r0, r1, r2, r3 *uint32, k0, k1 uint32) {
 	k0 ^= *r0
 	k1 ^= *r1

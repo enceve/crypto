@@ -202,19 +202,19 @@ func TestSerpent(t *testing.T) {
 	for i, v := range vectors {
 		key, err := hex.DecodeString(v.key)
 		if err != nil {
-			t.Fatalf("Test vector %d: Failed to decode hex key - Caused by: %s", i, err)
+			t.Fatalf("Test vector %d: Failed to decode hex key - Cause: %s", i, err)
 		}
 		plaintext, err := hex.DecodeString(v.plaintext)
 		if err != nil {
-			t.Fatalf("Test vector %d: Failed to decode hex plaintext - Caused by: %s", i, err)
+			t.Fatalf("Test vector %d: Failed to decode hex plaintext - Cause: %s", i, err)
 		}
 		ciphertext, err := hex.DecodeString(v.ciphertext)
 		if err != nil {
-			t.Fatalf("Test vector %d: Failed to decode hex ciphertext - Caused by: %s", i, err)
+			t.Fatalf("Test vector %d: Failed to decode hex ciphertext - Cause: %s", i, err)
 		}
 		c, err := New(key)
 		if err != nil {
-			t.Fatal("Test vector %d: Failed to create cipher instance - Caused by: %s", i, err)
+			t.Fatalf("Test vector %d: Failed to create cipher instance - Cause: %s", i, err)
 		}
 
 		buf := make([]byte, BlockSize)
@@ -231,5 +231,38 @@ func TestSerpent(t *testing.T) {
 				t.Fatalf("Test vector %d:\nFound:    %s\nExpected: %s", i, hex.EncodeToString(buf), hex.EncodeToString(plaintext))
 			}
 		}
+	}
+}
+
+func BenchmarkEncrypt(b *testing.B) {
+	c, err := New(make([]byte, 16))
+	if err != nil {
+		b.Fatalf("Failed to create cipher instance - Cause: %s", err)
+	}
+	buf := make([]byte, c.BlockSize())
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		c.Encrypt(buf, buf)
+	}
+}
+
+func BenchmarkDecrypt(b *testing.B) {
+	c, err := New(make([]byte, 16))
+	if err != nil {
+		b.Fatalf("Failed to create cipher instance - Cause: %s", err)
+	}
+	buf := make([]byte, c.BlockSize())
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		c.Decrypt(buf, buf)
+	}
+}
+
+func BenchmarkKeySchedule(b *testing.B) {
+	key := make([]byte, 32)
+	c := new(serpent)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		keySchedule(key, &(c.sk))
 	}
 }

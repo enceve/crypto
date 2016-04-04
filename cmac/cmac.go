@@ -44,34 +44,37 @@ type mac struct {
 	off    int
 }
 
-// Calculates the CMac sum for the message in src using
-// the block cipher. If the block cipher is not supported
-// by CMac (see package doc), a non-nil error is returned.
-// This function returns a MAC with the same length as the
-// block size of the cipher.
-func Sum(src []byte, c cipher.Block) ([]byte, error) {
+// Sum computes the CMac checksum of msg using the cipher.Block.
+// If the block cipher is not supported  by CMac (see package doc),
+// a non-nil error is returned.
+func Sum(msg []byte, c cipher.Block) ([]byte, error) {
 	mac, err := New(c)
 	if err != nil {
 		return nil, err
 	}
-	mac.Write(src)
+	mac.Write(msg)
 	return mac.Sum(nil), nil
 }
 
-// Verifies the CMac mac for the message in src using
-// the block cipher. If the block cipher is not supported
+// Verify computes the CMac checksum of msg and compares it with the
+// given mac. This functions returns true if and only if the given mac
+// is equal to computed one. If the block cipher is not supported
 // by CMac (see package doc), this function returns false.
-// This functions returns true if and only if the given mac
-// is equal to calculated CMac for src.
-func Verify(mac, src []byte, c cipher.Block) bool {
-	sum, _ := Sum(src, c)
+func Verify(mac, msg []byte, c cipher.Block) bool {
+	sum, err := Sum(msg, c)
+	if err != nil {
+		return false
+	}
 	return subtle.ConstantTimeCompare(mac, sum) == 1
 }
 
-// Creates a new CMac MAC from the given block cipher.
+// New returns a hash.Hash computing the CMac checksum.
 // If the block cipher is not supported by CMac
 // (see package doc), a non-nil error is returned.
 func New(c cipher.Block) (hash.Hash, error) {
+	if c == nil {
+		return nil, errors.New("nil is invalid")
+	}
 	bs := c.BlockSize()
 
 	var p int
@@ -107,13 +110,10 @@ func New(c cipher.Block) (hash.Hash, error) {
 	return m, nil
 }
 
-// Returns the MAC size of CMac in bytes.
 func (h *mac) Size() int { return h.cipher.BlockSize() }
 
-// Returns the block size of CMac in bytes.
 func (h *mac) BlockSize() int { return h.cipher.BlockSize() }
 
-// Reset resets the MAC to its initial state.
 func (h *mac) Reset() {
 	for i := range h.buf {
 		h.buf[i] = 0
@@ -121,7 +121,6 @@ func (h *mac) Reset() {
 	h.off = 0
 }
 
-// Write adds more data to the running MAC. It never returns an error.
 func (h *mac) Write(p []byte) (int, error) {
 	bs := len(h.buf)
 	left := bs - h.off
@@ -156,8 +155,6 @@ func (h *mac) Write(p []byte) (int, error) {
 	return n, nil
 }
 
-// Sum appends the current MAC to b and returns the resulting slice.
-// It does not change the underlying MAC state.
 func (h *mac) Sum(b []byte) []byte {
 	bs := h.cipher.BlockSize()
 

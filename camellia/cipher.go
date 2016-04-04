@@ -11,10 +11,11 @@ package camellia
 
 import (
 	"crypto/cipher"
+
 	"github.com/EncEve/crypto"
 )
 
-const BlockSize = 16 // The camellia block size in bytes
+const BlockSize = 16 // The camellia block size in bytes.
 
 // The camellia cipher for 128 bit keys.
 type camellia128 struct {
@@ -26,9 +27,8 @@ type camellia struct {
 	sk [68]uint32
 }
 
-// New creates and returns a new camellia cipher.
+// New returns a new cipher.Block implementing the camellia cipher.
 // The key argument must be 128, 192 or 256 bit (16, 24, 32 byte).
-// Otherwise a non-nil error is returned.
 func New(key []byte) (cipher.Block, error) {
 	k := len(key)
 	if k == 16 {
@@ -44,14 +44,10 @@ func New(key []byte) (cipher.Block, error) {
 	return nil, crypto.KeySizeError(k)
 }
 
-// Returns the camellia block size in bytes.
 func (c *camellia128) BlockSize() int { return BlockSize }
 
-// Returns the camellia block size in bytes.
 func (c *camellia) BlockSize() int { return BlockSize }
 
-// Encrypt encrypts the first block in src into dst.
-// Dst and src may point at the same memory.
 func (c *camellia128) Encrypt(dst, src []byte) {
 	if len(src) < BlockSize {
 		panic("src buffer to small")
@@ -130,14 +126,12 @@ func (c *camellia128) Encrypt(dst, src []byte) {
 	dst[15] = byte(r1)
 }
 
-// Encrypt encrypts the first block in src into dst.
-// Dst and src may point at the same memory.
 func (c *camellia) Encrypt(dst, src []byte) {
 	if len(src) < BlockSize {
-		panic("input to small")
+		panic("src buffer to small")
 	}
 	if len(dst) < BlockSize {
-		panic("output to small")
+		panic("dst buffer to small")
 	}
 
 	r0 := uint32(src[0])<<24 | uint32(src[1])<<16 | uint32(src[2])<<8 | uint32(src[3])
@@ -225,14 +219,12 @@ func (c *camellia) Encrypt(dst, src []byte) {
 
 }
 
-// Decrypt decrypts the first block in src into dst.
-// Dst and src may point at the same memory.
 func (c *camellia128) Decrypt(dst, src []byte) {
 	if len(src) < BlockSize {
-		panic("input to small")
+		panic("src buffer to small")
 	}
 	if len(dst) < BlockSize {
-		panic("output to small")
+		panic("dst buffer to small")
 	}
 
 	r0 := uint32(src[0])<<24 | uint32(src[1])<<16 | uint32(src[2])<<8 | uint32(src[3])
@@ -305,14 +297,12 @@ func (c *camellia128) Decrypt(dst, src []byte) {
 	dst[15] = byte(r1)
 }
 
-// Decrypt decrypts the first block in src into dst.
-// Dst and src may point at the same memory.
 func (c *camellia) Decrypt(dst, src []byte) {
 	if len(src) < BlockSize {
-		panic("input to small")
+		panic("src buffer to small")
 	}
 	if len(dst) < BlockSize {
-		panic("output to small")
+		panic("dst buffer to small")
 	}
 
 	r0 := uint32(src[0])<<24 | uint32(src[1])<<16 | uint32(src[2])<<8 | uint32(src[3])

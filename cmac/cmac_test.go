@@ -76,15 +76,15 @@ func TestCMac(t *testing.T) {
 
 		c, err := aes.NewCipher(key)
 		if err != nil {
-			t.Fatalf("Test vector %d: Failed to create AES instance - Caused by: %s", i, err)
+			t.Fatalf("Test vector %d: Failed to create AES instance - Cause: %s", i, err)
 		}
 		h, err := New(c)
 		if err != nil {
-			t.Fatalf("Test vector %d: Failed to create CMac instance - Caused by: %s", i, err)
+			t.Fatalf("Test vector %d: Failed to create CMac instance - Cause: %s", i, err)
 		}
 		_, err = h.Write(msg)
 		if err != nil {
-			t.Fatalf("Test vector %d: CMac write failed - Caused by: %s", i, err)
+			t.Fatalf("Test vector %d: CMac write failed - Cause: %s", i, err)
 		}
 		sum := h.Sum(nil)
 		if !bytes.Equal(sum, hash) {
@@ -93,5 +93,49 @@ func TestCMac(t *testing.T) {
 		if !Verify(hash, msg, c) {
 			t.Fatalf("Test vector %d: verification of MAC failed", i)
 		}
+	}
+}
+
+func BenchmarkWrite(b *testing.B) {
+	c, err := aes.NewCipher(make([]byte, 16))
+	if err != nil {
+		b.Fatalf("Failed to create AES instance - Cause: %s", err)
+	}
+	h, err := New(c)
+	if err != nil {
+		b.Fatalf("Failed to create CMac instance - Cause: %s", err)
+	}
+	buf := make([]byte, aes.BlockSize)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		h.Write(buf)
+	}
+}
+
+func BenchmarkSum(b *testing.B) {
+	c, err := aes.NewCipher(make([]byte, 16))
+	if err != nil {
+		b.Fatalf("Failed to create AES instance - Cause: %s", err)
+	}
+	msg := make([]byte, aes.BlockSize)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		Sum(msg, c)
+	}
+}
+
+func BenchmarkVerify(b *testing.B) {
+	c, err := aes.NewCipher(make([]byte, 16))
+	if err != nil {
+		b.Fatalf("Failed to create AES instance - Cause: %s", err)
+	}
+	msg := make([]byte, aes.BlockSize)
+	hash, err := Sum(msg, c)
+	if err != nil {
+		b.Fatalf("Failed to calculate checksum - Cause: %s", err)
+	}
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		Verify(hash, msg, c)
 	}
 }

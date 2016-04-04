@@ -42,19 +42,19 @@ func Test128(t *testing.T) {
 	for i, v := range vectors128 {
 		key, err := hex.DecodeString(v.key)
 		if err != nil {
-			t.Fatalf("Test vector %d: Failed to decode hex key - Caused by: %s", i, err)
+			t.Fatalf("Test vector %d: Failed to decode hex key - Cause: %s", i, err)
 		}
 		nonce, err := hex.DecodeString(v.nonce)
 		if err != nil {
-			t.Fatalf("Test vector %d: Failed to decode hex nonce - Caused by: %s", i, err)
+			t.Fatalf("Test vector %d: Failed to decode hex nonce - Cause: %s", i, err)
 		}
 		keystream, err := hex.DecodeString(v.keystream)
 		if err != nil {
-			t.Fatalf("Test vector %d: Failed to decode hex keystream - Caused by: %s", i, err)
+			t.Fatalf("Test vector %d: Failed to decode hex keystream - Cause: %s", i, err)
 		}
 		c, err := New128(key, nonce)
 		if err != nil {
-			t.Fatalf("Test vector %d: Failed to create cipher instance - Caused by: %s", i, err)
+			t.Fatalf("Test vector %d: Failed to create cipher instance - Cause: %s", i, err)
 		}
 
 		buf := make([]byte, len(keystream))
@@ -62,7 +62,7 @@ func Test128(t *testing.T) {
 		c.XORKeyStream(buf, buf)
 		for j, v := range buf {
 			if v != keystream[j] {
-				t.Fatalf("Test vector %d: Unexpected keystream:\nFound:    %v\nExpected: %v", hex.EncodeToString(buf), hex.EncodeToString(keystream))
+				t.Fatalf("Test vector %d: Unexpected keystream:\nFound:    %v\nExpected: %v", i, hex.EncodeToString(buf), hex.EncodeToString(keystream))
 			}
 		}
 	}
@@ -92,23 +92,23 @@ var vectors256 = []testVector{
 }
 
 // Test all test vectors for the HC256 cipher
-func Test256(t *testing.T) {
+func TestVectors(t *testing.T) {
 	for i, v := range vectors256 {
 		key, err := hex.DecodeString(v.key)
 		if err != nil {
-			t.Fatalf("Test vector %d: Failed to decode hex key - Caused by: %s", i, err)
+			t.Fatalf("Test vector %d: Failed to decode hex key - Cause: %s", i, err)
 		}
 		nonce, err := hex.DecodeString(v.nonce)
 		if err != nil {
-			t.Fatalf("Test vector %d: Failed to decode hex nonce - Caused by: %s", i, err)
+			t.Fatalf("Test vector %d: Failed to decode hex nonce - Cause: %s", i, err)
 		}
 		keystream, err := hex.DecodeString(v.keystream)
 		if err != nil {
-			t.Fatalf("Test vector %d: Failed to decode hex keystream - Caused by: %s", i, err)
+			t.Fatalf("Test vector %d: Failed to decode hex keystream - Cause: %s", i, err)
 		}
 		c, err := New256(key, nonce)
 		if err != nil {
-			t.Fatalf("Test vector %d: Failed to create cipher instance - Caused by: %s", i, err)
+			t.Fatalf("Test vector %d: Failed to create cipher instance - Cause: %s", i, err)
 		}
 
 		buf := make([]byte, len(keystream))
@@ -116,8 +116,58 @@ func Test256(t *testing.T) {
 		c.XORKeyStream(buf, buf)
 		for j, v := range buf {
 			if v != keystream[j] {
-				t.Fatalf("Test vector %d: Unexpected keystream:\nFound:    %v\nExpected: %v", hex.EncodeToString(buf), hex.EncodeToString(keystream))
+				t.Fatalf("Test vector %d: Unexpected keystream:\nFound:    %s\nExpected: %s", i, hex.EncodeToString(buf), hex.EncodeToString(keystream))
 			}
 		}
+	}
+}
+
+func BenchmarkHC128Encrypt(b *testing.B) {
+	key := make([]byte, 16)
+	nonce := make([]byte, 16)
+	c, err := New128(key, nonce)
+	if err != nil {
+		b.Fatalf("Failed to create HC-128 instance - Cause: %s", err)
+	}
+	buf := make([]byte, 16)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		c.XORKeyStream(buf, buf)
+	}
+}
+
+func BenchmarkHC256Encrypt(b *testing.B) {
+	key := make([]byte, 32)
+	nonce := make([]byte, 32)
+	c, err := New256(key, nonce)
+	if err != nil {
+		b.Fatalf("Failed to create HC-256 instance - Cause: %s", err)
+	}
+	buf := make([]byte, 16)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		c.XORKeyStream(buf, buf)
+	}
+}
+
+func BenchmarkHC128Setup(b *testing.B) {
+	key := make([]byte, 16)
+	nonce := make([]byte, 16)
+	c := new(hc128)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		c.initialize(key, nonce)
+	}
+}
+
+func BenchmarkHC256Setup(b *testing.B) {
+	key := make([]byte, 32)
+	nonce := make([]byte, 32)
+	c := new(hc256)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		c.initialize(key, nonce)
 	}
 }

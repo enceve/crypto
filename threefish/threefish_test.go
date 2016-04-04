@@ -12,19 +12,19 @@ import (
 func convertVector(i int, v *testVector, t *testing.T) ([]byte, []byte, []byte, []byte) {
 	key, err := hex.DecodeString(v.key)
 	if err != nil {
-		t.Fatalf("Test vector %d: Failed to decode hex key - Caused by: %s", i, err)
+		t.Fatalf("Test vector %d: Failed to decode hex key - Cause: %s", i, err)
 	}
 	tweak, err := hex.DecodeString(v.tweak)
 	if err != nil {
-		t.Fatalf("Test vector %d: Failed to decode hex tweak - Caused by: %s", i, err)
+		t.Fatalf("Test vector %d: Failed to decode hex tweak - Cause: %s", i, err)
 	}
 	plaintext, err := hex.DecodeString(v.plaintext)
 	if err != nil {
-		t.Fatalf("Test vector %d: Failed to decode hex plaintext - Caused by: %s", i, err)
+		t.Fatalf("Test vector %d: Failed to decode hex plaintext - Cause: %s", i, err)
 	}
 	ciphertext, err := hex.DecodeString(v.ciphertext)
 	if err != nil {
-		t.Fatalf("Test vector %d: Failed to decode hex ciphertext - Caused by: %s", i, err)
+		t.Fatalf("Test vector %d: Failed to decode hex ciphertext - Cause: %s", i, err)
 	}
 	return key, tweak, plaintext, ciphertext
 }
@@ -108,7 +108,7 @@ var testVectors1024 = []testVector{
 	},
 }
 
-func TestThreeFish256(t *testing.T) {
+func TestVectros256(t *testing.T) {
 	for i := range testVectors256 {
 		key, tweak, plaintext, ciphertext := convertVector(i, &testVectors256[i], t)
 
@@ -117,7 +117,7 @@ func TestThreeFish256(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		dst := make([]byte, BlockSize256)
+		dst := make([]byte, blockSize256)
 
 		c.Encrypt(dst, plaintext)
 		if !bytes.Equal(ciphertext, dst) {
@@ -131,7 +131,7 @@ func TestThreeFish256(t *testing.T) {
 	}
 }
 
-func TestThreeFish512(t *testing.T) {
+func TestVectros512(t *testing.T) {
 	for i := range testVectors512 {
 		key, tweak, plaintext, ciphertext := convertVector(i, &testVectors512[i], t)
 
@@ -140,7 +140,7 @@ func TestThreeFish512(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		dst := make([]byte, BlockSize512)
+		dst := make([]byte, blockSize512)
 
 		c.Encrypt(dst, plaintext)
 		if !bytes.Equal(ciphertext, dst) {
@@ -154,7 +154,7 @@ func TestThreeFish512(t *testing.T) {
 	}
 }
 
-func TestThreeFish1024(t *testing.T) {
+func TestVectros1024(t *testing.T) {
 	for i := range testVectors1024 {
 		key, tweak, plaintext, ciphertext := convertVector(i, &testVectors1024[i], t)
 
@@ -163,7 +163,7 @@ func TestThreeFish1024(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		dst := make([]byte, BlockSize1024)
+		dst := make([]byte, blockSize1024)
 
 		c.Encrypt(dst, plaintext)
 		if !bytes.Equal(ciphertext, dst) {
@@ -174,5 +174,77 @@ func TestThreeFish1024(t *testing.T) {
 		if !bytes.Equal(plaintext, dst) {
 			t.Fatalf("Test vector %d:Decryption failed\nFound: %v \nExpected: %v", i, dst, plaintext)
 		}
+	}
+}
+
+func BenchmarkEncrypt256(b *testing.B) {
+	c, err := New256(make([]byte, 32), make([]byte, 16))
+	if err != nil {
+		b.Fatalf("Failed to create threefish-256 instance - Cause: %s", err)
+	}
+	buf := make([]byte, c.BlockSize())
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		c.Encrypt(buf, buf)
+	}
+}
+
+func BenchmarkEncrypt512(b *testing.B) {
+	c, err := New512(make([]byte, 64), make([]byte, 16))
+	if err != nil {
+		b.Fatalf("Failed to create threefish-256 instance - Cause: %s", err)
+	}
+	buf := make([]byte, c.BlockSize())
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		c.Encrypt(buf, buf)
+	}
+}
+
+func BenchmarkEncrypt1024(b *testing.B) {
+	c, err := New1024(make([]byte, 128), make([]byte, 16))
+	if err != nil {
+		b.Fatalf("Failed to create threefish-256 instance - Cause: %s", err)
+	}
+	buf := make([]byte, c.BlockSize())
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		c.Encrypt(buf, buf)
+	}
+}
+
+func BenchmarkDecrypt256(b *testing.B) {
+	c, err := New256(make([]byte, 32), make([]byte, 16))
+	if err != nil {
+		b.Fatalf("Failed to create threefish-256 instance - Cause: %s", err)
+	}
+	buf := make([]byte, c.BlockSize())
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		c.Decrypt(buf, buf)
+	}
+}
+
+func BenchmarkDecrypt512(b *testing.B) {
+	c, err := New512(make([]byte, 64), make([]byte, 16))
+	if err != nil {
+		b.Fatalf("Failed to create threefish-256 instance - Cause: %s", err)
+	}
+	buf := make([]byte, c.BlockSize())
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		c.Decrypt(buf, buf)
+	}
+}
+
+func BenchmarkDecrypt1024(b *testing.B) {
+	c, err := New1024(make([]byte, 128), make([]byte, 16))
+	if err != nil {
+		b.Fatalf("Failed to create threefish-256 instance - Cause: %s", err)
+	}
+	buf := make([]byte, c.BlockSize())
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		c.Decrypt(buf, buf)
 	}
 }

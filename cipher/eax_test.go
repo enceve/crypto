@@ -48,7 +48,7 @@ var vectors = []testVector{
 	},
 }
 
-func Test(t *testing.T) {
+func TestVectors(t *testing.T) {
 	for i, v := range vectors {
 		msg, err := hex.DecodeString(v.msg)
 		if err != nil {
@@ -104,5 +104,45 @@ func Test(t *testing.T) {
 				t.Fatalf("TestVector %d Open failed:\nFound   : %s\nExpected: %s", i, hex.EncodeToString(buf), hex.EncodeToString(msg))
 			}
 		}
+	}
+}
+
+func BenchmarkSeal(b *testing.B) {
+	block, err := aes.NewCipher(make([]byte, 16))
+	if err != nil {
+		b.Fatalf("Failed to create AES-128 instance - Cause: %s", err)
+	}
+	nonce := make([]byte, aes.BlockSize)
+	c, err := NewEAX(block)
+	if err != nil {
+		b.Fatalf("Failed to create AES-128-EAX instance - Cause: %s", err)
+	}
+	msg := make([]byte, 64)
+	dst := make([]byte, len(msg)+aes.BlockSize)
+	data := make([]byte, 8)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		dst = c.Seal(dst, nonce, msg, data)
+	}
+}
+
+func BenchmarkOpen(b *testing.B) {
+	block, err := aes.NewCipher(make([]byte, 16))
+	if err != nil {
+		b.Fatalf("Failed to create AES-128 instance - Cause: %s", err)
+	}
+	nonce := make([]byte, aes.BlockSize)
+	c, err := NewEAX(block)
+	if err != nil {
+		b.Fatalf("Failed to create AES-128-EAX instance - Cause: %s", err)
+	}
+	msg := make([]byte, 64)
+	dst := make([]byte, len(msg))
+	ciphertext := make([]byte, len(msg)+aes.BlockSize)
+	data := make([]byte, 8)
+	ciphertext = c.Seal(ciphertext, nonce, msg, data)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		dst, err = c.Open(dst, nonce, ciphertext, data)
 	}
 }

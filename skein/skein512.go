@@ -7,14 +7,10 @@ import (
 	"github.com/EncEve/crypto/threefish"
 )
 
-// Returns the block size of skein-512 in bytes.
-func (s *skein512) BlockSize() int { return StateSize512 }
+func (s *skein512) BlockSize() int { return Size512 }
 
-// Returns the hash size of skein-512 in bytes wich
-// is between 1 and 64.
 func (s *skein512) Size() int { return s.hsize }
 
-// Reset resets the Hash to its initial state.
 func (s *skein512) Reset() {
 	s.off = 0
 	s.msg = false
@@ -23,12 +19,10 @@ func (s *skein512) Reset() {
 	s.tweak[1] = messageParam<<56 | firstBlock
 }
 
-// Write (via the embedded io.Writer interface) adds more
-// data to the running hash. It never returns an error.
 func (s *skein512) Write(in []byte) (int, error) {
 	n := len(in)
 
-	diff := StateSize512 - s.off
+	diff := Size512 - s.off
 	if n > diff {
 		// process buffer.
 		copy(s.buf[s.off:], in[:diff])
@@ -39,10 +33,10 @@ func (s *skein512) Write(in []byte) (int, error) {
 	}
 	// process full blocks except for the last
 	length := len(in)
-	if length > StateSize512 {
-		nn := length - (length % StateSize512)
+	if length > Size512 {
+		nn := length - (length % Size512)
 		if nn == length {
-			nn -= StateSize512
+			nn -= Size512
 		}
 		s.hashMessage(in[:nn])
 		in = in[nn:]
@@ -53,15 +47,13 @@ func (s *skein512) Write(in []byte) (int, error) {
 	return n, nil
 }
 
-// Sum appends the current hash to b and returns the resulting slice.
-// It does not change the underlying hash state.
 func (s *skein512) Sum(in []byte) []byte {
 	s0 := *s // make a copy
 	if s0.msg {
 		s0.finalize()
 	}
 
-	var out [StateSize512]byte
+	var out [Size512]byte
 	s0.output(&out, 0)
 	return append(in, out[:s0.hsize]...)
 }
@@ -69,18 +61,18 @@ func (s *skein512) Sum(in []byte) []byte {
 // Update the hash with the given full blocks.
 func (s *skein512) hashMessage(blocks []byte) {
 	var message, msg [8]uint64
-	var block [StateSize512]byte
-	for i := 0; i < len(blocks); i += StateSize512 {
+	var block [Size512]byte
+	for i := 0; i < len(blocks); i += Size512 {
 		// copy the message block into an array for
 		// the toWords512 function
-		copy(block[:], blocks[i:i+StateSize512])
+		copy(block[:], blocks[i:i+Size512])
 		toWords512(&msg, &block)
 		message = msg
 
 		s.hVal[8] = threefish.C240 ^ s.hVal[0] ^ s.hVal[1] ^ s.hVal[2] ^
 			s.hVal[3] ^ s.hVal[4] ^ s.hVal[5] ^ s.hVal[6] ^ s.hVal[7]
 
-		incTweak(&(s.tweak), StateSize512)
+		incTweak(&(s.tweak), Size512)
 		s.tweak[2] = s.tweak[0] ^ s.tweak[1]
 
 		threefish.Encrypt512(&(s.hVal), &(s.tweak), &msg)
@@ -95,7 +87,7 @@ func (s *skein512) hashMessage(blocks []byte) {
 func (s *skein512) finalize() {
 	var message, msg [8]uint64
 	// flush the buffer
-	for i := s.off; i < StateSize512; i++ {
+	for i := s.off; i < Size512; i++ {
 		s.buf[i] = 0
 	}
 
@@ -115,7 +107,7 @@ func (s *skein512) finalize() {
 }
 
 // Extract the output from the hash function
-func (s *skein512) output(dst *[StateSize512]byte, ctr uint64) {
+func (s *skein512) output(dst *[Size512]byte, ctr uint64) {
 	var message, msg [8]uint64
 	msg[0], message[0] = ctr, ctr
 

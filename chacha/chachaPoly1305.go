@@ -6,6 +6,7 @@ package chacha
 import (
 	"crypto/cipher"
 	"crypto/subtle"
+
 	"github.com/EncEve/crypto"
 	"golang.org/x/crypto/poly1305"
 )
@@ -15,11 +16,10 @@ type aeadCipher struct {
 	key [32]byte
 }
 
-// NewAEAD creates a new cipher implementing the
+// NewAEAD returns a cipher.AEAD implementing the
 // ChaCha20-Poly1305 construction specified in
 // RFC 7539. The key argument must be 256 bit
-// (32 byte) - otherwise a non-nil error is
-// returned.
+// (32 byte).
 func NewAEAD(key []byte) (cipher.AEAD, error) {
 	if k := len(key); k != 32 {
 		return nil, crypto.KeySizeError(k)
@@ -109,9 +109,13 @@ func authenticate(key *[32]byte, ciphertext, additionalData []byte) []byte {
 	}
 	buf := make([]byte, bufSize)
 	off := copy(buf, additionalData)
-	off += copy(buf[off:], make([]byte, 16-padAD))
+	if padAD > 0 {
+		off += copy(buf[off:], make([]byte, 16-padAD))
+	}
 	off += copy(buf[off:], ciphertext)
-	off += copy(buf[off:], make([]byte, 16-padCT))
+	if padCT > 0 {
+		off += copy(buf[off:], make([]byte, 16-padCT))
+	}
 
 	buf[off+0] = byte(adLen)
 	buf[off+1] = byte(adLen >> 8)

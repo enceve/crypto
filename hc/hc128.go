@@ -3,7 +3,7 @@
 
 package hc
 
-// key & iv setup and initialization
+// key and nonce setup and initialization
 func (c *hc128) initialize(key, nonce []byte) {
 	w := make([]uint32, 1280)
 
@@ -19,7 +19,7 @@ func (c *hc128) initialize(key, nonce []byte) {
 	}
 	copy(w[12:16], w[8:12])
 
-	// expand key and iv with the f1 and f2 functions
+	// expand key and nonce with the f1 and f2 functions
 	// (2.2 http://www.ecrypt.eu.org/stream/p3ciphers/hc/hc128_p3.pdf)
 	var f2, f1 uint32
 	for i := 16; i < 1280; i++ {
@@ -28,8 +28,8 @@ func (c *hc128) initialize(key, nonce []byte) {
 		f2 = ((f2 >> 17) | (f2 << 15)) ^ ((f2 >> 19) | (f2 << 13)) ^ (f2 >> 10)
 		w[i] = f1 + f2 + w[i-7] + w[i-16] + uint32(i)
 	}
-	copy(c.p, w[256:(256+512)])
-	copy(c.q, w[768:(768+512)])
+	copy(c.p[:], w[256:(256+512)])
+	copy(c.q[:], w[768:(768+512)])
 
 	// do 1024 iterations for initialization
 	c.ctr = 0
@@ -42,12 +42,10 @@ func (c *hc128) initialize(key, nonce []byte) {
 	c.ctr = 0
 }
 
-// XORKeyStream XORs each byte in the given slice with a byte from the
-// cipher's key stream.
 func (c *hc128) XORKeyStream(dst, src []byte) {
 	n := len(src)
 	if len(dst) < n {
-		panic("output buffer to small")
+		panic("dst buffer to small")
 	}
 	dOff, sOff := 0, 0
 	for n > 0 && c.off < 4 {

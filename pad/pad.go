@@ -33,12 +33,12 @@ type Padding interface {
 	// the padding can be used.
 	BlockSize() int
 
-	// Calculates the overhead, the padding will cause
-	// by padding the given byte slice.
-	// The overhead will always between 1 and BlockSize().
+	// Returns the overhead, the padding will cause
+	// by padding the given byte slice. The overhead
+	// will always be between 1 and BlockSize() inclusively.
 	Overhead(src []byte) int
 
-	// Expands the last (may incomplete) block of the src slice
+	// Pads the last (may incomplete) block of the src slice
 	// to a padded and complete block, appends the padding bytes
 	// to the src slice and returns this slice.
 	// The length of the returned slice is len(src) + Overhead(src)
@@ -47,37 +47,37 @@ type Padding interface {
 	// Takes a slice and tries to remove the padding bytes
 	// form the last block. Therefore the length of the
 	// src argument must be a multiply of the blocksize.
-	// If the return error is nil, the padding could be
-	// removed successfully.
-	// The returned slice holds the unpadded src bytes.
+	// If the returned error is nil, the padding could be
+	// removed successfully. The returned slice holds the
+	// unpadded src bytes.
 	Unpad(src []byte) ([]byte, error)
 }
 
-// Creates a new Padding implementing the ANSI X.923 scheme.
+// Returns a new Padding implementing the ANSI X.923 scheme.
 // Only block sizes between 1 and 255 are legal.
 // This function panics if the blocksize is smaller than 1
 // or greater than 255.
 func NewX923(blocksize int) Padding {
-	if blocksize <= 0 || blocksize > 255 {
+	if blocksize < 1 || blocksize > 255 {
 		panic("illegal blocksize - size must between 0 and 256")
 	}
 	pad := x923Padding(blocksize)
 	return pad
 }
 
-// Creates a new Padding implementing the PKCS 7 scheme.
+// Returns a new Padding implementing the PKCS 7 scheme.
 // Only block sizes between 1 and 255 are legal.
 // This function panics if the blocksize is smaller than 1
 // or greater than 255.
 func NewPkcs7(blocksize int) Padding {
-	if blocksize <= 0 || blocksize > 255 {
+	if blocksize < 1 || blocksize > 255 {
 		panic("illegal blocksize - size must between 0 and 256")
 	}
 	pad := pkcs7Padding(blocksize)
 	return pad
 }
 
-// Creates a new Padding, which uses the padding scheme
+// Returns a new Padding, which uses the padding scheme
 // described in ISO 10126. The padding bytes are taken
 // form the given rand argument. This reader should return
 // random data.
@@ -85,7 +85,7 @@ func NewPkcs7(blocksize int) Padding {
 // This function panics if the blocksize is smaller than 1
 // or greater than 255.
 func NewIso10126(blocksize int, rand io.Reader) Padding {
-	if blocksize <= 0 || blocksize > 255 {
+	if blocksize < 1 || blocksize > 255 {
 		panic("illegal blocksize - size must between 0 and 256")
 	}
 	pad := &isoPadding{

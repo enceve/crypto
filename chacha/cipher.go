@@ -15,6 +15,7 @@ package chacha
 
 import (
 	"crypto/cipher"
+
 	"github.com/EncEve/crypto"
 )
 
@@ -57,12 +58,10 @@ func XORKeyStream(dst, key, nonce []byte, ctr uint32, src []byte) {
 	c.XORKeyStream(dst, src)
 }
 
-// Create a new ChaCha20 instance from the key and
-// the nonce. The nonce must be unique for one key for
-// all time.
-// The key must be exactly 256 bit (32 byte) and the
-// nonce must be exactly 96 bit (12 byte). Otherwise
-// a non-nil error is returned.
+// New returns a new cipher.Stream implementing the ChaCha20
+// cipher. The key must be exactly 256 bit (32 byte). The
+// nonce must be exactly 96 bit (12 byte) and unique for one
+// key for all time.
 func New(key, nonce []byte) (cipher.Stream, error) {
 	if k := len(key); k != 32 {
 		return nil, crypto.KeySizeError(k)
@@ -80,7 +79,7 @@ func New(key, nonce []byte) (cipher.Stream, error) {
 func (c *chacha20) XORKeyStream(dst, src []byte) {
 	n := len(src)
 	if len(dst) < n {
-		panic("output buffer to small")
+		panic("dst buffer to small")
 	}
 	dOff, sOff := 0, 0
 	if c.off < 64 {

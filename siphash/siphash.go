@@ -12,15 +12,17 @@
 package siphash
 
 import (
-	"github.com/EncEve/crypto"
+	"crypto/subtle"
 	"hash"
+
+	"github.com/EncEve/crypto"
 )
 
-const KeySize = 16 // The size of the secret key for SipHash.
-
-const BlockSize = 8 // The block size of SipHash.
-
-const HashSize64 = 8 // The size of hash / MAC of SipHash.
+const (
+	KeySize   = 16 // The size of the secret key for SipHash.
+	BlockSize = 8  // The block size of SipHash.
+	Size      = 8  // The size of hash / MAC of SipHash.
+)
 
 // The four initialization constants
 const (
@@ -39,13 +41,10 @@ type siphash struct {
 	ctr            byte
 }
 
-// Returns the block size of sipash in bytes.
 func (h *siphash) BlockSize() int { return BlockSize }
 
-// Returns the hash size of siphash in bytes.
-func (h *siphash) Size() int { return HashSize64 }
+func (h *siphash) Size() int { return Size }
 
-// Reset resets the Hash to its initial state.
 func (h *siphash) Reset() {
 	h.v0 = h.k0 ^ c0
 	h.v1 = h.k1 ^ c1
@@ -56,8 +55,6 @@ func (h *siphash) Reset() {
 	h.ctr = 0
 }
 
-// Write (via the embedded io.Writer interface) adds more
-// data to the running hash. It never returns an error.
 func (h *siphash) Write(src []byte) (int, error) {
 	in := src
 	n := len(in)
@@ -90,8 +87,6 @@ func (h *siphash) Write(src []byte) (int, error) {
 	return n, nil
 }
 
-// Sum64 returns the current hash as 64 bit value.
-// It does not change the underlying hash state.
 func (h *siphash) Sum64() uint64 {
 	h0 := *h
 	for i := h0.off; i < BlockSize-1; i++ {
@@ -101,12 +96,10 @@ func (h *siphash) Sum64() uint64 {
 	return finalize(&h0)
 }
 
-// Sum appends the current hash to b and returns the resulting slice.
-// It does not change the underlying hash state.
 func (h *siphash) Sum(b []byte) []byte {
 	r := h.Sum64()
 
-	var out [HashSize64]byte
+	var out [Size]byte
 	out[0] = byte(r)
 	out[1] = byte(r >> 8)
 	out[2] = byte(r >> 16)
@@ -118,11 +111,8 @@ func (h *siphash) Sum(b []byte) []byte {
 	return append(b, out[:]...)
 }
 
-// Creates a new hash instance,implementing the Hash64 interface,
-// with the given secret key.
-// The length of the key argument must be equal to the
-// KeySize constant - otherwise the returned error is
-// not nil.
+// New returns a hash.Hash computing the SipHash checksum.
+// The key must be 128 bit (16 byte)
 func New(key []byte) (hash.Hash64, error) {
 	if k := len(key); k != KeySize {
 		return nil, crypto.KeySizeError(k)
@@ -136,11 +126,9 @@ func New(key []byte) (hash.Hash64, error) {
 	return h, nil
 }
 
-// Calculates the siphash MAC for the given key and
-// the specified message.
-// The length of the key argument must be equal to the
-// KeySize constant - otherwise the returned error is
-// not nil.
+// Sum computes the SipHash checksum of the msg and
+// returns the checksum as a slice.
+// The key must be 128 bit (16 byte).
 func Sum(key, msg []byte) ([]byte, error) {
 	h, err := New(key)
 	if err != nil {
@@ -150,16 +138,27 @@ func Sum(key, msg []byte) ([]byte, error) {
 	return h.Sum(nil), nil
 }
 
-// Calculates the siphash MAC for the given key and
-// the specified message.
-// The length of the key argument must be equal to the
-// KeySize constant - otherwise the returned error is
-// not nil.
-func Sum64(key, msg []byte) (uint64, error) {
+// Sum64 computes the SipHash checksum of the msg and
+// returns the checksum as a uint64.
+// The key must be 128 bit (16 byte).
+func Sum64(msg, key []byte) (uint64, error) {
 	h, err := New(key)
 	if err != nil {
 		return 0, err
 	}
 	h.Write(msg)
 	return h.Sum64(), nil
+}
+
+// Verify checks whether the given sum is equal to the
+// computed checksum of msg. This function returns true
+// if and only if the computed checksum is equal to the
+// given sum. This function returns false, if the key is
+// not 128 bit.
+func Verify(sum, msg, key []byte) bool {
+	checksum, err := Sum(key, msg)
+	if err != nil {
+		return false
+	}
+	return subtle.ConstantTimeCompare(sum, checksum) == 1
 }

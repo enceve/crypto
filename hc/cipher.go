@@ -13,19 +13,20 @@ package hc
 
 import (
 	"crypto/cipher"
+
 	"github.com/EncEve/crypto"
 )
 
 const (
-	mod512  = 0x1FF
-	mod1024 = 0x3FF
-	mod2048 = 0x7FF
+	mod512  uint32 = 0x1FF
+	mod1024 uint32 = 0x3FF
+	mod2048 uint32 = 0x7FF
 )
 
 // A hc128 holds the both states P and Q, the counter,
 // 4 byte of the keystream and the offset
 type hc128 struct {
-	p, q        []uint32
+	p, q        [512]uint32
 	ctr, stream uint32
 	off         uint
 }
@@ -33,17 +34,14 @@ type hc128 struct {
 // A hc256 holds the both states P and Q, the counter,
 // 4 byte of the keystream and the offset
 type hc256 struct {
-	p, q        []uint32
+	p, q        [1024]uint32
 	ctr, stream uint32
 	off         uint
 }
 
-// New128 creates and returns a new cipher.Stream.
-// The key argument must be 128 bit (16 byte).
-// The nonce argument must be at least 128 bit (16 byte).
-// The returned cipher.Stream implements the HC128 cipher.
-// If the key is not 128 bit or the nonce is not 128 bit,
-// this function returns an non-nil error.
+// New128 returns a new cipher.Stream implementing the
+// HC-128 cipher. The key and nonce argument must be
+// 128 bit (16 byte).
 func New128(key, nonce []byte) (cipher.Stream, error) {
 	if k := len(key); k != 16 {
 		return nil, crypto.KeySizeError(k)
@@ -52,8 +50,6 @@ func New128(key, nonce []byte) (cipher.Stream, error) {
 		return nil, crypto.NonceSizeError(n)
 	}
 	c := &hc128{
-		p:      make([]uint32, 512),
-		q:      make([]uint32, 512),
 		off:    4,
 		ctr:    0,
 		stream: 0,
@@ -63,12 +59,9 @@ func New128(key, nonce []byte) (cipher.Stream, error) {
 	return c, nil
 }
 
-// New256 creates and returns a new cipher.Stream.
-// The key argument must be 256 bit (32 byte),
-// The nonce argument must be at least 256 bit (32 byte),
-// The returned cipher.Stream implements the HC256 cipher.
-// If the key is not 256 bit or the nonce is 256 bit,
-// this function returns an non-nil error.
+// New256 returns a new cipher.Stream implementing the
+// HC-256 cipher. The key and nonce argument must be
+// 256 bit (32 byte).
 func New256(key, nonce []byte) (cipher.Stream, error) {
 	if k := len(key); k != 32 {
 		return nil, crypto.KeySizeError(k)
@@ -77,8 +70,6 @@ func New256(key, nonce []byte) (cipher.Stream, error) {
 		return nil, crypto.NonceSizeError(n)
 	}
 	c := &hc256{
-		p:      make([]uint32, 1024),
-		q:      make([]uint32, 1024),
 		off:    4,
 		ctr:    0,
 		stream: 0,
