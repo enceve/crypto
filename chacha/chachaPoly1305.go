@@ -8,7 +8,7 @@ import (
 	"crypto/subtle"
 
 	"github.com/EncEve/crypto"
-	"golang.org/x/crypto/poly1305"
+	"github.com/EncEve/crypto/poly1305"
 )
 
 // The AEAD cipher ChaCha20-Poly1305
@@ -100,42 +100,33 @@ func authenticate(key *[32]byte, ciphertext, additionalData []byte) []byte {
 	adLen := uint64(len(additionalData))
 	padAD, padCT := adLen%16, ctLen%16
 
-	bufSize := adLen + ctLen + 16
-	if padAD > 0 {
-		bufSize += 16 - padAD
-	}
-	if padCT > 0 {
-		bufSize += 16 - padCT
-	}
-	buf := make([]byte, bufSize)
-	off := copy(buf, additionalData)
-	if padAD > 0 {
-		off += copy(buf[off:], make([]byte, 16-padAD))
-	}
-	off += copy(buf[off:], ciphertext)
-	if padCT > 0 {
-		off += copy(buf[off:], make([]byte, 16-padCT))
-	}
+	var buf [16]byte
+	buf[0] = byte(adLen)
+	buf[1] = byte(adLen >> 8)
+	buf[2] = byte(adLen >> 16)
+	buf[3] = byte(adLen >> 24)
+	buf[4] = byte(adLen >> 32)
+	buf[5] = byte(adLen >> 40)
+	buf[6] = byte(adLen >> 48)
+	buf[7] = byte(adLen >> 56)
+	buf[8] = byte(ctLen)
+	buf[9] = byte(ctLen >> 8)
+	buf[10] = byte(ctLen >> 16)
+	buf[11] = byte(ctLen >> 24)
+	buf[12] = byte(ctLen >> 32)
+	buf[13] = byte(ctLen >> 40)
+	buf[14] = byte(ctLen >> 48)
+	buf[15] = byte(ctLen >> 56)
 
-	buf[off+0] = byte(adLen)
-	buf[off+1] = byte(adLen >> 8)
-	buf[off+2] = byte(adLen >> 16)
-	buf[off+3] = byte(adLen >> 24)
-	buf[off+4] = byte(adLen >> 32)
-	buf[off+5] = byte(adLen >> 40)
-	buf[off+6] = byte(adLen >> 48)
-	buf[off+7] = byte(adLen >> 56)
-	off += 8
-	buf[off+0] = byte(ctLen)
-	buf[off+1] = byte(ctLen >> 8)
-	buf[off+2] = byte(ctLen >> 16)
-	buf[off+3] = byte(ctLen >> 24)
-	buf[off+4] = byte(ctLen >> 32)
-	buf[off+5] = byte(ctLen >> 40)
-	buf[off+6] = byte(ctLen >> 48)
-	buf[off+7] = byte(ctLen >> 56)
-
-	var tag [poly1305.TagSize]byte
-	poly1305.Sum(&tag, buf, key)
-	return tag[:]
+	poly, _ := poly1305.New(key[:])
+	poly.Write(additionalData)
+	if padAD > 0 {
+		poly.Write(make([]byte, 16-padAD))
+	}
+	poly.Write(ciphertext)
+	if padCT > 0 {
+		poly.Write(make([]byte, 16-padCT))
+	}
+	poly.Write(buf[:])
+	return poly.Sum(nil)
 }
