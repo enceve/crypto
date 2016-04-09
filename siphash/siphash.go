@@ -129,7 +129,7 @@ func New(key []byte) (hash.Hash64, error) {
 // Sum computes the SipHash checksum of the msg and
 // returns the checksum as a slice.
 // The key must be 128 bit (16 byte).
-func Sum(key, msg []byte) ([]byte, error) {
+func Sum(msg, key []byte) ([]byte, error) {
 	h, err := New(key)
 	if err != nil {
 		return nil, err
@@ -156,7 +156,7 @@ func Sum64(msg, key []byte) (uint64, error) {
 // given sum. This function returns false, if the key is
 // not 128 bit.
 func Verify(sum, msg, key []byte) bool {
-	checksum, err := Sum(key, msg)
+	checksum, err := Sum(msg, key)
 	if err != nil {
 		return false
 	}
