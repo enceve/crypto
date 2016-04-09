@@ -91,10 +91,6 @@ func (c *aeadCipher) Open(dst, nonce, ciphertext, additionalData []byte) ([]byte
 
 // authenticate calculates the poly1305 tag from
 // the given ciphertext and additional data.
-//
-// TODO (EncEve): another poly1305 implementation
-// 		  (which satisfy the Writer interface)
-//		  may avoids buffer allocation and copying.
 func authenticate(key *[32]byte, ciphertext, additionalData []byte) []byte {
 	ctLen := uint64(len(ciphertext))
 	adLen := uint64(len(additionalData))
