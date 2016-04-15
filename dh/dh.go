@@ -6,120 +6,79 @@
 package dh
 
 import (
-	"crypto/rand"
-	"errors"
 	"io"
 	"math/big"
 )
 
-// The public part of the Diffie-Hellman exchange
-// consisting of the prime, the generator and the
-// public value.
-type Public struct {
-	P     *big.Int // The prime
-	G     *big.Int // The generator
-	Value *big.Int // The public value
-}
-
-// The private part of the Diffie-Hellman exchange
-// consisting the private value
-type Private struct {
-	Value *big.Int // The private value
-}
-
+var zero *big.Int = big.NewInt(0)
 var one *big.Int = big.NewInt(1)
 var two *big.Int = big.NewInt(2)
 
-// Determines whether the prime of the public
-// part is or is not a "safe prime". A so called
-// "safe prime" is a prime number p for which following
-// statement is true:
-// The number q = ( p - 1 ) / 2 is prime.
-// The n argument is the number of iterations for the
-// probabilistic prime test.
-// If the pub argument or the prime is nil, the function
-// panics.
-func (pub *Public) SafePrime(n int) bool {
-	if pub == nil {
-		panic("pub is nil")
-	}
-	if pub.P == nil {
-		panic("pub.P is nil")
-	}
-	q := new(big.Int).Sub(pub.P, one)
+// IsSafePrime returns true, if the prime of the group is
+// a so called safe-prime. For a group with a safe-prime prime
+// number the Decisional-Diffie-Hellman-Problem (DDH) is a
+// 'hard' problem. The n argument is the number of iterations
+// for the probabilistic prime test.
+// It's recommend to use DDH-safe groups for DH-exchanges.
+func IsSafePrime(g *Group, n int) bool {
+	q := new(big.Int).Sub(g.P, one)
 	q = q.Div(q, two)
 	return q.ProbablyPrime(n)
 }
 
+// Group represents a mathematical group defined
+// by a large prime and a generator.
+type Group struct {
+	P *big.Int // The prime
+	G *big.Int // The generator
+}
+
 // GenerateKey returns a public/private key pair. The private key is
 // generated using the given reader, which must return random data.
-// An error is returned, if the prime or the generator is nil,
-// or the reader fails.
-// If the pub argument is nil, the functions panics.
-func GenerateKey(pub *Public, random io.Reader) (*Private, error) {
-	if pub == nil {
-		panic("public part is nil")
+func (g *Group) GenerateKey(rand io.Reader) (private, public *big.Int, err error) {
+	if g.P == nil {
+		panic("group prime is nil")
 	}
-	if pub.P == nil {
-		return nil, errors.New("public prime is nil")
-	}
-	if pub.G == nil {
-		return nil, errors.New("public generator is nil")
+	if g.G == nil {
+		panic("group generator is nil")
 	}
 
-	pri := new(Private)
-	pv, err := rand.Int(random, pub.P)
-	if err != nil {
-		return nil, err
+	// Ensure, that p.G ** private > than g.P
+	// (only modulo calculations are safe)
+	// The minimal (and common) value for p.G is 2
+	// So 2 ** (1 + 'bitsize of p.G') > than g.P
+	min := big.NewInt(int64(g.P.BitLen() + 1))
+	bytes := make([]byte, (g.P.BitLen()+7)/8)
+	for private == nil {
+		_, err = io.ReadFull(rand, bytes)
+		if err != nil {
+			private = nil
+			return
+		}
+		// Clear bits in the first byte to increase
+		// the probability that the candidate is < g.P.
+		bytes[0] = 0
+		if private == nil {
+			private = new(big.Int)
+		}
+		private.SetBytes(bytes)
+		if private.Cmp(min) < 0 {
+			private = nil
+		}
 	}
-	pri.Value = pv
-
-	pub.Value = new(big.Int).Exp(pub.G, pri.Value, pub.P)
-	return pri, nil
+	public = new(big.Int).Exp(g.G, private, g.P)
+	return
 }
 
-// Validates the parameters for the Diffie-Hellman exchange.
-// If the given parameters cannot used for a secret derivation,
-// this function returns an non-nil error.
-// Only if the return value is nil, the DeriveSecret function will
-// work correctly.
-func (pri *Private) Validate(pub *Public) error {
-	if pub == nil {
-		return errors.New("public part is nil")
-	}
-
-	if pri.Value == nil {
-		return errors.New("private value is nil")
-	}
-	if pub.P == nil {
-		return errors.New("public prime is nil")
-	}
-	if pub.Value == nil {
-		return errors.New("public value is nil")
-	}
-
-	if pub.G.Cmp(pub.P) >= 0 {
-		return errors.New("generator >= prime")
-	}
-	if pub.Value.Cmp(pub.P) >= 0 {
-		return errors.New("public value >= prime")
-	}
-	if pri.Value.Cmp(pub.P) >= 0 {
-		return errors.New("private value >= prime")
-	}
-	return nil
+// IsGroupElement returns true if the given public key is
+// a possible element of the group. This means, that the
+// public key is >= 0 and < g.P.
+func (g *Group) IsGroupElement(peersPublic *big.Int) bool {
+	return peersPublic.Cmp(zero) >= 0 && peersPublic.Cmp(g.P) == -1
 }
 
-// DeriveSecret does the  Diffie-Hellman exchange.
-// The public part contains the prime, the generator and the
-// public value of the other side.
-// If the pub argument is nil, the functions panics.
-// This function does not validate the parameters. Therefore
-// use Validate.
-func (pri *Private) DeriveSecret(pub *Public) *big.Int {
-	if pub == nil {
-		panic("public part is nil")
-	}
-
-	return new(big.Int).Exp(pub.Value, pri.Value, pub.P)
+// ComputeSecret returns the secret computed from
+// the own private and the peer's public key.
+func (g *Group) ComputeSecret(private, peersPublic *big.Int) *big.Int {
+	return new(big.Int).Exp(peersPublic, private, g.P)
 }

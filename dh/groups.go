@@ -10,13 +10,6 @@ import (
 
 // DH groups defined in https://www.ietf.org/rfc/rfc3526.txt
 const (
-	// The 1536 bit prime form 2.
-	rfc3526_1536_G = "02"
-	rfc3526_1536_P = "FFFFFFFFFFFFFFFFC90FDAA22168C234C4C6628B80DC1CD129024E088A67CC74020BBEA63B139B22514A08798E" +
-		"3404DDEF9519B3CD3A431B302B0A6DF25F14374FE1356D6D51C245E485B576625E7EC6F44C42E9A637ED6B0BFF5CB6F406B7EDEE386" +
-		"BFB5A899FA5AE9F24117C4B1FE649286651ECE45B3DC2007CB8A163BF0598DA48361C55D39A69163FA8FD24CF5F83655D23DCA3AD96" +
-		"1C62F356208552BB9ED529077096966D670C354E4ABC9804F1746C08CA237327FFFFFFFFFFFFFFFF"
-
 	// The 2048 bit prime form 3.
 	rfc3526_2048_G = "02"
 	rfc3526_2048_P = "FFFFFFFFFFFFFFFFC90FDAA22168C234C4C6628B80DC1CD129024E088A67CC74020BBEA63B139B22514A08798E3" +
@@ -51,41 +44,32 @@ const (
 )
 
 var once sync.Once
-var rfc3526_1536 *Public
-var rfc3526_2048 *Public
-var rfc3526_3072 *Public
-var rfc3526_4096 *Public
-
-func initRFC3526_1536() {
-	rfc3526_1536 = &Public{}
-	rfc3526_1536.G, _ = new(big.Int).SetString(rfc3526_1536_G, 16)
-	rfc3526_1536.P, _ = new(big.Int).SetString(rfc3526_1536_P, 16)
-
-}
+var rfc3526_2048 *Group
+var rfc3526_3072 *Group
+var rfc3526_4096 *Group
 
 func initRFC3526_2048() {
-	rfc3526_2048 = &Public{}
+	rfc3526_2048 = &Group{}
 	rfc3526_2048.G, _ = new(big.Int).SetString(rfc3526_2048_G, 16)
 	rfc3526_2048.P, _ = new(big.Int).SetString(rfc3526_2048_P, 16)
 
 }
 
 func initRFC3526_3072() {
-	rfc3526_3072 = &Public{}
+	rfc3526_3072 = &Group{}
 	rfc3526_3072.G, _ = new(big.Int).SetString(rfc3526_3072_G, 16)
 	rfc3526_3072.P, _ = new(big.Int).SetString(rfc3526_3072_P, 16)
 
 }
 
 func initRFC3526_4096() {
-	rfc3526_4096 = &Public{}
+	rfc3526_4096 = &Group{}
 	rfc3526_4096.G, _ = new(big.Int).SetString(rfc3526_4096_G, 16)
 	rfc3526_4096.P, _ = new(big.Int).SetString(rfc3526_4096_P, 16)
 }
 
 // Initialize the primes and generators
 func initAll() {
-	initRFC3526_1536()
 	initRFC3526_2048()
 	initRFC3526_3072()
 	initRFC3526_4096()
@@ -93,48 +77,36 @@ func initAll() {
 
 // Creates a new public part consisting of the prime
 // and the generator. The prime (and generator) are
-// described in RFC 3526 (2.). The prime is a 1536 bit value.
-func RFC3526_1536() *Public {
-	once.Do(initAll)
-	pub := &Public{
-		P: new(big.Int).Set(rfc3526_1536.P),
-		G: new(big.Int).Set(rfc3526_1536.G),
-	}
-	return pub
-}
-
-// Creates a new public part consisting of the prime
-// and the generator. The prime (and generator) are
 // described in RFC 3526 (3.). The prime is a 2048 bit value.
-func RFC3526_2048() *Public {
+func RFC3526_2048() *Group {
 	once.Do(initAll)
-	pub := &Public{
+	g := &Group{
 		P: new(big.Int).Set(rfc3526_2048.P),
 		G: new(big.Int).Set(rfc3526_2048.G),
 	}
-	return pub
+	return g
 }
 
 // Creates a new public part consisting of the prime
 // and the generator. The prime (and generator) are
 // described in RFC 3526 (4.). The prime is a 3072 bit value.
-func RFC3526_3072() *Public {
+func RFC3526_3072() *Group {
 	once.Do(initAll)
-	pub := &Public{
+	g := &Group{
 		P: new(big.Int).Set(rfc3526_3072.P),
 		G: new(big.Int).Set(rfc3526_3072.G),
 	}
-	return pub
+	return g
 }
 
 // Creates a new public part consisting of the prime
 // and the generator. The prime (and generator) are
 // described in RFC 3526 (5.). The prime is a 4096 bit value.
-func RFC3526_4096() *Public {
+func RFC3526_4096() *Group {
 	once.Do(initAll)
-	pub := &Public{
+	g := &Group{
 		P: new(big.Int).Set(rfc3526_4096.P),
 		G: new(big.Int).Set(rfc3526_4096.G),
 	}
-	return pub
+	return g
 }
