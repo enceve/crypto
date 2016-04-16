@@ -5,20 +5,13 @@
 // based on the RFC 7693 (https://tools.ietf.org/html/rfc7693).
 // Blake2b is the 64 bit version of the blake2 hash function
 // and supports hash values from 8 to 512 bit (1 to 64 byte).
-// The package API directly supports 160, 256, 384 and 512 bit
+// The package API directly supports 256 and 512 bit
 // hash values, but custom sizes can be used as well.
-// Furthermore blake2b can be used for:
-// 		- simple, randomized and personalized hashing
-//		- MACs (builtin)
-//		- tree hashing
-// This package supports:
-//	- simple and randomized hashing
-//	- MACs
-// Personalization and Tree-hashing are not supported.
+// Furthermore blake2b supports randomized hashing and can be
+// used as a MAC.
 package blake2b
 
 import (
-	"encoding/binary"
 	"errors"
 	"hash"
 )
@@ -116,7 +109,7 @@ func (h *blake2b) Write(src []byte) (int, error) {
 	n := len(src)
 	in := src
 
-	diff := BlockSize - int(h.off)
+	diff := BlockSize - h.off
 	if n > diff {
 		// process buffer.
 		copy(h.buf[h.off:], in[:diff])
@@ -210,7 +203,10 @@ func (h *blake2b) initialize(conf *Params) {
 	// initialize hash values
 	h.hsize = conf.HashSize
 	for i := range iv {
-		h.hVal[i] = iv[i] ^ binary.LittleEndian.Uint64(p[i*8:])
+		j := i * 8
+		pv := uint64(p[j+0]) | uint64(p[j+1])<<8 | uint64(p[j+2])<<16 | uint64(p[j+3])<<24 |
+			uint64(p[j+4])<<32 | uint64(p[j+5])<<40 | uint64(p[j+6])<<48 | uint64(p[j+7])<<56
+		h.hVal[i] = iv[i] ^ pv
 	}
 
 	// process key

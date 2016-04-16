@@ -185,6 +185,24 @@ func BenchmarkChacha(b *testing.B) {
 	}
 }
 
+func BenchmarkXORKeyStream(b *testing.B) {
+	var key [32]byte
+	var nonce [12]byte
+	buf := make([]byte, 64)
+	for i := 0; i < b.N; i++ {
+		XORKeyStream(buf, buf, &key, &nonce, 0)
+	}
+}
+
+func BenchmarkXORKeyStream12(b *testing.B) {
+	var key [32]byte
+	var nonce [12]byte
+	buf := make([]byte, 64)
+	for i := 0; i < b.N; i++ {
+		XORKeyStream12(buf, buf, &key, &nonce, 0)
+	}
+}
+
 func BenchmarkSeal(b *testing.B) {
 	key := make([]byte, 32)
 	nonce := make([]byte, 12)

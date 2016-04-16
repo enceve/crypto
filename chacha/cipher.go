@@ -1,16 +1,10 @@
 // Use of this source code is governed by a license
 // that can be found in the LICENSE file.
 
-// The chacha package implements D J Bernstein's Chacha20 stream cipher algorithm.
-// See: http://cr.yp.to/chacha/chacha-20080128.pdf
-// There are two variants of this cipher:
-//		- the original by Bernstein
-// 		- the version described in RFC 7539.
-// This package implements the version described in RFC 7539.
-// Furthermore the AEAD cipher ChaCha20-Poly1305 (RFC 7539) is implemented here.
-// Notice, that this implementation of ChaCha20 can only process 64 x 2^32 bytes
-// for one specific key and nonce combination. So the amount of data, en / decrypted by one
-// key-nonce combination, is limited by 256 GB.
+// The chacha package implements D J Bernstein's Chacha20 stream cipher algorithm
+// and the ChaCha20-Poly1305 AEAD construction described in RFC 7539. Notice that
+// this implementation of ChaCha20 can only process 64 x 2^32 bytes (256 GB)
+// for one specific key and nonce combination.
 package chacha
 
 import (
@@ -29,33 +23,64 @@ const (
 	const3 = 0x6b206574
 )
 
-type chacha20 struct {
-	state  [16]uint32
-	stream [64]byte
-	off    uint
+func chachaCore(dst, src []byte, key *[32]byte, nonce *[12]byte, ctr uint32, rounds int) {
+	if len(dst) < len(src) {
+		panic("dst buffer is to small")
+	}
+	var state [16]uint32
+	var buf [64]byte
+
+	initialize(key, nonce, &state)
+	state[12] = ctr
+	length := len(src)
+	n := length - (length % 64)
+	for i := 0; i < n; i += 64 {
+		core(&buf, &state, rounds)
+		state[12]++ // inc. counter
+		for j, v := range buf {
+			dst[i+j] = src[i+j] ^ v
+		}
+	}
+	if n < length {
+		core(&buf, &state, rounds)
+		for j, v := range buf[:length-n] {
+			dst[n+j] = src[n+j] ^ v
+		}
+	}
 }
 
 // XORKeyStream xor`s each byte in the given src with a byte from the
-// ChaCha20 key stream. The key must be 256 bit (32 byte), otherwise this
-// function panics. The nonce must be 96 bit (12 byte) and unique for one
-// key for all time. If the nonce is not 96 bit long, this function panics.
-// The ctr argument sets the counter for the ChaCha20 key stream generation.
-// If len(dst) < len(src), XORKeyStream panics. It is acceptable
+// ChaCha20 key stream. The nonce must be unique for one key for all
+// time. If len(dst) < len(src), XORKeyStream panics. It is acceptable
 // to pass a dst bigger than src, and in that case, XORKeyStream will
 // only update dst[:len(src)] and will not touch the rest of dst.
-func XORKeyStream(dst, key, nonce []byte, ctr uint32, src []byte) {
-	if k := len(key); k != 32 {
-		panic(crypto.KeySizeError(k))
-	}
-	if n := len(nonce); n != NonceSize {
-		panic(crypto.NonceSizeError(n))
-	}
-	c := &chacha20{
-		off: 64,
-	}
-	initialize(key, nonce, &(c.state))
-	c.state[12] = ctr
-	c.XORKeyStream(dst, src)
+func XORKeyStream(dst, src []byte, key *[32]byte, nonce *[12]byte, counter uint32) {
+	chachaCore(dst, src, key, nonce, counter, 20)
+}
+
+// XORKeyStream12 xor`s each byte in the given src with a byte from the
+// ChaCha20-12 key stream. The nonce must be unique for one key for all
+// time. If len(dst) < len(src), XORKeyStream panics. It is acceptable
+// to pass a dst bigger than src, and in that case, XORKeyStream will
+// only update dst[:len(src)] and will not touch the rest of dst.
+func XORKeyStream12(dst, src []byte, key *[32]byte, nonce *[12]byte, counter uint32) {
+	chachaCore(dst, src, key, nonce, counter, 12)
+}
+
+// XORKeyStream8 xor`s each byte in the given src with a byte from the
+// ChaCha20-8 key stream. The nonce must be unique for one key for all
+// time. If len(dst) < len(src), XORKeyStream panics. It is acceptable
+// to pass a dst bigger than src, and in that case, XORKeyStream will
+// only update dst[:len(src)] and will not touch the rest of dst.
+func XORKeyStream8(dst, src []byte, key *[32]byte, nonce *[12]byte, counter uint32) {
+	chachaCore(dst, src, key, nonce, counter, 8)
+}
+
+// The ChaCha20 stream cipher
+type chacha20 struct {
+	state  [16]uint32
+	stream [64]byte
+	off    int
 }
 
 // New returns a new cipher.Stream implementing the ChaCha20
@@ -69,50 +94,58 @@ func New(key, nonce []byte) (cipher.Stream, error) {
 	if n := len(nonce); n != NonceSize {
 		return nil, crypto.NonceSizeError(n)
 	}
-	c := &chacha20{
-		off: 64,
-	}
-	initialize(key, nonce, &(c.state))
+	var k [32]byte
+	var n [12]byte
+	copy(k[:], key)
+	copy(n[:], nonce)
+
+	c := &chacha20{}
+	initialize(&k, &n, &(c.state))
 	return c, nil
 }
 
 func (c *chacha20) XORKeyStream(dst, src []byte) {
-	n := len(src)
-	if len(dst) < n {
+	length := len(src)
+	if len(dst) < length {
 		panic("dst buffer to small")
 	}
-	dOff, sOff := 0, 0
-	if c.off < 64 {
-		for n > 0 && c.off < 64 {
-			dst[dOff] = src[sOff] ^ c.stream[c.off]
-			dOff, sOff, c.off = dOff+1, sOff+1, c.off+1
-			n--
+	if c.off > 0 {
+		left := 64 - c.off
+		if left > length {
+			left = length
+		}
+		for i := 0; i < left; i++ {
+			dst[i] = src[i] ^ c.stream[c.off+i]
+			src = src[left:]
+			dst = dst[left:]
+		}
+		length -= left
+		c.off += left
+		if c.off == 64 {
+			c.off = 0
 		}
 	}
-	for n >= 64 {
-		core(&(c.stream), &(c.state))
+
+	n := length - (length % 64)
+	for i := 0; i < n; i += 64 {
+		core(&(c.stream), &(c.state), 20)
 		c.state[12]++ // inc. counter
-		for i := range c.stream {
-			dst[dOff+i] = src[sOff+i] ^ c.stream[i]
+		for j := range c.stream {
+			dst[i+j] = src[i+j] ^ c.stream[j]
 		}
-		dOff += 64
-		sOff += 64
-		n -= 64
 	}
-	if n > 0 {
-		c.off = 0
-		core(&(c.stream), &(c.state))
+	if n < length {
+		core(&(c.stream), &(c.state), 20)
 		c.state[12]++ // inc. counter
-		for i := 0; n > 0; i++ {
-			dst[dOff+i] = src[sOff+i] ^ c.stream[i]
-			c.off++
-			n--
+		for j, v := range c.stream[:length-n] {
+			dst[n+j] = src[n+j] ^ v
 		}
+		c.off += (length - n)
 	}
 }
 
 // Initialize the cipher with the key and the nonce
-func initialize(key, nonce []byte, state *[16]uint32) {
+func initialize(key *[32]byte, nonce *[12]byte, state *[16]uint32) {
 	// The four rfc constants
 	state[0] = const0
 	state[1] = const1

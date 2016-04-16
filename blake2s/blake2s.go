@@ -4,20 +4,13 @@
 // The blake2s package implements the blake2s hash function.
 // Blake2s is the 32 bit version of the blake2 hash function
 // and supports hash values from 8 to 256 bit (1 to 32 byte).
-// The package API directly supports 128, 160, 224 and 256 bit
+// The package API directly supports 160 and 256 bit
 // hash values, but custom sizes can be used as well.
-// Furthermore blake2s can be used for:
-// 		- simple, randomized and personalized hashing
-//		- MACs (builtin)
-//		- tree hashing
-// This package supports:
-//	    - simple and randomized hashing
-//		- MACs
-// Personalization and Tree-hashing are not supported.
+// Furthermore blake2s supports randomized hashing and can be
+// used as a MAC.
 package blake2s
 
 import (
-	"encoding/binary"
 	"errors"
 	"hash"
 )
@@ -115,7 +108,7 @@ func (h *blake2s) Write(src []byte) (int, error) {
 	n := len(src)
 	in := src
 
-	diff := BlockSize - int(h.off)
+	diff := BlockSize - h.off
 	if n > diff {
 		// process buffer.
 		copy(h.buf[h.off:], in[:diff])
@@ -205,7 +198,9 @@ func (h *blake2s) initialize(conf *Params) {
 	// initialize hash values
 	h.hsize = conf.HashSize
 	for i := range iv {
-		h.hVal[i] = iv[i] ^ binary.LittleEndian.Uint32(p[i*4:])
+		j := i * 4
+		pv := uint32(p[j+0]) | uint32(p[j+1])<<8 | uint32(p[j+2])<<16 | uint32(p[j+3])<<24
+		h.hVal[i] = iv[i] ^ pv
 	}
 
 	// process key

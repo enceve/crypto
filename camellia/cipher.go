@@ -1,7 +1,7 @@
 // Use of this source code is governed by a license
 // that can be found in the LICENSE file.
 
-// The camellia implements the camellia block cipher.
+// The camellia package implements the camellia block cipher.
 // The cipher has block size of 128 bit (16 byte) and
 // accepts 128, 192 or 256 bit keys (16, 24, 32 byte).
 // Camellia was jointly developed by Mitsubishi Electric
