@@ -3,6 +3,8 @@
 ### Introduction
 
 The `crypto` package implements some additional cryptographic functionality, currently not supported by the standard or additional [golang packages](https://golang.org/pkg/ "Offical golang packages").
+Check out the documentation at [godoc] (https://godoc.org/github.com/EncEve/crypto "GoDoc").
+
 Notice:
 This code should currently NOT used in productive environments!
 The public API is not stable and backward compatibility is currently NOT guaranteed.
