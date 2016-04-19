@@ -92,7 +92,7 @@ var vectors256 = []testVector{
 }
 
 // Test all test vectors for the HC256 cipher
-func TestVectors(t *testing.T) {
+func Test256(t *testing.T) {
 	for i, v := range vectors256 {
 		key, err := hex.DecodeString(v.key)
 		if err != nil {

@@ -34,12 +34,12 @@ func init() {
 
 	// ARM doesn't get the spiffy fast code since it's picky wrt alignment
 	// and I doubt Go does the right thing.
+	littleEndian = false
 	if runtime.GOARCH != "arm" {
 		if *(*uint32)(unsafe.Pointer(&mark[0])) == 0x0000feff {
 			littleEndian = true
 		}
 	}
-	littleEndian = false
 }
 
 const TagSize = 16 // The size of the poly1305 authentication tag in bytes.

@@ -116,9 +116,9 @@ func (c *chacha20) XORKeyStream(dst, src []byte) {
 		}
 		for i := 0; i < left; i++ {
 			dst[i] = src[i] ^ c.stream[c.off+i]
-			src = src[left:]
-			dst = dst[left:]
 		}
+		src = src[left:]
+		dst = dst[left:]
 		length -= left
 		c.off += left
 		if c.off == 64 {

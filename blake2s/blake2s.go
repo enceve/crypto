@@ -104,30 +104,26 @@ func (h *blake2s) BlockSize() int { return BlockSize }
 
 func (b *blake2s) Size() int { return b.hsize }
 
-func (h *blake2s) Write(src []byte) (int, error) {
-	n := len(src)
-	in := src
+func (h *blake2s) Write(p []byte) (int, error) {
+	n := len(p)
 
-	diff := BlockSize - h.off
-	if n > diff {
-		// process buffer.
-		copy(h.buf[h.off:], in[:diff])
-		update(&(h.hVal), &(h.ctr), h.f, h.buf[:])
-		h.off = 0
-
-		in = in[diff:]
-	}
-	// process full blocks except for the last
-	length := len(in)
-	if length > BlockSize {
-		nn := length - (length % BlockSize)
-		if nn == length {
-			nn -= BlockSize
+	if h.off > 0 {
+		diff := BlockSize - h.off
+		h.off += copy(h.buf[h.off:], p[:diff])
+		if n > diff {
+			update(&(h.hVal), &(h.ctr), h.f, h.buf[:])
+			h.off = 0
+			p = p[diff:]
 		}
-		update(&(h.hVal), &(h.ctr), h.f, in[:nn])
-		in = in[nn:]
 	}
-	h.off += copy(h.buf[h.off:], in)
+
+	// process full blocks except for the last
+	nn := len(p) & (^(BlockSize - 1))
+	if len(p)-nn > 0 {
+		update(&(h.hVal), &(h.ctr), h.f, p[:nn])
+		p = p[nn:]
+	}
+	h.off += copy(h.buf[h.off:], p)
 	return n, nil
 }
 

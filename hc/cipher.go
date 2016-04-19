@@ -59,6 +59,46 @@ func New128(key, nonce []byte) (cipher.Stream, error) {
 	return c, nil
 }
 
+func (c *hc128) XORKeyStream(dst, src []byte) {
+	length := len(src)
+	if len(dst) < length {
+		panic("dst buffer to small")
+	}
+	if c.off > 0 {
+		left := int(4 - c.off)
+		if left > length {
+			left = length
+		}
+		for i := 0; i < left; i++ {
+			dst[i] = src[i] ^ byte(c.stream>>(c.off*8))
+			c.off++
+		}
+		src = src[left:]
+		dst = dst[left:]
+		length -= left
+		c.off += uint(left)
+		if c.off == 4 {
+			c.off = 0
+		}
+	}
+	var ks uint32
+	n := length - (length % 4)
+	for i := 0; i < n; i += 4 {
+		ks = c.keystream128()
+		dst[i] = src[i] ^ byte(ks)
+		dst[i+1] = src[i+1] ^ byte(ks>>8)
+		dst[i+2] = src[i+2] ^ byte(ks>>16)
+		dst[i+3] = src[i+3] ^ byte(ks>>24)
+	}
+	if n < length {
+		c.stream = c.keystream128()
+		for i := (length - n); i < length; i++ {
+			dst[i] = src[i] ^ byte(c.stream>>(c.off*8))
+			c.off++
+		}
+	}
+}
+
 // New256 returns a new cipher.Stream implementing the
 // HC-256 cipher. The key and nonce argument must be
 // 256 bit (32 byte).
@@ -77,4 +117,44 @@ func New256(key, nonce []byte) (cipher.Stream, error) {
 	c.initialize(key, nonce)
 
 	return c, nil
+}
+
+func (c *hc256) XORKeyStream(dst, src []byte) {
+	length := len(src)
+	if len(dst) < length {
+		panic("dst buffer to small")
+	}
+	if c.off > 0 {
+		left := int(4 - c.off)
+		if left > length {
+			left = length
+		}
+		for i := 0; i < left; i++ {
+			dst[i] = src[i] ^ byte(c.stream>>(c.off*8))
+			c.off++
+		}
+		src = src[left:]
+		dst = dst[left:]
+		length -= left
+		c.off += uint(left)
+		if c.off == 4 {
+			c.off = 0
+		}
+	}
+	var ks uint32
+	n := length - (length % 4)
+	for i := 0; i < n; i += 4 {
+		ks = c.keystream256()
+		dst[i] = src[i] ^ byte(ks)
+		dst[i+1] = src[i+1] ^ byte(ks>>8)
+		dst[i+2] = src[i+2] ^ byte(ks>>16)
+		dst[i+3] = src[i+3] ^ byte(ks>>24)
+	}
+	if n < length {
+		c.stream = c.keystream256()
+		for i := (length - n); i < length; i++ {
+			dst[i] = src[i] ^ byte(c.stream>>(c.off*8))
+			c.off++
+		}
+	}
 }

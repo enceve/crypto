@@ -1,13 +1,13 @@
 // Use of this source code is governed by a license
 // that can be found in the LICENSE file.
 
-package ecdh
-
 // The ecdh package implements the Diffie-Hellman key
 // exchange with elliptic curves. This implementation
 // can be used with generic elliptic curves provided
 // by the crypto.elliptic package or with D. J.
 // Bernsteins Curve25519.
+package ecdh
+
 import (
 	"crypto/elliptic"
 	"io"

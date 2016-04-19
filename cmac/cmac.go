@@ -73,7 +73,7 @@ func Verify(mac, msg []byte, c cipher.Block) bool {
 // (see package doc), a non-nil error is returned.
 func New(c cipher.Block) (hash.Hash, error) {
 	if c == nil {
-		return nil, errors.New("nil is invalid")
+		return nil, errors.New("the cipher.Block must not be nil")
 	}
 	bs := c.BlockSize()
 

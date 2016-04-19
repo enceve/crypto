@@ -42,38 +42,6 @@ func (c *hc128) initialize(key, nonce []byte) {
 	c.ctr = 0
 }
 
-func (c *hc128) XORKeyStream(dst, src []byte) {
-	n := len(src)
-	if len(dst) < n {
-		panic("dst buffer to small")
-	}
-	dOff, sOff := 0, 0
-	for n > 0 && c.off < 4 {
-		dst[dOff] = src[sOff] ^ byte(c.stream>>(c.off*8))
-		dOff, sOff, c.off = dOff+1, sOff+1, c.off+1
-		n--
-	}
-	for n >= 4 {
-		k := c.keystream128()
-		dst[dOff] = src[sOff] ^ byte(k)
-		dst[dOff+1] = src[sOff+1] ^ byte(k>>8)
-		dst[dOff+2] = src[sOff+2] ^ byte(k>>16)
-		dst[dOff+3] = src[sOff+3] ^ byte(k>>24)
-
-		dOff, sOff = dOff+4, sOff+4
-		n -= 4
-	}
-	if n > 0 {
-		c.stream = c.keystream128()
-		c.off = 0
-		for n > 0 && c.off < 4 {
-			dst[dOff] = src[sOff] ^ byte(c.stream>>(c.off*8))
-			dOff, sOff, c.off = dOff+1, sOff+1, c.off+1
-			n--
-		}
-	}
-}
-
 // The keystream generation function for HC128
 // Compare 2.3 at http://www.ecrypt.eu.org/stream/p3ciphers/hc/hc128_p3.pdf
 // The functions g1, g2, h1 and h2 are rolled out for optimisation
