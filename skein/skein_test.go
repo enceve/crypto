@@ -182,9 +182,11 @@ func TestSum(t *testing.T) {
 			if p.HashSize == Size512 || p.HashSize == Size256 {
 				var sum []byte
 				if p.HashSize == Size256 {
-					sum = Sum256(in)
+					t := Sum256(in)
+					sum = t[:]
 				} else {
-					sum = Sum512(in)
+					t := Sum512(in)
+					sum = t[:]
 				}
 
 				if len(sum) != len(ref) {
@@ -197,6 +199,33 @@ func TestSum(t *testing.T) {
 				}
 			}
 		}
+	}
+}
+
+func TestWrite(t *testing.T) {
+	bs := 32
+	for i := 0; i < 3; i++ {
+		h, err := New(&Params{BlockSize: bs})
+		if err != nil {
+			t.Fatalf("Iteratoiin %d: Failed to create instance of skine - Cause: %s", i, err)
+		}
+		n, err := h.Write(nil)
+		if n != 0 || err != nil {
+			t.Fatalf("Iteratoiin %d: Failed to process nil slice: Processed bytes: %d - Returned error: %s", i, n, err)
+		}
+		n, err = h.Write(make([]byte, h.Size()))
+		if n != h.Size() || err != nil {
+			t.Fatalf("Iteratoiin %d: Failed to process 0-slice with length %d: Processed bytes: %d - Returned error: %s", i, h.Size(), n, err)
+		}
+		n, err = h.Write(make([]byte, h.BlockSize()))
+		if n != h.BlockSize() || err != nil {
+			t.Fatalf("Iteratoiin %d: Failed to process 0-slice with length %d: Processed bytes: %d - Returned error: %s", i, h.BlockSize(), n, err)
+		}
+		n, err = h.Write(make([]byte, 211)) // 211 = (2*3*5*7)+1 is prime
+		if n != 211 || err != nil {
+			t.Fatalf("Iteratoiin %d: Failed to process 0-slice with length %d: Processed bytes: %d - Returned error: %s", i, 211, n, err)
+		}
+		bs *= 2
 	}
 }
 

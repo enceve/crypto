@@ -9,8 +9,10 @@ const (
 )
 
 const (
-	keySize  = 32 // The max. key size in bytes.
-	saltSize = 8  // The max. salt size in bytes.
+	keySize          = 32         // The max. key size in bytes.
+	saltSize         = 8          // The max. salt size in bytes.
+	msgBlock  uint32 = 0          // The block flag for message blocks
+	lastBlock uint32 = 0xffffffff // The last block flag
 )
 
 // the blake2s iv constants

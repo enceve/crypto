@@ -19,7 +19,6 @@ import (
 type blake2s struct {
 	hVal [8]uint32       // the chain values
 	ctr  [2]uint32       // the counter (max 2^64 bytes)
-	f    uint32          // the final block flag
 	buf  [BlockSize]byte // the buffer
 	off  int             // the buffer offset
 
@@ -111,7 +110,7 @@ func (h *blake2s) Write(p []byte) (int, error) {
 		diff := BlockSize - h.off
 		h.off += copy(h.buf[h.off:], p[:diff])
 		if n > diff {
-			update(&(h.hVal), &(h.ctr), h.f, h.buf[:])
+			update(&(h.hVal), &(h.ctr), msgBlock, h.buf[:])
 			h.off = 0
 			p = p[diff:]
 		}
@@ -120,7 +119,7 @@ func (h *blake2s) Write(p []byte) (int, error) {
 	// process full blocks except for the last
 	nn := len(p) & (^(BlockSize - 1))
 	if len(p)-nn > 0 {
-		update(&(h.hVal), &(h.ctr), h.f, p[:nn])
+		update(&(h.hVal), &(h.ctr), msgBlock, p[:nn])
 		p = p[nn:]
 	}
 	h.off += copy(h.buf[h.off:], p)
@@ -130,7 +129,6 @@ func (h *blake2s) Write(p []byte) (int, error) {
 func (h *blake2s) Reset() {
 	h.hVal = h.initVal
 	h.ctr[0], h.ctr[1] = 0, 0
-	h.f = 0
 	for i := range h.buf {
 		h.buf[i] = 0
 	}
@@ -161,11 +159,9 @@ func (h *blake2s) finalize(out *[Size]byte) {
 	for i := h.off; i < BlockSize; i++ {
 		h.buf[i] = 0
 	}
-	// set the last block flag
-	h.f = uint32(0xffffffff)
 
 	// process last block
-	update(&(h.hVal), &(h.ctr), h.f, h.buf[:])
+	update(&(h.hVal), &(h.ctr), lastBlock, h.buf[:])
 
 	// extract hash
 	j := 0

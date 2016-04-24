@@ -20,7 +20,6 @@ import (
 type blake2b struct {
 	hVal [8]uint64       // the chain values
 	ctr  [2]uint64       // the counter (max 2^128 bytes)
-	f    uint64          // the final block flag
 	buf  [BlockSize]byte // the buffer
 	off  int             // the buffer offset
 
@@ -59,19 +58,23 @@ var (
 )
 
 // Sum512 returns the 512 bit blake2b checksum of the msg.
-func Sum512(msg []byte) []byte {
+func Sum512(msg []byte) [64]byte {
 	h := new(blake2b)
 	h.initialize(params512)
 	h.Write(msg)
-	return h.Sum(nil)
+	var out [64]byte
+	h.Sum(out[:0])
+	return out
 }
 
 // Sum256 returns the 256 bit blake2b checksum of the msg.
-func Sum256(msg []byte) []byte {
+func Sum256(msg []byte) [32]byte {
 	h := new(blake2b)
 	h.initialize(params256)
 	h.Write(msg)
-	return h.Sum(nil)
+	var out [32]byte
+	h.Sum(out[:0])
+	return out
 }
 
 // Sum returns the blake2b checksum of the msg.
@@ -112,7 +115,7 @@ func (h *blake2b) Write(p []byte) (int, error) {
 		diff := BlockSize - h.off
 		h.off += copy(h.buf[h.off:], p[:diff])
 		if n > diff {
-			update(&(h.hVal), &(h.ctr), h.f, h.buf[:])
+			update(&(h.hVal), &(h.ctr), msgBlock, h.buf[:])
 			h.off = 0
 			p = p[diff:]
 		}
@@ -121,7 +124,7 @@ func (h *blake2b) Write(p []byte) (int, error) {
 	// process full blocks except for the last
 	nn := len(p) & (^(BlockSize - 1))
 	if len(p)-nn > 0 {
-		update(&(h.hVal), &(h.ctr), h.f, p[:nn])
+		update(&(h.hVal), &(h.ctr), msgBlock, p[:nn])
 		p = p[nn:]
 	}
 	h.off += copy(h.buf[h.off:], p)
@@ -131,7 +134,6 @@ func (h *blake2b) Write(p []byte) (int, error) {
 func (h *blake2b) Reset() {
 	h.hVal = h.initVal
 	h.ctr[0], h.ctr[1] = 0, 0
-	h.f = 0
 	for i := range h.buf {
 		h.buf[i] = 0
 	}
@@ -162,11 +164,9 @@ func (h *blake2b) finalize(out *[Size]byte) {
 	for i := h.off; i < BlockSize; i++ {
 		h.buf[i] = 0
 	}
-	// set the last block flag
-	h.f = uint64(0xffffffffffffffff)
 
 	// process last block
-	update(&(h.hVal), &(h.ctr), h.f, h.buf[:])
+	update(&(h.hVal), &(h.ctr), lastBlock, h.buf[:])
 
 	// extract hash
 	j := 0

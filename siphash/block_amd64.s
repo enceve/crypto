@@ -18,15 +18,15 @@
     XORQ v2, v1; \
     RORQ $32, v2
 
-// blocks(h *hashc2c4, data []uint8)
+// blocks(h *hashc2c4, p []uint8)
 TEXT ·blocks(SB),4,$0-32
-    MOVQ d+0(FP), BX
+    MOVQ h+0(FP), BX
     MOVQ 0(BX), R9		        // R9 = v0
     MOVQ 8(BX), R10		        // R10 = v1
     MOVQ 16(BX), R11	        // R11 = v2
     MOVQ 24(BX), R12	        // R12 = v3
-    MOVQ data+8(FP), DI	        // DI = *uint64
-    MOVQ data_len+16(FP), SI    // SI = nblocks
+    MOVQ p+8(FP), DI	        // DI = *uint64
+    MOVQ p_len+16(FP), SI	    // SI = nblocks
     XORL DX, DX		            // DX = index (0)
     SHRQ $3, SI 		        // SI /= 8
 body:
@@ -48,7 +48,7 @@ end:
 
 // flush(h *hashc2c4)
 TEXT ·flush(SB),4,$0-8
-    MOVQ d+0(FP), BX
+    MOVQ h+0(FP), BX
     MOVQ 0(BX), R9		// R9 = v0
     MOVQ 8(BX), R10		// R10 = v1
     MOVQ 16(BX), R11	// R11 = v2
@@ -66,7 +66,7 @@ TEXT ·flush(SB),4,$0-8
 
 // finalize(h *hashc2c4) uint64
 TEXT ·finalize(SB),4,$0-16
-    MOVQ d+0(FP), BX
+    MOVQ h+0(FP), BX
     MOVQ 0(BX), R9		// R9 = v0
     MOVQ 8(BX), R10		// R10 = v1
     MOVQ 16(BX), R11	// R11 = v2

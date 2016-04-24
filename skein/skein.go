@@ -100,17 +100,31 @@ type Params struct {
 }
 
 // Sum256 computes the Skein-512 256 bit (32 byte) checksum of the msg.
-func Sum256(msg []byte) []byte {
+func Sum256(msg []byte) [32]byte {
 	s := New512(Size256)
 	s.Write(msg)
-	return s.Sum(nil)
+	var out [32]byte
+	s.Sum(out[:0])
+	return out
 }
 
 // Sum512 computes the Skein-512 512 bit (64 byte) checksum of the msg.
-func Sum512(msg []byte) []byte {
+func Sum512(msg []byte) [64]byte {
 	s := New512(Size512)
 	s.Write(msg)
-	return s.Sum(nil)
+	var out [64]byte
+	s.Sum(out[:0])
+	return out
+}
+
+// Sum computes the Skein checksum of the msg.
+func Sum(msg []byte, p *Params) ([]byte, error) {
+	s, err := New(p)
+	if err != nil {
+		return nil, err
+	}
+	s.Write(msg)
+	return s.Sum(nil), nil
 }
 
 // New returns a hash.Hash computing the Skein checksum.
