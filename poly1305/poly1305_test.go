@@ -12,6 +12,18 @@ type testVector struct {
 	key, msg, tag string
 }
 
+func bytesEqual(a, b []byte) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i, v := range a {
+		if b[i] != v {
+			return false
+		}
+	}
+	return true
+}
+
 var vectors = []testVector{
 	testVector{
 		key: "85d6be7857556d337f4452fe42d506a80103808afb0db2fd4abff6af4149f51b",
@@ -84,6 +96,95 @@ func TestVerify(t *testing.T) {
 		if !Verify(&sum, msg, &k) {
 			t.Fatalf("Test vector %d : Poly1305 Verification failed", i)
 		}
+	}
+}
+
+func TestBlockSize(t *testing.T) {
+	h, err := New(make([]byte, 32))
+	if err != nil {
+		t.Fatalf("Could not create Poly1305 instance: %s", err)
+	}
+	if bs := h.BlockSize(); bs != TagSize || bs != 16 {
+		t.Fatalf("BlockSize() returned: %d - but expected: %d", bs, 16)
+	}
+}
+
+func TestSize(t *testing.T) {
+	h, err := New(make([]byte, 32))
+	if err != nil {
+		t.Fatalf("Could not create Poly1305 instance: %s", err)
+	}
+	if s := h.Size(); s != TagSize || s != 16 {
+		t.Fatalf("Size() returned: %d - but expected: %d", s, 16)
+	}
+}
+
+func TestWrite(t *testing.T) {
+	h, err := New(make([]byte, 32))
+	if err != nil {
+		t.Fatalf("Failed to create instance of Poly1305 - Cause: %s", err)
+	}
+	n, err := h.Write(nil)
+	if n != 0 || err != nil {
+		t.Fatalf("Failed to process nil slice: Processed bytes: %d - Returned error: %s", n, err)
+	}
+	n, err = h.Write(make([]byte, h.Size()))
+	if n != h.Size() || err != nil {
+		t.Fatalf("Failed to process 0-slice with length %d: Processed bytes: %d - Returned error: %s", h.Size(), n, err)
+	}
+	n, err = h.Write(make([]byte, h.BlockSize()))
+	if n != h.BlockSize() || err != nil {
+		t.Fatalf("Failed to process 0-slice with length %d: Processed bytes: %d - Returned error: %s", h.BlockSize(), n, err)
+	}
+	n, err = h.Write(make([]byte, 211)) // 211 = (2*3*5*7)+1 is prime
+	if n != 211 || err != nil {
+		t.Fatalf("Failed to process 0-slice with length %d: Processed bytes: %d - Returned error: %s", 211, n, err)
+	}
+}
+
+func TestNew(t *testing.T) {
+	_, err := New(make([]byte, 32))
+	if err != nil {
+		t.Fatalf("Failed to create Poly1305 instance: %s", err)
+	}
+
+	_, err = New(nil)
+	if err == nil {
+		t.Fatal("Accepted invalid nil argument for key")
+	}
+
+	_, err = New(make([]byte, TagSize))
+	if err == nil {
+		t.Fatalf("Accepted invalid key argument with len: %d", TagSize)
+	}
+
+	_, err = New(make([]byte, 33))
+	if err == nil {
+		t.Fatalf("Accepted invalid key argument with len: %d", 33)
+	}
+}
+
+// Tests the Sum(b []byte) function declared within
+// the hash.Hash interface.
+func TestSum(t *testing.T) {
+	h, err := New(make([]byte, 32))
+	if err != nil {
+		t.Fatalf("Failed to create Poly130 instance: %s", err)
+	}
+	var one = [1]byte{1}
+
+	h.Sum(nil)
+	h.Write(make([]byte, TagSize))
+	h.Write(one[:])
+
+	sum1 := h.Sum(nil)
+
+	var key [32]byte
+	var sum2 [16]byte
+	Sum(&sum2, append(make([]byte, TagSize), one[:]...), &key)
+
+	if !bytesEqual(sum1, sum2[:]) {
+		t.Fatalf("Hash does not match:\nFound:    %s\nExpected: %s", hex.EncodeToString(sum1), hex.EncodeToString(sum2[:]))
 	}
 }
 

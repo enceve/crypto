@@ -4,6 +4,7 @@
 package serpent
 
 import (
+	"crypto/rand"
 	"encoding/hex"
 	"testing"
 )
@@ -157,6 +158,18 @@ type testVector struct {
 	key, plaintext, ciphertext string
 }
 
+func bytesEqual(a, b []byte) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i, v := range a {
+		if b[i] != v {
+			return false
+		}
+	}
+	return true
+}
+
 // Test vectors for serpent
 var vectors = []testVector{
 	// test vectors for 128 bit key from
@@ -220,24 +233,84 @@ func TestSerpent(t *testing.T) {
 		buf := make([]byte, BlockSize)
 
 		c.Encrypt(buf, plaintext)
-		for j := range buf {
-			if ciphertext[j] != buf[j] {
-				t.Fatalf("Test vector %d:\nEncryption failed\nFound:    %s\nExpected: %s", i, hex.EncodeToString(buf), hex.EncodeToString(ciphertext))
-			}
+		if !bytesEqual(ciphertext, buf) {
+			t.Fatalf("Test vector %d:\nEncryption failed\nFound:    %s\nExpected: %s", i, hex.EncodeToString(buf), hex.EncodeToString(ciphertext))
 		}
 		c.Decrypt(buf, buf)
-		for j := range buf {
-			if plaintext[j] != buf[j] {
-				t.Fatalf("Test vector %d:\nFound:    %s\nExpected: %s", i, hex.EncodeToString(buf), hex.EncodeToString(plaintext))
-			}
+		if !bytesEqual(plaintext, buf) {
+			t.Fatalf("Test vector %d:\nDecryption failed\nFound:    %s\nExpected: %s", i, hex.EncodeToString(buf), hex.EncodeToString(plaintext))
 		}
+	}
+}
+
+func TestEncryptDecrypt(t *testing.T) {
+	dst, src := make([]byte, BlockSize), make([]byte, BlockSize)
+	dstCp, srcCp := make([]byte, BlockSize), make([]byte, BlockSize)
+
+	_, err := rand.Read(src)
+	if err != nil {
+		t.Fatalf("Failed to read from random source: %s", err)
+	}
+	copy(srcCp, src)
+	_, err = rand.Read(dst)
+	if err != nil {
+		t.Fatalf("Failed to read from random source: %s", err)
+	}
+	copy(dstCp, dst)
+
+	// 128 bit key
+	key := make([]byte, 16)
+	_, err = rand.Read(key)
+	if err != nil {
+		t.Fatalf("Failed to read from random source: %s", err)
+	}
+	c, err := New(key)
+	if err != nil {
+		t.Fatalf("Failed to create Serpent instance: %s", err)
+	}
+	c.Encrypt(dst, src)
+	c.Decrypt(src, dst)
+	if !bytesEqual(src, srcCp) {
+		t.Fatalf("En/Decryption of dst to src failed\nKey: %v\nSrc:  %v\nDst: %v", key, srcCp, dst)
+	}
+
+	// 192 bit key
+	key = make([]byte, 24)
+	_, err = rand.Read(key)
+	if err != nil {
+		t.Fatalf("Failed to read from random source: %s", err)
+	}
+	c, err = New(key)
+	if err != nil {
+		t.Fatalf("Failed to create Serpent instance: %s", err)
+	}
+	c.Encrypt(dst, src)
+	c.Decrypt(src, dst)
+	if !bytesEqual(src, srcCp) {
+		t.Fatalf("En/Decryption of dst to src failed\nKey: %v\nSrc:  %v\nDst: %v", key, srcCp, dst)
+	}
+
+	// 256 bit key
+	key = make([]byte, 32)
+	_, err = rand.Read(key)
+	if err != nil {
+		t.Fatalf("Failed to read from random source: %s", err)
+	}
+	c, err = New(key)
+	if err != nil {
+		t.Fatalf("Failed to create Serpent instance: %s", err)
+	}
+	c.Encrypt(dst, src)
+	c.Decrypt(src, dst)
+	if !bytesEqual(src, srcCp) {
+		t.Fatalf("En/Decryption of dst to src failed\nKey: %v\nSrc:  %v\nDst: %v", key, srcCp, dst)
 	}
 }
 
 func BenchmarkEncrypt(b *testing.B) {
 	c, err := New(make([]byte, 16))
 	if err != nil {
-		b.Fatalf("Failed to create cipher instance - Cause: %s", err)
+		b.Fatalf("Failed to create Serpent instance - Cause: %s", err)
 	}
 	buf := make([]byte, c.BlockSize())
 	b.ResetTimer()
@@ -249,7 +322,7 @@ func BenchmarkEncrypt(b *testing.B) {
 func BenchmarkDecrypt(b *testing.B) {
 	c, err := New(make([]byte, 16))
 	if err != nil {
-		b.Fatalf("Failed to create cipher instance - Cause: %s", err)
+		b.Fatalf("Failed to create Serpent instance - Cause: %s", err)
 	}
 	buf := make([]byte, c.BlockSize())
 	b.ResetTimer()

@@ -4,7 +4,7 @@
 package threefish
 
 import (
-	"bytes"
+	"crypto/rand"
 	"encoding/hex"
 	"testing"
 )
@@ -31,6 +31,18 @@ func convertVector(i int, v *testVector, t *testing.T) ([]byte, []byte, []byte, 
 
 type testVector struct {
 	key, tweak, plaintext, ciphertext string
+}
+
+func bytesEqual(a, b []byte) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i, v := range a {
+		if b[i] != v {
+			return false
+		}
+	}
+	return true
 }
 
 // Test vectors from:
@@ -120,12 +132,12 @@ func TestVectros256(t *testing.T) {
 		dst := make([]byte, blockSize256)
 
 		c.Encrypt(dst, plaintext)
-		if !bytes.Equal(ciphertext, dst) {
+		if !bytesEqual(ciphertext, dst) {
 			t.Fatalf("Test vector %d : Encryption failed\nFound:    %v \nExpected: %v", i, dst, ciphertext)
 		}
 
 		c.Decrypt(dst, dst)
-		if !bytes.Equal(plaintext, dst) {
+		if !bytesEqual(plaintext, dst) {
 			t.Fatalf("Test vector %d:Decryption failed\nFound: %v \nExpected: %v", i, dst, plaintext)
 		}
 	}
@@ -143,12 +155,12 @@ func TestVectros512(t *testing.T) {
 		dst := make([]byte, blockSize512)
 
 		c.Encrypt(dst, plaintext)
-		if !bytes.Equal(ciphertext, dst) {
+		if !bytesEqual(ciphertext, dst) {
 			t.Fatalf("Test vector %d : Encryption failed\nFound:    %v \nExpected: %v", i, dst, ciphertext)
 		}
 
 		c.Decrypt(dst, dst)
-		if !bytes.Equal(plaintext, dst) {
+		if !bytesEqual(plaintext, dst) {
 			t.Fatalf("Test vector %d:Decryption failed\nFound: %v \nExpected: %v", i, dst, plaintext)
 		}
 	}
@@ -166,14 +178,108 @@ func TestVectros1024(t *testing.T) {
 		dst := make([]byte, blockSize1024)
 
 		c.Encrypt(dst, plaintext)
-		if !bytes.Equal(ciphertext, dst) {
+		if !bytesEqual(ciphertext, dst) {
 			t.Fatalf("Test vector %d : Encryption failed\nFound:    %v \nExpected: %v", i, dst, ciphertext)
 		}
 
 		c.Decrypt(dst, dst)
-		if !bytes.Equal(plaintext, dst) {
+		if !bytesEqual(plaintext, dst) {
 			t.Fatalf("Test vector %d:Decryption failed\nFound: %v \nExpected: %v", i, dst, plaintext)
 		}
+	}
+}
+
+func TestEncryptDecrypt(t *testing.T) {
+	tweak := make([]byte, TweakSize)
+
+	dst, src := make([]byte, blockSize256), make([]byte, blockSize256)
+	dstCp, srcCp := make([]byte, blockSize256), make([]byte, blockSize256)
+
+	_, err := rand.Read(src)
+	if err != nil {
+		t.Fatalf("Failed to read from random source: %s", err)
+	}
+	copy(srcCp, src)
+	_, err = rand.Read(dst)
+	if err != nil {
+		t.Fatalf("Failed to read from random source: %s", err)
+	}
+	copy(dstCp, dst)
+
+	// 256 bit key
+	key := make([]byte, 32)
+	_, err = rand.Read(key)
+	if err != nil {
+		t.Fatalf("Failed to read from random source: %s", err)
+	}
+	c, err := New256(key, tweak)
+	if err != nil {
+		t.Fatalf("Failed to create Threefish256 instance: %s", err)
+	}
+	c.Encrypt(dst, src)
+	c.Decrypt(src, dst)
+	if !bytesEqual(src, srcCp) {
+		t.Fatalf("Threefish256: En/Decryption of dst to src failed\nKey: %v\nSrc:  %v\nDst: %v", key, srcCp, dst)
+	}
+
+	dst, src = make([]byte, blockSize512), make([]byte, blockSize512)
+	dstCp, srcCp = make([]byte, blockSize512), make([]byte, blockSize512)
+
+	_, err = rand.Read(src)
+	if err != nil {
+		t.Fatalf("Failed to read from random source: %s", err)
+	}
+	copy(srcCp, src)
+	_, err = rand.Read(dst)
+	if err != nil {
+		t.Fatalf("Failed to read from random source: %s", err)
+	}
+	copy(dstCp, dst)
+
+	// 512 bit key
+	key = make([]byte, 64)
+	_, err = rand.Read(key)
+	if err != nil {
+		t.Fatalf("Failed to read from random source: %s", err)
+	}
+	c, err = New512(key, tweak)
+	if err != nil {
+		t.Fatalf("Failed to create Threefish512 instance: %s", err)
+	}
+	c.Encrypt(dst, src)
+	c.Decrypt(src, dst)
+	if !bytesEqual(src, srcCp) {
+		t.Fatalf("En/Decryption of dst to src failed\nKey: %v\nSrc:  %v\nDst: %v", key, srcCp, dst)
+	}
+
+	dst, src = make([]byte, blockSize1024), make([]byte, blockSize1024)
+	dstCp, srcCp = make([]byte, blockSize1024), make([]byte, blockSize1024)
+
+	_, err = rand.Read(src)
+	if err != nil {
+		t.Fatalf("Failed to read from random source: %s", err)
+	}
+	copy(srcCp, src)
+	_, err = rand.Read(dst)
+	if err != nil {
+		t.Fatalf("Failed to read from random source: %s", err)
+	}
+	copy(dstCp, dst)
+
+	// 1024 bit key
+	key = make([]byte, 128)
+	_, err = rand.Read(key)
+	if err != nil {
+		t.Fatalf("Failed to read from random source: %s", err)
+	}
+	c, err = New1024(key, tweak)
+	if err != nil {
+		t.Fatalf("Failed to create Threefish1024 instance: %s", err)
+	}
+	c.Encrypt(dst, src)
+	c.Decrypt(src, dst)
+	if !bytesEqual(src, srcCp) {
+		t.Fatalf("En/Decryption of dst to src failed\nKey: %v\nSrc:  %v\nDst: %v", key, srcCp, dst)
 	}
 }
 
