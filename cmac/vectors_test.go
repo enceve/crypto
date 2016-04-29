@@ -36,6 +36,7 @@ var aesVectors = []testVector{
 			"30c81c46a35ce411",
 		hash: "dfa66747de9ae63030ca32611497c827",
 	},
+
 	// AES-256 vectors
 	testVector{
 		key: "603deb1015ca71be2b73aef0857d7781" +
@@ -59,32 +60,32 @@ var aesVectors = []testVector{
 	},
 }
 
-func TestCMac(t *testing.T) {
+func TestVectors(t *testing.T) {
 	for i, v := range aesVectors {
 		key, err := hex.DecodeString(v.key)
 		if err != nil {
-			t.Fatalf("Test vector %d: Failed to decode hex key - Caused by %s", i, err)
+			t.Fatalf("Test vector %d: Failed to decode hex key: %s", i, err)
 		}
 		msg, err := hex.DecodeString(v.msg)
 		if err != nil {
-			t.Fatalf("Test vector %d: Failed to decode hex msg - Caused by %s", i, err)
+			t.Fatalf("Test vector %d: Failed to decode hex msg: %s", i, err)
 		}
 		hash, err := hex.DecodeString(v.hash)
 		if err != nil {
-			t.Fatalf("Test vector %d: Failed to decode hex hash - Caused by %s", i, err)
+			t.Fatalf("Test vector %d: Failed to decode hex hash: %s", i, err)
 		}
 
 		c, err := aes.NewCipher(key)
 		if err != nil {
-			t.Fatalf("Test vector %d: Failed to create AES instance - Cause: %s", i, err)
+			t.Fatalf("Test vector %d: Failed to create AES instance: %s", i, err)
 		}
 		h, err := New(c)
 		if err != nil {
-			t.Fatalf("Test vector %d: Failed to create CMac instance - Cause: %s", i, err)
+			t.Fatalf("Test vector %d: Failed to create CMac instance: %s", i, err)
 		}
 		_, err = h.Write(msg)
 		if err != nil {
-			t.Fatalf("Test vector %d: CMac write failed - Cause: %s", i, err)
+			t.Fatalf("Test vector %d: CMac write failed: %s", i, err)
 		}
 		sum := h.Sum(nil)
 		if !bytes.Equal(sum, hash) {
@@ -93,49 +94,5 @@ func TestCMac(t *testing.T) {
 		if !Verify(hash, msg, c) {
 			t.Fatalf("Test vector %d: verification of MAC failed", i)
 		}
-	}
-}
-
-func BenchmarkWrite(b *testing.B) {
-	c, err := aes.NewCipher(make([]byte, 16))
-	if err != nil {
-		b.Fatalf("Failed to create AES instance - Cause: %s", err)
-	}
-	h, err := New(c)
-	if err != nil {
-		b.Fatalf("Failed to create CMac instance - Cause: %s", err)
-	}
-	buf := make([]byte, aes.BlockSize)
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		h.Write(buf)
-	}
-}
-
-func BenchmarkSum(b *testing.B) {
-	c, err := aes.NewCipher(make([]byte, 16))
-	if err != nil {
-		b.Fatalf("Failed to create AES instance - Cause: %s", err)
-	}
-	msg := make([]byte, aes.BlockSize)
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		Sum(msg, c)
-	}
-}
-
-func BenchmarkVerify(b *testing.B) {
-	c, err := aes.NewCipher(make([]byte, 16))
-	if err != nil {
-		b.Fatalf("Failed to create AES instance - Cause: %s", err)
-	}
-	msg := make([]byte, aes.BlockSize)
-	hash, err := Sum(msg, c)
-	if err != nil {
-		b.Fatalf("Failed to calculate checksum - Cause: %s", err)
-	}
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		Verify(hash, msg, c)
 	}
 }
