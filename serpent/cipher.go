@@ -19,31 +19,26 @@ const (
 	phi       = 0x9e3779b9 // The Serpent phi constant (sqrt(5) - 1) * 2**31
 )
 
-// A serpent struct holds an array of 132 32 bit values.
+// A serpentCipher struct holds an array of 132 32 bit values.
 // These are the sub-keys created by the keySchedule function
-type serpent struct {
+type serpentCipher struct {
 	sk [132]uint32
 }
 
-// New returns a new cipher.Block implementing the serpent cipher.
+// New returns a new cipher.Block implementing the serpent block cipher.
 // The key argument must be 128, 192 or 256 bit (16, 24, 32 byte).
 func New(key []byte) (cipher.Block, error) {
-	n := len(key)
-	switch n {
-	default:
-		return nil, crypto.KeySizeError(n)
-	case 16, 24, 32:
-		break
+	if k := len(key); k != 16 && k != 24 && k != 32 {
+		return nil, crypto.KeySizeError(k)
 	}
-
-	s := &serpent{}
+	s := &serpentCipher{}
 	keySchedule(key, &s.sk)
 	return s, nil
 }
 
-func (s *serpent) BlockSize() int { return BlockSize }
+func (s *serpentCipher) BlockSize() int { return BlockSize }
 
-func (s *serpent) Encrypt(dst, src []byte) {
+func (s *serpentCipher) Encrypt(dst, src []byte) {
 	if len(src) < BlockSize {
 		panic("src buffer to small")
 	}
@@ -53,7 +48,7 @@ func (s *serpent) Encrypt(dst, src []byte) {
 	encryptBlock(dst, src, &s.sk)
 }
 
-func (s *serpent) Decrypt(dst, src []byte) {
+func (s *serpentCipher) Decrypt(dst, src []byte) {
 	if len(src) < BlockSize {
 		panic("src buffer to small")
 	}

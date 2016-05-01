@@ -4,19 +4,17 @@
 package hc
 
 import (
+	"bytes"
 	"encoding/hex"
 	"testing"
 )
 
-// A test vector consisting of the key,the initialization vector (nonce),
-// and the reference keystream.
 type testVector struct {
 	key, nonce, keystream string
 }
 
 // Test vectors are from the HC128 description by Hongjun Wu
 // http://www.ecrypt.eu.org/stream/p3ciphers/hc/hc128_p3.pdf
-
 // The byte order was changed following:
 // e.g.: 0x73150082 -> 0x82001573
 var vectors128 = []testVector{
@@ -38,39 +36,36 @@ var vectors128 = []testVector{
 }
 
 // Test all test vectors for the HC128 cipher
-func Test128(t *testing.T) {
+func TestVectors128(t *testing.T) {
 	for i, v := range vectors128 {
 		key, err := hex.DecodeString(v.key)
 		if err != nil {
-			t.Fatalf("Test vector %d: Failed to decode hex key - Cause: %s", i, err)
+			t.Fatalf("Test vector %d: Failed to decode hex key: %s", i, err)
 		}
 		nonce, err := hex.DecodeString(v.nonce)
 		if err != nil {
-			t.Fatalf("Test vector %d: Failed to decode hex nonce - Cause: %s", i, err)
+			t.Fatalf("Test vector %d: Failed to decode hex nonce: %s", i, err)
 		}
 		keystream, err := hex.DecodeString(v.keystream)
 		if err != nil {
-			t.Fatalf("Test vector %d: Failed to decode hex keystream - Cause: %s", i, err)
+			t.Fatalf("Test vector %d: Failed to decode hex keystream: %s", i, err)
 		}
 		c, err := New128(key, nonce)
 		if err != nil {
-			t.Fatalf("Test vector %d: Failed to create cipher instance - Cause: %s", i, err)
+			t.Fatalf("Test vector %d: Failed to create HC-128 instance: %s", i, err)
 		}
 
 		buf := make([]byte, len(keystream))
 
 		c.XORKeyStream(buf, buf)
-		for j, v := range buf {
-			if v != keystream[j] {
-				t.Fatalf("Test vector %d: Unexpected keystream:\nFound:    %v\nExpected: %v", i, hex.EncodeToString(buf), hex.EncodeToString(keystream))
-			}
+		if !bytes.Equal(buf, keystream) {
+			t.Fatalf("Test vector %d: Unexpected keystream:\nFound:    %v\nExpected: %v", i, hex.EncodeToString(buf), hex.EncodeToString(keystream))
 		}
 	}
 }
 
 // Test vectors are from the HC256 description by Hongjun Wu
 // https://eprint.iacr.org/2004/092.pdf
-
 // The byte order was changed following:
 // e.g.: 0x8589075b -> 0x5b078985
 var vectors256 = []testVector{
@@ -92,82 +87,30 @@ var vectors256 = []testVector{
 }
 
 // Test all test vectors for the HC256 cipher
-func Test256(t *testing.T) {
+func TestVectors256(t *testing.T) {
 	for i, v := range vectors256 {
 		key, err := hex.DecodeString(v.key)
 		if err != nil {
-			t.Fatalf("Test vector %d: Failed to decode hex key - Cause: %s", i, err)
+			t.Fatalf("Test vector %d: Failed to decode hex key: %s", i, err)
 		}
 		nonce, err := hex.DecodeString(v.nonce)
 		if err != nil {
-			t.Fatalf("Test vector %d: Failed to decode hex nonce - Cause: %s", i, err)
+			t.Fatalf("Test vector %d: Failed to decode hex nonce: %s", i, err)
 		}
 		keystream, err := hex.DecodeString(v.keystream)
 		if err != nil {
-			t.Fatalf("Test vector %d: Failed to decode hex keystream - Cause: %s", i, err)
+			t.Fatalf("Test vector %d: Failed to decode hex keystream: %s", i, err)
 		}
 		c, err := New256(key, nonce)
 		if err != nil {
-			t.Fatalf("Test vector %d: Failed to create cipher instance - Cause: %s", i, err)
+			t.Fatalf("Test vector %d: Failed to create HC-256 instance: %s", i, err)
 		}
 
 		buf := make([]byte, len(keystream))
 
 		c.XORKeyStream(buf, buf)
-		for j, v := range buf {
-			if v != keystream[j] {
-				t.Fatalf("Test vector %d: Unexpected keystream:\nFound:    %s\nExpected: %s", i, hex.EncodeToString(buf), hex.EncodeToString(keystream))
-			}
+		if !bytes.Equal(buf, keystream) {
+			t.Fatalf("Test vector %d: Unexpected keystream:\nFound:    %s\nExpected: %s", i, hex.EncodeToString(buf), hex.EncodeToString(keystream))
 		}
-	}
-}
-
-func BenchmarkHC128Encrypt(b *testing.B) {
-	key := make([]byte, 16)
-	nonce := make([]byte, 16)
-	c, err := New128(key, nonce)
-	if err != nil {
-		b.Fatalf("Failed to create HC-128 instance - Cause: %s", err)
-	}
-	buf := make([]byte, 16)
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		c.XORKeyStream(buf, buf)
-	}
-}
-
-func BenchmarkHC256Encrypt(b *testing.B) {
-	key := make([]byte, 32)
-	nonce := make([]byte, 32)
-	c, err := New256(key, nonce)
-	if err != nil {
-		b.Fatalf("Failed to create HC-256 instance - Cause: %s", err)
-	}
-	buf := make([]byte, 16)
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		c.XORKeyStream(buf, buf)
-	}
-}
-
-func BenchmarkHC128Setup(b *testing.B) {
-	key := make([]byte, 16)
-	nonce := make([]byte, 16)
-	c := new(hc128)
-
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		c.initialize(key, nonce)
-	}
-}
-
-func BenchmarkHC256Setup(b *testing.B) {
-	key := make([]byte, 32)
-	nonce := make([]byte, 32)
-	c := new(hc256)
-
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		c.initialize(key, nonce)
 	}
 }

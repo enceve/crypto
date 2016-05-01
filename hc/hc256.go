@@ -1,7 +1,85 @@
 // Use of this source code is governed by a license
 // that can be found in the LICENSE file.
 
+// Doc: Look at hc128.go
+
 package hc
+
+import (
+	"crypto/cipher"
+
+	"github.com/EncEve/crypto"
+)
+
+const mod2048 uint32 = 0x7FF
+
+// A hc256 holds the both states P and Q, the counter,
+// 4 byte of the keystream and the offset
+type hc256 struct {
+	p, q        [1024]uint32
+	ctr, stream uint32
+	off         uint
+}
+
+// New256 returns a new cipher.Stream implementing the
+// HC-256 cipher. The key and nonce argument must be
+// 256 bit (32 byte).
+func New256(key, nonce []byte) (cipher.Stream, error) {
+	if k := len(key); k != 32 {
+		return nil, crypto.KeySizeError(k)
+	}
+	if n := len(nonce); n != 32 {
+		return nil, crypto.NonceSizeError(n)
+	}
+	c := &hc256{
+		off:    4,
+		ctr:    0,
+		stream: 0,
+	}
+	c.initialize(key, nonce)
+
+	return c, nil
+}
+
+func (c *hc256) XORKeyStream(dst, src []byte) {
+	length := len(src)
+	if len(dst) < length {
+		panic("dst buffer to small")
+	}
+	if c.off > 0 {
+		left := int(4 - c.off)
+		if left > length {
+			left = length
+		}
+		for i := 0; i < left; i++ {
+			dst[i] = src[i] ^ byte(c.stream>>(c.off*8))
+			c.off++
+		}
+		src = src[left:]
+		dst = dst[left:]
+		length -= left
+		c.off += uint(left)
+		if c.off == 4 {
+			c.off = 0
+		}
+	}
+	var ks uint32
+	n := length - (length % 4)
+	for i := 0; i < n; i += 4 {
+		ks = c.keystream256()
+		dst[i] = src[i] ^ byte(ks)
+		dst[i+1] = src[i+1] ^ byte(ks>>8)
+		dst[i+2] = src[i+2] ^ byte(ks>>16)
+		dst[i+3] = src[i+3] ^ byte(ks>>24)
+	}
+	if n < length {
+		c.stream = c.keystream256()
+		for i := (length - n); i < length; i++ {
+			dst[i] = src[i] ^ byte(c.stream>>(c.off*8))
+			c.off++
+		}
+	}
+}
 
 // key and nonce setup and initialization
 func (c *hc256) initialize(key, nonce []byte) {
