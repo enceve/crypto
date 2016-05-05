@@ -6,6 +6,7 @@ package chacha
 import (
 	"crypto/cipher"
 	"crypto/subtle"
+	"errors"
 
 	"github.com/EncEve/crypto"
 	"github.com/EncEve/crypto/poly1305"
@@ -13,7 +14,8 @@ import (
 
 // The AEAD cipher ChaCha20-Poly1305
 type aeadCipher struct {
-	key [32]byte
+	key     [32]byte
+	tagSize int
 }
 
 // NewAEAD returns a cipher.AEAD implementing the
@@ -21,17 +23,29 @@ type aeadCipher struct {
 // RFC 7539. The key argument must be 256 bit
 // (32 byte).
 func NewAEAD(key []byte) (cipher.AEAD, error) {
+	return NewAEADTagSize(key, 16)
+}
+
+// NewAEADTagSize returns a cipher.AEAD implementing the
+// ChaCha20-Poly1305 construction specified in
+// RFC 7539 with arbitrary tag size. The key argument
+// must be 256 bit (32 byte), and the tagSize must be
+// between 1 and 16.
+func NewAEADTagSize(key []byte, tagSize int) (cipher.AEAD, error) {
 	if k := len(key); k != 32 {
 		return nil, crypto.KeySizeError(k)
 	}
-	c := new(aeadCipher)
+	if tagSize <= 0 || tagSize > 16 {
+		return nil, errors.New("tag size must be between 1 and 16")
+	}
+	c := &aeadCipher{tagSize: tagSize}
 	for i, v := range key {
 		c.key[i] = v
 	}
 	return c, nil
 }
 
-func (c *aeadCipher) Overhead() int { return poly1305.TagSize }
+func (c *aeadCipher) Overhead() int { return c.tagSize }
 
 func (c *aeadCipher) NonceSize() int { return NonceSize }
 
@@ -39,7 +53,7 @@ func (c *aeadCipher) Seal(dst, nonce, plaintext, additionalData []byte) []byte {
 	if n := len(nonce); n != NonceSize {
 		panic(crypto.NonceSizeError(n))
 	}
-	if len(dst) < len(plaintext) {
+	if len(dst) < len(plaintext)+c.tagSize {
 		panic("dst buffer to small")
 	}
 	var Nonce [12]byte
@@ -55,24 +69,24 @@ func (c *aeadCipher) Seal(dst, nonce, plaintext, additionalData []byte) []byte {
 
 	// authenticate the ciphertext
 	tag := authenticate(&polyKey, dst[:n], additionalData)
-	return append(dst[:n], tag...)
+	return append(dst[:n], tag[0:c.tagSize]...)
 }
 
 func (c *aeadCipher) Open(dst, nonce, ciphertext, additionalData []byte) ([]byte, error) {
 	if n := len(nonce); n != NonceSize {
 		return nil, crypto.NonceSizeError(n)
 	}
-	if len(ciphertext) < poly1305.TagSize {
+	if len(ciphertext) < c.tagSize {
 		return nil, crypto.AuthenticationError{}
 	}
-	if len(dst) < len(ciphertext)-poly1305.TagSize {
+	if len(dst) < len(ciphertext)-c.tagSize {
 		panic("dst buffer to small")
 	}
 	var Nonce [12]byte
 	copy(Nonce[:], nonce)
 
-	hash := ciphertext[len(ciphertext)-poly1305.TagSize:]
-	ciphertext = ciphertext[:len(ciphertext)-poly1305.TagSize]
+	hash := ciphertext[len(ciphertext)-c.tagSize:]
+	ciphertext = ciphertext[:len(ciphertext)-c.tagSize]
 
 	// create the poly1305 key
 	var polyKey [32]byte
@@ -80,7 +94,7 @@ func (c *aeadCipher) Open(dst, nonce, ciphertext, additionalData []byte) ([]byte
 
 	// authenticate the ciphertext
 	tag := authenticate(&polyKey, ciphertext, additionalData)
-	if subtle.ConstantTimeCompare(tag, hash) != 1 {
+	if subtle.ConstantTimeCompare(tag[0:c.tagSize], hash[0:c.tagSize]) != 1 {
 		return nil, crypto.AuthenticationError{}
 	}
 
