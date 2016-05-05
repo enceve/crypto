@@ -45,7 +45,7 @@ func (c *aeadCipher) Seal(dst, nonce, plaintext, additionalData []byte) []byte {
 	var Nonce [12]byte
 	copy(Nonce[:], nonce)
 
-	// create the ploy1305 key
+	// create the poly1305 key
 	var polyKey [32]byte
 	XORKeyStream(polyKey[:], polyKey[:], &(c.key), &Nonce, 0)
 
@@ -74,7 +74,7 @@ func (c *aeadCipher) Open(dst, nonce, ciphertext, additionalData []byte) ([]byte
 	hash := ciphertext[len(ciphertext)-poly1305.TagSize:]
 	ciphertext = ciphertext[:len(ciphertext)-poly1305.TagSize]
 
-	// create the ploy1305 key
+	// create the poly1305 key
 	var polyKey [32]byte
 	XORKeyStream(polyKey[:], polyKey[:], &(c.key), &Nonce, 0)
 
