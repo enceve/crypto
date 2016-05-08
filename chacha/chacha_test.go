@@ -67,6 +67,27 @@ var aeadVectors = []aeadTestVector{
 			"1ae10b594f09e26a7e902ecbd0600691", // poly 1305 tag
 	},
 }
+var aeadVectorsTag12 = []aeadTestVector{
+	aeadTestVector{
+		key: "808182838485868788898a8b8c8d8e8f" +
+			"909192939495969798999a9b9c9d9e9f",
+		nonce: "070000004041424344454647",
+		data:  "50515253c0c1c2c3c4c5c6c7",
+		msg: "4c616469657320616e642047656e746c656d656e206f662074686520636c6173" +
+			"73206f66202739393a204966204920636f756c64206f6666657220796f75206f" +
+			"6e6c79206f6e652074697020666f7220746865206675747572652c2073756e73" +
+			"637265656e20776f756c642062652069742e",
+		ciphertext: "d31a8d34648e60db7b86afbc53ef7ec2" +
+			"a4aded51296e08fea9e2b5a736ee62d6" +
+			"3dbea45e8ca9671282fafb69da92728b" +
+			"1a71de0a9e060b2905d6a5b67ecd3b36" +
+			"92ddbd7f2d778b8c9803aee328091b58" +
+			"fab324e4fad675945585808b4831d7bc" +
+			"3ff4def08e4b7a9de576d26586cec64b" +
+			"6116" +
+			"1ae10b594f09e26a7e902ecb", // poly 1305 tag
+	},
+}
 
 func TestChacha20Vectors(t *testing.T) {
 	for i, v := range chachaVectors {
@@ -139,6 +160,61 @@ func TestChacha20Poly1305Vectors(t *testing.T) {
 			t.Fatalf("Test vector %d: Failed to decode hex ciphertext - Cause: %s", i, err)
 		}
 		c, err := NewAEAD(key)
+		if err != nil {
+			t.Fatalf("Test vector %d: %s", i, err)
+		}
+
+		buf := make([]byte, len(ciphertext))
+		c.Seal(buf, nonce, msg, data)
+
+		if len(buf) != len(ciphertext) {
+			t.Fatalf("Test vector %d Seal: length of buf and ciphertext does not match - found %d expected %d", i, len(buf), len(ciphertext))
+		}
+		for j, v := range ciphertext {
+			if v != buf[j] {
+				t.Fatalf("TestVector %d Seal failed:\nFound   : %s\nExpected: %s", i, hex.EncodeToString(buf), hex.EncodeToString(ciphertext))
+			}
+		}
+
+		buf, err = c.Open(buf, nonce, buf, data)
+
+		if err != nil {
+			t.Fatalf("TestVector %d: Open failed - Cause: %s", i, err)
+		}
+		if len(buf) != len(msg) {
+			t.Fatalf("Test vector %d Open: length of buf and msg does not match - found %d expected %d", i, len(buf), len(msg))
+		}
+		for j, v := range msg {
+			if v != buf[j] {
+				t.Fatalf("TestVector %d Open failed:\nFound   : %s\nExpected: %s", i, hex.EncodeToString(buf), hex.EncodeToString(msg))
+			}
+		}
+	}
+}
+
+func TestChacha20Poly1305VectorsTagSize12(t *testing.T) {
+	for i, v := range aeadVectorsTag12 {
+		key, err := hex.DecodeString(v.key)
+		if err != nil {
+			t.Fatalf("Test vector %d: Failed to decode hex key - Cause: %s", i, err)
+		}
+		nonce, err := hex.DecodeString(v.nonce)
+		if err != nil {
+			t.Fatalf("Test vector %d: Failed to decode hex nonce - Cause: %s", i, err)
+		}
+		msg, err := hex.DecodeString(v.msg)
+		if err != nil {
+			t.Fatalf("Test vector %d: Failed to decode hex msg - Cause: %s", i, err)
+		}
+		data, err := hex.DecodeString(v.data)
+		if err != nil {
+			t.Fatalf("Test vector %d: Failed to decode hex data - Cause: %s", i, err)
+		}
+		ciphertext, err := hex.DecodeString(v.ciphertext)
+		if err != nil {
+			t.Fatalf("Test vector %d: Failed to decode hex ciphertext - Cause: %s", i, err)
+		}
+		c, err := NewAEADTagSize(key, 12)
 		if err != nil {
 			t.Fatalf("Test vector %d: %s", i, err)
 		}
