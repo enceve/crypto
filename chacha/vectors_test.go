@@ -42,6 +42,7 @@ var chachaVectors = []testVector{
 
 type aeadTestVector struct {
 	key, nonce, data, msg, ciphertext string
+	tagSize                           int
 }
 
 // Test vector from:
@@ -65,9 +66,8 @@ var aeadVectors = []aeadTestVector{
 			"3ff4def08e4b7a9de576d26586cec64b" +
 			"6116" +
 			"1ae10b594f09e26a7e902ecbd0600691", // poly 1305 tag
+		tagSize: TagSize,
 	},
-}
-var aeadVectorsTag12 = []aeadTestVector{
 	aeadTestVector{
 		key: "808182838485868788898a8b8c8d8e8f" +
 			"909192939495969798999a9b9c9d9e9f",
@@ -86,34 +86,35 @@ var aeadVectorsTag12 = []aeadTestVector{
 			"3ff4def08e4b7a9de576d26586cec64b" +
 			"6116" +
 			"1ae10b594f09e26a7e902ecb", // poly 1305 tag
+		tagSize: 12,
 	},
 }
 
-func TestChacha20Vectors(t *testing.T) {
+func TestVectors(t *testing.T) {
 	for i, v := range chachaVectors {
 		key, err := hex.DecodeString(v.key)
 		if err != nil {
-			t.Fatalf("Test vector %d: Failed to decode hex key - Cause: %s", i, err)
+			t.Fatalf("Test vector %d: Failed to decode hex key: %s", i, err)
 		}
 		nonce, err := hex.DecodeString(v.nonce)
 		if err != nil {
-			t.Fatalf("Test vector %d: Failed to decode hex nonce - Cause: %s", i, err)
+			t.Fatalf("Test vector %d: Failed to decode hex nonce: %s", i, err)
 		}
 		msg, err := hex.DecodeString(v.msg)
 		if err != nil {
-			t.Fatalf("Test vector %d: Failed to decode hex msg - Cause: %s", i, err)
+			t.Fatalf("Test vector %d: Failed to decode hex msg: %s", i, err)
 		}
 		keystream, err := hex.DecodeString(v.keystream)
 		if err != nil {
-			t.Fatalf("Test vector %d: Failed to decode hex keystream - Cause: %s", i, err)
+			t.Fatalf("Test vector %d: Failed to decode hex keystream: %s", i, err)
 		}
 		ciphertext, err := hex.DecodeString(v.ciphertext)
 		if err != nil {
-			t.Fatalf("Test vector %d: Failed to decode hex ciphertext - Cause: %s", i, err)
+			t.Fatalf("Test vector %d: Failed to decode hex ciphertext: %s", i, err)
 		}
 		c, err := New(key, nonce)
 		if err != nil {
-			t.Fatalf("Test vector %d: Failed to create cipher instance - Cause: %s", i, err)
+			t.Fatalf("Test vector %d: Failed to create cipher instance: %s", i, err)
 		}
 		ch := c.(*chacha20)
 		ch.state[12] = v.ctr
@@ -137,31 +138,31 @@ func TestChacha20Vectors(t *testing.T) {
 	}
 }
 
-func TestChacha20Poly1305Vectors(t *testing.T) {
+func TestAEADVectors(t *testing.T) {
 	for i, v := range aeadVectors {
 		key, err := hex.DecodeString(v.key)
 		if err != nil {
-			t.Fatalf("Test vector %d: Failed to decode hex key - Cause: %s", i, err)
+			t.Fatalf("Test vector %d: Failed to decode hex key: %s", i, err)
 		}
 		nonce, err := hex.DecodeString(v.nonce)
 		if err != nil {
-			t.Fatalf("Test vector %d: Failed to decode hex nonce - Cause: %s", i, err)
+			t.Fatalf("Test vector %d: Failed to decode hex nonce: %s", i, err)
 		}
 		msg, err := hex.DecodeString(v.msg)
 		if err != nil {
-			t.Fatalf("Test vector %d: Failed to decode hex msg - Cause: %s", i, err)
+			t.Fatalf("Test vector %d: Failed to decode hex msg: %s", i, err)
 		}
 		data, err := hex.DecodeString(v.data)
 		if err != nil {
-			t.Fatalf("Test vector %d: Failed to decode hex data - Cause: %s", i, err)
+			t.Fatalf("Test vector %d: Failed to decode hex data: %s", i, err)
 		}
 		ciphertext, err := hex.DecodeString(v.ciphertext)
 		if err != nil {
-			t.Fatalf("Test vector %d: Failed to decode hex ciphertext - Cause: %s", i, err)
+			t.Fatalf("Test vector %d: Failed to decode hex ciphertext: %s", i, err)
 		}
-		c, err := NewAEAD(key)
+		c, err := NewAEAD(key, v.tagSize)
 		if err != nil {
-			t.Fatalf("Test vector %d: %s", i, err)
+			t.Fatalf("Test vector %d: Failed to create AEAD instance: %s", i, err)
 		}
 
 		buf := make([]byte, len(ciphertext))
@@ -189,126 +190,5 @@ func TestChacha20Poly1305Vectors(t *testing.T) {
 				t.Fatalf("TestVector %d Open failed:\nFound   : %s\nExpected: %s", i, hex.EncodeToString(buf), hex.EncodeToString(msg))
 			}
 		}
-	}
-}
-
-func TestChacha20Poly1305VectorsTagSize12(t *testing.T) {
-	for i, v := range aeadVectorsTag12 {
-		key, err := hex.DecodeString(v.key)
-		if err != nil {
-			t.Fatalf("Test vector %d: Failed to decode hex key - Cause: %s", i, err)
-		}
-		nonce, err := hex.DecodeString(v.nonce)
-		if err != nil {
-			t.Fatalf("Test vector %d: Failed to decode hex nonce - Cause: %s", i, err)
-		}
-		msg, err := hex.DecodeString(v.msg)
-		if err != nil {
-			t.Fatalf("Test vector %d: Failed to decode hex msg - Cause: %s", i, err)
-		}
-		data, err := hex.DecodeString(v.data)
-		if err != nil {
-			t.Fatalf("Test vector %d: Failed to decode hex data - Cause: %s", i, err)
-		}
-		ciphertext, err := hex.DecodeString(v.ciphertext)
-		if err != nil {
-			t.Fatalf("Test vector %d: Failed to decode hex ciphertext - Cause: %s", i, err)
-		}
-		c, err := NewAEADTagSize(key, 12)
-		if err != nil {
-			t.Fatalf("Test vector %d: %s", i, err)
-		}
-
-		buf := make([]byte, len(ciphertext))
-		c.Seal(buf, nonce, msg, data)
-
-		if len(buf) != len(ciphertext) {
-			t.Fatalf("Test vector %d Seal: length of buf and ciphertext does not match - found %d expected %d", i, len(buf), len(ciphertext))
-		}
-		for j, v := range ciphertext {
-			if v != buf[j] {
-				t.Fatalf("TestVector %d Seal failed:\nFound   : %s\nExpected: %s", i, hex.EncodeToString(buf), hex.EncodeToString(ciphertext))
-			}
-		}
-
-		buf, err = c.Open(buf, nonce, buf, data)
-
-		if err != nil {
-			t.Fatalf("TestVector %d: Open failed - Cause: %s", i, err)
-		}
-		if len(buf) != len(msg) {
-			t.Fatalf("Test vector %d Open: length of buf and msg does not match - found %d expected %d", i, len(buf), len(msg))
-		}
-		for j, v := range msg {
-			if v != buf[j] {
-				t.Fatalf("TestVector %d Open failed:\nFound   : %s\nExpected: %s", i, hex.EncodeToString(buf), hex.EncodeToString(msg))
-			}
-		}
-	}
-}
-
-func BenchmarkChacha(b *testing.B) {
-	key := make([]byte, 32)
-	nonce := make([]byte, 12)
-	c, err := New(key, nonce)
-	if err != nil {
-		b.Fatalf("Failed to create ChaCha instance - Cause: %s", err)
-	}
-	buf := make([]byte, 64)
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		c.XORKeyStream(buf, buf)
-	}
-}
-
-func BenchmarkXORKeyStream(b *testing.B) {
-	var key [32]byte
-	var nonce [12]byte
-	buf := make([]byte, 64)
-	for i := 0; i < b.N; i++ {
-		XORKeyStream(buf, buf, &key, &nonce, 0)
-	}
-}
-
-func BenchmarkXORKeyStream12(b *testing.B) {
-	var key [32]byte
-	var nonce [12]byte
-	buf := make([]byte, 64)
-	for i := 0; i < b.N; i++ {
-		XORKeyStream12(buf, buf, &key, &nonce, 0)
-	}
-}
-
-func BenchmarkSeal(b *testing.B) {
-	key := make([]byte, 32)
-	nonce := make([]byte, 12)
-	c, err := NewAEAD(key)
-	if err != nil {
-		b.Fatalf("Failed to create ChaCha-Poly1305 instance - Cause: %s", err)
-	}
-	msg := make([]byte, 64)
-	dst := make([]byte, len(msg)+16)
-	data := make([]byte, 8)
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		dst = c.Seal(dst, nonce, msg, data)
-	}
-}
-
-func BenchmarkOpen(b *testing.B) {
-	key := make([]byte, 32)
-	nonce := make([]byte, 12)
-	c, err := NewAEAD(key)
-	if err != nil {
-		b.Fatalf("Failed to create ChaCha-Poly1305 instance - Cause: %s", err)
-	}
-	msg := make([]byte, 64)
-	dst := make([]byte, len(msg))
-	ciphertext := make([]byte, len(msg)+16)
-	data := make([]byte, 8)
-	ciphertext = c.Seal(ciphertext, nonce, msg, data)
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		dst, err = c.Open(dst, nonce, ciphertext, data)
 	}
 }

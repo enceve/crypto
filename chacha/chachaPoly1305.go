@@ -12,6 +12,8 @@ import (
 	"github.com/EncEve/crypto/poly1305"
 )
 
+const TagSize = 16 // The max. size of the auth. tag for the ChaCha-Poly1305 AEAD cipher in bytes.
+
 // The AEAD cipher ChaCha20-Poly1305
 type aeadCipher struct {
 	key     [32]byte
@@ -20,18 +22,10 @@ type aeadCipher struct {
 
 // NewAEAD returns a cipher.AEAD implementing the
 // ChaCha20-Poly1305 construction specified in
-// RFC 7539. The key argument must be 256 bit
-// (32 byte).
-func NewAEAD(key []byte) (cipher.AEAD, error) {
-	return NewAEADTagSize(key, 16)
-}
-
-// NewAEADTagSize returns a cipher.AEAD implementing the
-// ChaCha20-Poly1305 construction specified in
 // RFC 7539 with arbitrary tag size. The key argument
 // must be 256 bit (32 byte), and the tagSize must be
 // between 1 and 16.
-func NewAEADTagSize(key []byte, tagSize int) (cipher.AEAD, error) {
+func NewAEAD(key []byte, tagSize int) (cipher.AEAD, error) {
 	if k := len(key); k != 32 {
 		return nil, crypto.KeySizeError(k)
 	}
@@ -94,7 +88,7 @@ func (c *aeadCipher) Open(dst, nonce, ciphertext, additionalData []byte) ([]byte
 
 	// authenticate the ciphertext
 	tag := authenticate(&polyKey, ciphertext, additionalData)
-	if subtle.ConstantTimeCompare(tag[0:c.tagSize], hash[0:c.tagSize]) != 1 {
+	if subtle.ConstantTimeCompare(tag[:c.tagSize], hash[:c.tagSize]) != 1 {
 		return nil, crypto.AuthenticationError{}
 	}
 
