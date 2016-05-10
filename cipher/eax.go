@@ -9,6 +9,7 @@ package cipher
 import (
 	"crypto/cipher"
 	"crypto/subtle"
+	"errors"
 	"hash"
 
 	"github.com/EncEve/crypto"
@@ -26,6 +27,7 @@ type eaxCipher struct {
 	block    cipher.Block
 	ctr, buf []byte
 	mac      hash.Hash
+	size     int
 }
 
 // NewEAX returns a cipher.AEAD wrapping the cipher.Block.
@@ -35,22 +37,26 @@ type eaxCipher struct {
 // size as the block size of the cipher.
 // This function returns a non-nil error if the given block cipher
 // is not supported by CMac (see crypto/cmac for details)
-func NewEAX(c cipher.Block) (cipher.AEAD, error) {
+func NewEAX(c cipher.Block, tagSize int) (cipher.AEAD, error) {
 	m, err := cmac.New(c)
 	if err != nil {
 		return nil, err
+	}
+	if tagSize < 1 || tagSize > c.BlockSize() {
+		return nil, errors.New("tagSize must between 1 and BlockSize() of the given cipher")
 	}
 	return &eaxCipher{
 		block: c,
 		mac:   m,
 		ctr:   make([]byte, c.BlockSize()),
 		buf:   make([]byte, c.BlockSize()),
+		size:  tagSize,
 	}, nil
 }
 
 func (c *eaxCipher) NonceSize() int { return c.block.BlockSize() }
 
-func (c *eaxCipher) Overhead() int { return c.mac.Size() }
+func (c *eaxCipher) Overhead() int { return c.size }
 
 func (c *eaxCipher) Seal(dst, nonce, plaintext, additionalData []byte) []byte {
 	if n := len(nonce); n != c.block.BlockSize() {
@@ -91,22 +97,22 @@ func (c *eaxCipher) Seal(dst, nonce, plaintext, additionalData []byte) []byte {
 	for i := range tag {
 		tag[i] ^= authData[i] ^ authNonce[i]
 	}
-	return append(dst[:n], tag...)
+	return append(dst[:n], tag[:c.size]...)
 }
 
 func (c *eaxCipher) Open(dst, nonce, ciphertext, additionalData []byte) ([]byte, error) {
 	if n := len(nonce); n != c.block.BlockSize() {
 		return nil, crypto.NonceSizeError(n)
 	}
-	if len(ciphertext) < c.mac.Size() {
+	if len(ciphertext) < c.size {
 		return nil, crypto.AuthenticationError{}
 	}
 	if len(dst) < len(ciphertext)-c.mac.Size() {
 		panic("dst buffer to small")
 	}
 
-	hash := ciphertext[len(ciphertext)-c.mac.Size():]
-	ciphertext = ciphertext[:len(ciphertext)-c.mac.Size()]
+	hash := ciphertext[len(ciphertext)-c.size:]
+	ciphertext = ciphertext[:len(ciphertext)-c.size]
 
 	tag := make([]byte, c.mac.BlockSize())
 
@@ -135,7 +141,7 @@ func (c *eaxCipher) Open(dst, nonce, ciphertext, additionalData []byte) ([]byte,
 		tag[i] ^= authData[i] ^ authNonce[i]
 	}
 
-	if subtle.ConstantTimeCompare(tag, hash) != 1 {
+	if subtle.ConstantTimeCompare(tag[:c.size], hash) != 1 {
 		return nil, crypto.AuthenticationError{}
 	}
 
