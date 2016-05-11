@@ -1,5 +1,8 @@
 ## The *crypto* package
 
+[![Build Status](https://api.travis-ci.org/EncEve/crypto.svg?branch=master)](https://api.travis-ci.org/EncEve/crypto)
+[![Godoc Reference](https://godoc.org/github.com/EncEve/crypto?status.svg)](https://godoc.org/github.com/EncEve/crypto)
+
 ### Introduction
 
 The `crypto` package implements some additional cryptographic functionality, currently not supported by the standard or additional [golang packages](https://golang.org/pkg/ "Offical golang packages").
