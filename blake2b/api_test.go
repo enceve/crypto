@@ -43,7 +43,7 @@ func TestReset(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Could not create blake2b instance: %s", err)
 	}
-	b, ok := h.(*blake2b)
+	b, ok := h.(*hashFunc)
 	if !ok {
 		t.Fatal("Impossible situation: New returns no blake2b struct")
 	}

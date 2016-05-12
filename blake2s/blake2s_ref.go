@@ -8,7 +8,7 @@ package blake2s
 //  - the 2 32 counters
 //  - the final block flag
 //  - the message (multiply of the blocksize)
-func update(hVal *[8]uint32, ctr *[2]uint32, f uint32, msg []byte) {
+func blake2sCore(hVal *[8]uint32, ctr *[2]uint32, f uint32, msg []byte) {
 	h0, h1, h2, h3 := hVal[0], hVal[1], hVal[2], hVal[3]
 	h4, h5, h6, h7 := hVal[4], hVal[5], hVal[6], hVal[7]
 	var m [16]uint32

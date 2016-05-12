@@ -44,3 +44,9 @@ var precomputed [12][16]byte = [12][16]byte{
 	{0, 2, 4, 6, 5, 7, 3, 1, 8, 10, 12, 14, 13, 15, 11, 9}, // equal to the first
 	{14, 4, 9, 13, 15, 6, 8, 10, 1, 0, 11, 5, 7, 3, 2, 12}, // equal to the secound
 }
+
+// predefined parameters for the common hash sizes 256 and 512 bit
+var (
+	params512 *Params = &Params{HashSize: Size}
+	params256 *Params = &Params{HashSize: 32}
+)

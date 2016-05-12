@@ -4,8 +4,8 @@
 package blake2s
 
 const (
-	BlockSize = 64 // The block size in bytes.
-	Size      = 32 // The max. hash size in bytes.
+	BlockSize = 64 // The block size of blake2s in bytes.
+	Size      = 32 // The max. hash size of blake2s in bytes.
 )
 
 const (
@@ -42,3 +42,9 @@ var precomputed [10][16]byte = [10][16]byte{
 	{6, 14, 11, 0, 3, 8, 9, 15, 12, 13, 1, 10, 4, 5, 7, 2},
 	{10, 8, 7, 1, 6, 5, 4, 2, 15, 9, 3, 13, 12, 0, 14, 11},
 }
+
+// predefined parameters for the common hash sizes 160 and 256 bit
+var (
+	params256 *Params = &Params{HashSize: Size}
+	params160 *Params = &Params{HashSize: 20}
+)
