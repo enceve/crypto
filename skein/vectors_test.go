@@ -4,8 +4,8 @@
 package skein
 
 import (
+	"bytes"
 	"encoding/hex"
-	"hash"
 	"testing"
 )
 
@@ -14,26 +14,13 @@ type testVector struct {
 	msg, hash string
 }
 
-func checkHashes(t *testing.T, h hash.Hash, in, ref []byte, i int) {
-	h.Write(in)
-	sum := h.Sum(nil)
-	if len(sum) != len(ref) {
-		t.Fatalf("Test vector %d : Hash size does not match expected - found %d expected %d", i, len(sum), len(ref))
-	}
-	for j := range sum {
-		if sum[j] != ref[j] {
-			t.Fatalf("Test vector %d : Hash does not match:\nFound:    %s\nExpected: %s", i, hex.EncodeToString(sum), hex.EncodeToString(ref))
-		}
-	}
-}
-
 func decodeHex(t *testing.T, s string) []byte {
 	b, err := hex.DecodeString(s)
 	if err != nil {
 		if t == nil {
 			panic(err)
 		}
-		t.Fatalf("Failed to decode hex: %s\nCaused by: %s", s, err)
+		t.Fatalf("Failed to decode hex: %s - Error: %s", s, err)
 	}
 	return b
 }
@@ -158,119 +145,12 @@ func TestVectors(t *testing.T) {
 
 		h, err := New(p)
 		if err != nil {
-			t.Fatalf("Failed to create new Skein instance - Cause: %s", err)
+			t.Fatalf("Failed to create new Skein instance: %s", err)
 		}
-		checkHashes(t, h, in, ref, i)
-	}
-}
-
-func TestNew512(t *testing.T) {
-	for i, v := range vectors {
-		p, in, ref := v.p, decodeHex(t, v.msg), decodeHex(t, v.hash)
-		if p.BlockSize == Size512 && p.Key == nil && p.KeyID == nil && p.Nonce == nil && p.PublicKey == nil {
-
-			h := New512(p.HashSize)
-			checkHashes(t, h, in, ref, i)
+		h.Write(in)
+		sum := h.Sum(nil)
+		if !bytes.Equal(sum, ref) {
+			t.Fatalf("Test vector %d : Hash does not match:\nFound:    %s\nExpected: %s", i, hex.EncodeToString(sum), hex.EncodeToString(ref))
 		}
-	}
-}
-
-func TestSum(t *testing.T) {
-	for i, v := range vectors {
-		p, in, ref := v.p, decodeHex(t, v.msg), decodeHex(t, v.hash)
-		if p.BlockSize == Size512 && p.Key == nil && p.KeyID == nil && p.Nonce == nil && p.PublicKey == nil {
-			if p.HashSize == Size512 || p.HashSize == Size256 {
-				var sum []byte
-				if p.HashSize == Size256 {
-					t := Sum256(in)
-					sum = t[:]
-				} else {
-					t := Sum512(in)
-					sum = t[:]
-				}
-
-				if len(sum) != len(ref) {
-					t.Fatalf("Test vector %d : Hash size does not match expected - found %d expected %d", i, len(sum), len(ref))
-				}
-				for j := range sum {
-					if sum[j] != ref[j] {
-						t.Fatalf("Test vector %d : Hash does not match:\nFound:    %v\nExpected: %v", i, hex.EncodeToString(sum), hex.EncodeToString(ref))
-					}
-				}
-			}
-		}
-	}
-}
-
-func TestWrite(t *testing.T) {
-	bs := 32
-	for i := 0; i < 3; i++ {
-		h, err := New(&Params{BlockSize: bs})
-		if err != nil {
-			t.Fatalf("Iteratoiin %d: Failed to create instance of skine - Cause: %s", i, err)
-		}
-		n, err := h.Write(nil)
-		if n != 0 || err != nil {
-			t.Fatalf("Iteratoiin %d: Failed to process nil slice: Processed bytes: %d - Returned error: %s", i, n, err)
-		}
-		n, err = h.Write(make([]byte, h.Size()))
-		if n != h.Size() || err != nil {
-			t.Fatalf("Iteratoiin %d: Failed to process 0-slice with length %d: Processed bytes: %d - Returned error: %s", i, h.Size(), n, err)
-		}
-		n, err = h.Write(make([]byte, h.BlockSize()))
-		if n != h.BlockSize() || err != nil {
-			t.Fatalf("Iteratoiin %d: Failed to process 0-slice with length %d: Processed bytes: %d - Returned error: %s", i, h.BlockSize(), n, err)
-		}
-		n, err = h.Write(make([]byte, 211)) // 211 = (2*3*5*7)+1 is prime
-		if n != 211 || err != nil {
-			t.Fatalf("Iteratoiin %d: Failed to process 0-slice with length %d: Processed bytes: %d - Returned error: %s", i, 211, n, err)
-		}
-		bs *= 2
-	}
-}
-
-func BenchmarkWrite256(b *testing.B) {
-	h, err := New(&Params{BlockSize: Size256})
-	if err != nil {
-		b.Fatalf("Failed to create Skein-256 instance - Cause: %s", err)
-	}
-	buf := make([]byte, Size256)
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		h.Write(buf)
-	}
-}
-
-func BenchmarkWrite512(b *testing.B) {
-	h := New512(64)
-	buf := make([]byte, Size512)
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		h.Write(buf)
-	}
-}
-
-func BenchmarkWrite1024(b *testing.B) {
-	h, err := New(&Params{BlockSize: Size1024})
-	if err != nil {
-		b.Fatalf("Failed to create Skein-1024 instance - Cause: %s", err)
-	}
-	buf := make([]byte, Size1024)
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		h.Write(buf)
-	}
-}
-
-func BenchmarkNew(b *testing.B) {
-	p := &Params{BlockSize: Size512}
-	for i := 0; i < b.N; i++ {
-		New(p)
-	}
-}
-
-func BenchmarkNew512(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		New512(64)
 	}
 }

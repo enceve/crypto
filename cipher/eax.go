@@ -33,8 +33,8 @@ type eaxCipher struct {
 // NewEAX returns a cipher.AEAD wrapping the cipher.Block.
 // EAX is a two pass-scheme AEAD cipher with provable security.
 // For authentication EAX uses CMac (OMAC1).
-// This implementations produces authentication tags with the same
-// size as the block size of the cipher.
+// The tagSize argument specifies the number of bytes of the auth. tag
+// and must be between 1 and the block size of the cipher.
 // This function returns a non-nil error if the given block cipher
 // is not supported by CMac (see crypto/cmac for details)
 func NewEAX(c cipher.Block, tagSize int) (cipher.AEAD, error) {

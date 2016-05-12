@@ -13,6 +13,9 @@ func (s *skein256) Reset() {
 	s.off = 0
 	s.msg = false
 	copy(s.hVal[:4], s.initVal[:])
+	for i := range s.buf {
+		s.buf[i] = 0
+	}
 	s.tweak[0] = 0
 	s.tweak[1] = messageParam<<56 | firstBlock
 }
