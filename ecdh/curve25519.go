@@ -21,6 +21,11 @@ func (c *Curve25519) GenerateKey(rand io.Reader) (private, public *[32]byte, err
 		private = nil
 		return
 	}
+	// From https://cr.yp.to/ecdh.html
+	private[0] &= 248
+	private[31] &= 127
+	private[31] |= 64
+
 	public = new([32]byte)
 	curve25519.ScalarBaseMult(public, private)
 	return
