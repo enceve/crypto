@@ -5,102 +5,10 @@
 
 package poly1305
 
-import (
-	"crypto/subtle"
-	"hash"
-
-	"github.com/EncEve/crypto"
-)
-
-const TagSize = 16 // The size of the poly1305 authentication tag in bytes.
-
 const (
 	msgBlock   = uint32(1 << 24)
 	finalBlock = uint32(0)
 )
-
-// Verify returns true if and only if the mac is a valid authenticator
-// for msg with the given key.
-func Verify(mac *[TagSize]byte, msg []byte, key *[32]byte) bool {
-	var sum [TagSize]byte
-	Sum(&sum, msg, key)
-	return subtle.ConstantTimeCompare(sum[:], mac[:]) == 1
-}
-
-// The poly1305 hash struct implementing hash.Hash
-type polyHash struct {
-	h, r [5]uint32
-	pad  [4]uint32
-
-	buf [TagSize]byte
-	off int
-}
-
-// New returns a hash.Hash computing the poly1305 sum.
-// The given key must be 256 bit (32 byte). Notice that
-// poly1305 is inseure if one key is used twice. To prevent
-// misuse the returned hash.Hash doesn't support the Reset()
-// method.
-func New(key []byte) (hash.Hash, error) {
-	if k := len(key); k != 32 {
-		return nil, crypto.KeySizeError(k)
-	}
-	var k [32]byte
-	copy(k[:], key)
-
-	p := new(polyHash)
-	initialize(&(p.r), &(p.pad), &k)
-	return p, nil
-}
-
-func (p *polyHash) BlockSize() int { return TagSize }
-
-func (p *polyHash) Size() int { return TagSize }
-
-func (p *polyHash) Reset() {
-	panic("poly1305 does not support Reset() - poly1305 is insecure if one key is used twice!")
-}
-
-func (p *polyHash) Write(msg []byte) (int, error) {
-	n := len(msg)
-
-	diff := TagSize - p.off
-	if p.off > 0 {
-		p.off += copy(p.buf[p.off:], msg[:diff])
-		if p.off == TagSize {
-			update(p.buf[:], msgBlock, &(p.h), &(p.r))
-			p.off = 0
-		}
-		msg = msg[diff:]
-	}
-
-	length := len(msg) & (^(TagSize - 1))
-	if length > 0 {
-		update(msg[:length], msgBlock, &(p.h), &(p.r))
-		msg = msg[length:]
-	}
-	if len(msg) > 0 {
-		p.off += copy(p.buf[p.off:], msg)
-	}
-
-	return n, nil
-}
-
-func (p *polyHash) Sum(b []byte) []byte {
-	var mac [TagSize]byte
-	p0 := *p
-
-	if p0.off > 0 {
-		p0.buf[p0.off] = 1 // invariant: p0.off < TagSize
-		for i := p0.off + 1; i < TagSize; i++ {
-			p0.buf[i] = 0
-		}
-		update(p0.buf[:], finalBlock, &(p0.h), &(p0.r))
-	}
-
-	finish(&mac, &(p0.h), &(p0.pad))
-	return append(b, mac[:]...)
-}
 
 func initialize(r *[5]uint32, pad *[4]uint32, key *[32]byte) {
 	r[0] = (uint32(key[0]) | uint32(key[1])<<8 | uint32(key[2])<<16 | uint32(key[3])<<24) & 0x3ffffff
@@ -115,7 +23,7 @@ func initialize(r *[5]uint32, pad *[4]uint32, key *[32]byte) {
 	pad[3] = (uint32(key[28]) | uint32(key[29])<<8 | uint32(key[30])<<16 | uint32(key[31])<<24)
 }
 
-func update(msg []byte, flag uint32, h, r *[5]uint32) {
+func polyCore(msg []byte, flag uint32, h, r *[5]uint32) {
 	h0, h1, h2, h3, h4 := h[0], h[1], h[2], h[3], h[4]
 	r0, r1, r2, r3, r4 := uint64(r[0]), uint64(r[1]), uint64(r[2]), uint64(r[3]), uint64(r[4])
 	s1, s2, s3, s4 := uint64(r[1]*5), uint64(r[2]*5), uint64(r[3]*5), uint64(r[4]*5)
@@ -151,7 +59,7 @@ func update(msg []byte, flag uint32, h, r *[5]uint32) {
 }
 
 // finish the poly1305 authentication
-func finish(tag *[TagSize]byte, h *[5]uint32, pad *[4]uint32) {
+func polyFinalize(tag *[TagSize]byte, h *[5]uint32, pad *[4]uint32) {
 	var g0, g1, g2, g3, g4 uint32
 
 	// fully carry h

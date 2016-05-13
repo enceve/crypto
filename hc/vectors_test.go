@@ -50,7 +50,7 @@ func TestVectors128(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Test vector %d: Failed to decode hex keystream: %s", i, err)
 		}
-		c, err := New128(key, nonce)
+		c, err := NewCipher128(key, nonce)
 		if err != nil {
 			t.Fatalf("Test vector %d: Failed to create HC-128 instance: %s", i, err)
 		}
@@ -101,7 +101,7 @@ func TestVectors256(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Test vector %d: Failed to decode hex keystream: %s", i, err)
 		}
-		c, err := New256(key, nonce)
+		c, err := NewCipher256(key, nonce)
 		if err != nil {
 			t.Fatalf("Test vector %d: Failed to create HC-256 instance: %s", i, err)
 		}

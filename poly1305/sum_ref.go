@@ -20,8 +20,8 @@ func Sum(out *[TagSize]byte, msg []byte, key *[32]byte) {
 		for i := p.off + 1; i < TagSize; i++ {
 			p.buf[i] = 0
 		}
-		update(p.buf[:], finalBlock, &(p.h), &(p.r))
+		polyCore(p.buf[:], finalBlock, &(p.h), &(p.r))
 	}
 
-	finish(out, &(p.h), &(p.pad))
+	polyFinalize(out, &(p.h), &(p.pad))
 }

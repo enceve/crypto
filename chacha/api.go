@@ -48,7 +48,7 @@ func XORKeyStream8(dst, src []byte, key *[32]byte, nonce *[12]byte, counter uint
 	genericXORKeyStream(dst, src, key, nonce, counter, 8)
 }
 
-// New returns a new cipher.Stream implementing the ChaCha20
+// NewCipher returns a new cipher.Stream implementing the ChaCha20
 // cipher. The key must be exactly 256 bit (32 byte). The
 // nonce must be exactly 96 bit (12 byte) and unique for one
 // key for all time.

@@ -10,7 +10,7 @@ import "testing"
 func BenchmarkHC128Encrypt(b *testing.B) {
 	key := make([]byte, 16)
 	nonce := make([]byte, 16)
-	c, err := New128(key, nonce)
+	c, err := NewCipher128(key, nonce)
 	if err != nil {
 		b.Fatalf("Failed to create HC-128 instance: %s", err)
 	}
@@ -24,7 +24,7 @@ func BenchmarkHC128Encrypt(b *testing.B) {
 func BenchmarkHC256Encrypt(b *testing.B) {
 	key := make([]byte, 32)
 	nonce := make([]byte, 32)
-	c, err := New256(key, nonce)
+	c, err := NewCipher256(key, nonce)
 	if err != nil {
 		b.Fatalf("Failed to create HC-256 instance: %s", err)
 	}
@@ -38,7 +38,7 @@ func BenchmarkHC256Encrypt(b *testing.B) {
 func BenchmarkHC128Setup(b *testing.B) {
 	key := make([]byte, 16)
 	nonce := make([]byte, 16)
-	c := new(hc128)
+	c := new(streamCipher128)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -49,7 +49,7 @@ func BenchmarkHC128Setup(b *testing.B) {
 func BenchmarkHC256Setup(b *testing.B) {
 	key := make([]byte, 32)
 	nonce := make([]byte, 32)
-	c := new(hc256)
+	c := new(streamCipher256)
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
