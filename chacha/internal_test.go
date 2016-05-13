@@ -10,7 +10,7 @@ import "testing"
 func BenchmarkChacha(b *testing.B) {
 	key := make([]byte, 32)
 	nonce := make([]byte, 12)
-	c, err := New(key, nonce)
+	c, err := NewCipher(key, nonce)
 	if err != nil {
 		b.Fatalf("Failed to create ChaCha instance: %s", err)
 	}

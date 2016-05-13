@@ -29,14 +29,3 @@ func f(r0, r1, r2, r3 *uint32, k0, k1 uint32) {
 	*r2 ^= t2
 	*r3 ^= t2
 }
-
-// Note that n has to be less than 32. Rotations for larger amount
-// of bits are achieved by "rotating" order of registers and
-// adjusting n accordingly, e.g. RotLeft128(r1,r2,r3,r0,n-32).
-func rotl128(r0, r1, r2, r3 *uint32, n uint) {
-	t := *r0 >> (32 - n)
-	*r0 = (*r0 << n) | (*r1 >> (32 - n))
-	*r1 = (*r1 << n) | (*r2 >> (32 - n))
-	*r2 = (*r2 << n) | (*r3 >> (32 - n))
-	*r3 = (*r3 << n) | t
-}

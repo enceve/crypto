@@ -8,7 +8,7 @@ import "testing"
 // Benchmarks
 
 func BenchmarkEncrypt128(b *testing.B) {
-	c, err := New(make([]byte, 16))
+	c, err := NewCipher(make([]byte, 16))
 	if err != nil {
 		b.Fatalf("Failed to create Camellia instance: %s", err)
 	}
@@ -20,7 +20,7 @@ func BenchmarkEncrypt128(b *testing.B) {
 }
 
 func BenchmarkEncrypt256(b *testing.B) {
-	c, err := New(make([]byte, 32))
+	c, err := NewCipher(make([]byte, 32))
 	if err != nil {
 		b.Fatalf("Failed to create Camellia instance: %s", err)
 	}
@@ -32,7 +32,7 @@ func BenchmarkEncrypt256(b *testing.B) {
 }
 
 func BenchmarkDecrypt128(b *testing.B) {
-	c, err := New(make([]byte, 16))
+	c, err := NewCipher(make([]byte, 16))
 	if err != nil {
 		b.Fatalf("Failed to create Camellia instance: %s", err)
 	}
@@ -44,7 +44,7 @@ func BenchmarkDecrypt128(b *testing.B) {
 }
 
 func BenchmarkDecrypt256(b *testing.B) {
-	c, err := New(make([]byte, 32))
+	c, err := NewCipher(make([]byte, 32))
 	if err != nil {
 		b.Fatalf("Failed to create Camellia instance: %s", err)
 	}
@@ -56,7 +56,7 @@ func BenchmarkDecrypt256(b *testing.B) {
 }
 
 func BenchmarkKeySchedule128(b *testing.B) {
-	c := new(camellia128)
+	c := new(blockCipher128)
 	key := make([]byte, 16)
 	for i := 0; i < b.N; i++ {
 		c.keySchedule(key)
@@ -64,7 +64,7 @@ func BenchmarkKeySchedule128(b *testing.B) {
 }
 
 func BenchmarkKeySchedule256(b *testing.B) {
-	c := new(camellia)
+	c := new(blockCipher256)
 	key := make([]byte, 32)
 	for i := 0; i < b.N; i++ {
 		c.keySchedule(key)

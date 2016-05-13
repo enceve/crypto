@@ -6,23 +6,23 @@ package chacha
 import "testing"
 
 func TestNew(t *testing.T) {
-	_, err := New(make([]byte, 32), make([]byte, 12))
+	_, err := NewCipher(make([]byte, 32), make([]byte, 12))
 	if err != nil {
 		t.Fatalf("Failed to create instance of ChaCha20: %s", err)
 	}
-	_, err = New(make([]byte, 36), make([]byte, 12))
+	_, err = NewCipher(make([]byte, 36), make([]byte, 12))
 	if err == nil {
 		t.Fatalf("Key verification failed - invalid key accepted")
 	}
-	_, err = New(make([]byte, 16), make([]byte, 12))
+	_, err = NewCipher(make([]byte, 16), make([]byte, 12))
 	if err == nil {
 		t.Fatalf("Key verification failed - invalid key accepted")
 	}
-	_, err = New(make([]byte, 32), make([]byte, 11))
+	_, err = NewCipher(make([]byte, 32), make([]byte, 11))
 	if err == nil {
 		t.Fatalf("Key verification failed - invalid nonce accepted")
 	}
-	_, err = New(make([]byte, 32), make([]byte, 32))
+	_, err = NewCipher(make([]byte, 32), make([]byte, 32))
 	if err == nil {
 		t.Fatalf("Key verification failed - invalid nonce accepted")
 	}

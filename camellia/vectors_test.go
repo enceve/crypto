@@ -48,7 +48,7 @@ func TestVectors(t *testing.T) {
 		}
 		buf := make([]byte, BlockSize)
 
-		c, err := New(key)
+		c, err := NewCipher(key)
 		if err != nil {
 			t.Fatalf("Test vector %d: Failed to create Camellia instance: %s", i, err)
 		}

@@ -12,7 +12,7 @@ func TestEncryptDecrypt(t *testing.T) {
 	buf, src := make([]byte, BlockSize), make([]byte, BlockSize)
 
 	// 128 bit key
-	c, err := New(make([]byte, 16))
+	c, err := NewCipher(make([]byte, 16))
 	if err != nil {
 		t.Fatalf("Failed to create Camellia instance: %s", err)
 	}
@@ -23,7 +23,7 @@ func TestEncryptDecrypt(t *testing.T) {
 	}
 
 	// 192 bit key
-	c, err = New(make([]byte, 24))
+	c, err = NewCipher(make([]byte, 24))
 	if err != nil {
 		t.Fatalf("Failed to create Camellia instance: %s", err)
 	}
@@ -34,7 +34,7 @@ func TestEncryptDecrypt(t *testing.T) {
 	}
 
 	// 256 bit key
-	c, err = New(make([]byte, 32))
+	c, err = NewCipher(make([]byte, 32))
 	if err != nil {
 		t.Fatalf("Failed to create Camellia instance: %s", err)
 	}

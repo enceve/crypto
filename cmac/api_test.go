@@ -51,7 +51,7 @@ func TestReset(t *testing.T) {
 		t.Fatalf("Could not create AES instance: %s", err)
 	}
 	h, err := New(cipher)
-	c, ok := h.(*mac)
+	c, ok := h.(*macFunc)
 	if !ok {
 		t.Fatal("Impossible situation: New returns no CMac struct")
 	}
@@ -78,7 +78,7 @@ func TestReset(t *testing.T) {
 		t.Fatalf("Reseted off field: %d - but expected: %d", c.off, orig.off)
 	}
 	if c.cipher != orig.cipher {
-		t.Fatalf("Reseted cipher field: %d - but expected: %d", c.cipher, orig.cipher)
+		t.Fatalf("Reseted cipher field: %v - but expected: %v", c.cipher, orig.cipher)
 	}
 }
 

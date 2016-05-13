@@ -17,7 +17,6 @@
 // tweakable block cipher. Ciphers with 64 bit blocks are
 // supported, but not recommened.
 // CMac (using AES) is specified in RFC 4493.
-// See: https://tools.ietf.org/html/rfc4493
 package cmac
 
 import (
@@ -26,23 +25,6 @@ import (
 	"errors"
 	"hash"
 )
-
-const (
-	// minimal irreducible polynomial for blocksize
-	p64   = 0x1b    // for 64  bit block ciphers
-	p128  = 0x87    // for 128 bit block ciphers (like AES)
-	p256  = 0x425   // special for large block ciphers (Threefish)
-	p512  = 0x125   // special for large block ciphers (Threefish)
-	p1024 = 0x80043 // special for large block ciphers (Threefish)
-)
-
-// The CMac struct
-type mac struct {
-	cipher cipher.Block
-	k0, k1 []byte
-	buf    []byte
-	off    int
-}
 
 // Sum computes the CMac checksum of msg using the cipher.Block.
 // If the block cipher is not supported  by CMac (see package doc),
@@ -93,7 +75,7 @@ func New(c cipher.Block) (hash.Hash, error) {
 		p = p1024
 	}
 
-	m := &mac{
+	m := &macFunc{
 		cipher: c,
 		k0:     make([]byte, bs),
 		k1:     make([]byte, bs),
@@ -110,18 +92,26 @@ func New(c cipher.Block) (hash.Hash, error) {
 	return m, nil
 }
 
-func (h *mac) Size() int { return h.cipher.BlockSize() }
+// The CMac message auth. function
+type macFunc struct {
+	cipher cipher.Block
+	k0, k1 []byte
+	buf    []byte
+	off    int
+}
 
-func (h *mac) BlockSize() int { return h.cipher.BlockSize() }
+func (h *macFunc) Size() int { return h.cipher.BlockSize() }
 
-func (h *mac) Reset() {
+func (h *macFunc) BlockSize() int { return h.cipher.BlockSize() }
+
+func (h *macFunc) Reset() {
 	for i := range h.buf {
 		h.buf[i] = 0
 	}
 	h.off = 0
 }
 
-func (h *mac) Write(p []byte) (int, error) {
+func (h *macFunc) Write(p []byte) (int, error) {
 	bs := len(h.buf)
 	left := bs - h.off
 
@@ -155,7 +145,7 @@ func (h *mac) Write(p []byte) (int, error) {
 	return n, nil
 }
 
-func (h *mac) Sum(b []byte) []byte {
+func (h *macFunc) Sum(b []byte) []byte {
 	bs := h.cipher.BlockSize()
 
 	// Don't change the buffer so the
@@ -175,20 +165,4 @@ func (h *mac) Sum(b []byte) []byte {
 
 	h.cipher.Encrypt(hash, hash)
 	return append(b, hash...)
-}
-
-func xor(dst, src []byte) {
-	for i, v := range src {
-		dst[i] ^= v
-	}
-}
-
-func shift(dst, src []byte) int {
-	var b, bit byte
-	for i := len(src) - 1; i >= 0; i-- { // a range would be nice
-		bit = src[i] >> 7
-		dst[i] = src[i]<<1 | b
-		b = bit
-	}
-	return int(b)
 }
