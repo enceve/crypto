@@ -106,7 +106,7 @@ func TestVectros256(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Test vector %d: Failed to decode hex ciphertext: %s", i, err)
 		}
-		c, err := New256(key, tweak)
+		c, err := NewCipher(key, tweak)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -144,7 +144,7 @@ func TestVectros512(t *testing.T) {
 			t.Fatalf("Test vector %d: Failed to decode hex ciphertext: %s", i, err)
 		}
 
-		c, err := New512(key, tweak)
+		c, err := NewCipher(key, tweak)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -182,7 +182,7 @@ func TestVectros1024(t *testing.T) {
 			t.Fatalf("Test vector %d: Failed to decode hex ciphertext: %s", i, err)
 		}
 
-		c, err := New1024(key, tweak)
+		c, err := NewCipher(key, tweak)
 		if err != nil {
 			t.Fatal(err)
 		}

@@ -5,6 +5,16 @@ package threefish
 
 const C240 = 0x1bd11bdaa9fc1a22 // C240 is the key schedule constant
 
+const (
+	blockSize256  = 32  // the blocksize of threefish-256 in bytes
+	blockSize512  = 64  // the blocksize of threefish-512 in bytes
+	blockSize1024 = 128 // the blocksize of threefish-1024 in bytes
+
+	keySize256  = 32  // the keysize of threefish-256 in bytes
+	keySize512  = 64  // the keysize of threefish-512 in bytes
+	keySize1024 = 128 // the keysize of threefish-1024 in bytes
+)
+
 // expands the binary 128 bit tweak
 // to two 64 bit tweak words
 func scheduleTweak(dst *[3]uint64, tweak []byte) {

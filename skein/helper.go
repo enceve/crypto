@@ -1,254 +1,4 @@
-// Use of this source code is governed by a license
-// that can be found in the LICENSE file
-
-// The skein package implements the skein hash functions
-// developed by Niels Ferguson, Stefan Lucks, Bruce Schneier,
-// Doug Whiting, Mihir Bellare, Tadayoshi Kohno, Jon Callas,
-// and Jesse Walker.
-// Skein is based on the Threefish tweakable block cipher
-// using Unique Block Iteration (UBI) chaining mode while
-// leveraging an optional low-overhead argument-system
-// for flexibility.
-// Skein was submitted to the SHA-3 challenge.
-//
-// Skein Variants
-//
-// There are three skein variants all implemented by
-// the skein package:
-//     - Skein-256 has a state size of 256 bit (32 byte)
-//     - Skein-512 has a state size of 512 bit (64 byte)
-//     - Skein-1024 has a state size of 1024 bit (128 byte)
-// The max. hash size of a skein variant is the same as
-// the state size (block size), but skein can produce hash values of
-// any length (limited by the state size).
-//
-// Using skein
-//
-// Skein is a very flexible hash function family. It
-// can be used for:
-// 	- simple, randomized, and personalized hashing
-//	- builtin MAC
-//	- public key bound hashing for dig. signatures
-//	- PRNG
-//	- key derivation
-//	- en and decryption (stream cipher)
-//	- tree hashing
-// The API of the skein package currently supports:
-//	- simple and randomized hashing
-//	- builtin MAC
-//	- public key bound hashing for dig. signatures
-//	- key derivation
 package skein
-
-import (
-	"errors"
-	"hash"
-)
-
-// The skein-256 hash function with a state size
-// of 256 bit.
-type skein256 struct {
-	initVal [4]uint64
-	hVal    [5]uint64
-	tweak   [3]uint64
-	buf     [Size256]byte
-	off     int
-	hsize   int
-	msg     bool
-}
-
-// The skein-512 hash function with a state size
-// of 512 bit.
-// Skein-512 is recommended by the
-// skein authors for most use cases.
-type skein512 struct {
-	initVal [8]uint64
-	hVal    [9]uint64
-	tweak   [3]uint64
-	buf     [Size512]byte
-	off     int
-	hsize   int
-	msg     bool
-}
-
-// The skein-1024 hash function with a state size
-// of 1024 bit.
-// Skein-1024 is the very conservative skein variant.
-type skein1024 struct {
-	initVal [16]uint64
-	hVal    [17]uint64
-	tweak   [3]uint64
-	buf     [Size1024]byte
-	off     int
-	hsize   int
-	msg     bool
-}
-
-// The configuration parameters for skein.
-// The BlockSize field is required and must be set
-// to a valid value (32, 64, 128). If the HashSize
-// is not set (or invalid), the default value, which
-// is equal to the block size, is used. All other
-// fields are optional  and can be nil.
-type Params struct {
-	BlockSize int    // Required: The block size of the skein variant (32 , 64 or 128)
-	HashSize  int    // Optional: The hash size - valid are values between 1 and the block size (default is the block size)
-	Key       []byte // Optional: The secret key for MAC
-	PublicKey []byte // Optional: The public key for key-bound hashing
-	KeyID     []byte // Optional: The key id for key derivation
-	Nonce     []byte // Optional: The nonce for randomized hashing
-}
-
-// Sum256 computes the Skein-512 256 bit (32 byte) checksum of the msg.
-func Sum256(msg []byte) [32]byte {
-	s := New512(Size256)
-	s.Write(msg)
-	var out [32]byte
-	s.Sum(out[:0])
-	return out
-}
-
-// Sum512 computes the Skein-512 512 bit (64 byte) checksum of the msg.
-func Sum512(msg []byte) [64]byte {
-	s := New512(Size512)
-	s.Write(msg)
-	var out [64]byte
-	s.Sum(out[:0])
-	return out
-}
-
-// Sum computes the Skein checksum of the msg.
-func Sum(msg []byte, p *Params) ([]byte, error) {
-	s, err := New(p)
-	if err != nil {
-		return nil, err
-	}
-	s.Write(msg)
-	return s.Sum(nil), nil
-}
-
-// New returns a hash.Hash computing the Skein checksum.
-// If the BlockSize parameter is invalid, an non-nil error
-// is returned. If the HashSize parameter is not set (or invalid),
-// the BlockSize is used as hash size.
-func New(p *Params) (hash.Hash, error) {
-	if p == nil {
-		return nil, errors.New("Params argument must not be nil")
-	}
-
-	if p.BlockSize == Size256 {
-		s := new(skein256)
-		if p.HashSize < 1 || p.HashSize > Size256 {
-			p.HashSize = Size256
-		}
-		s.hsize = p.HashSize
-
-		if p.Key != nil {
-			s.addParam(keyParam, p.Key)
-		}
-		s.addConfig(s.hsize)
-		if p.PublicKey != nil {
-			s.addParam(publicKeyParam, p.PublicKey)
-		}
-		if p.KeyID != nil {
-			s.addParam(keyIDParam, p.KeyID)
-		}
-		if p.Nonce != nil {
-			s.addParam(nonceParam, p.Nonce)
-		}
-		copy(s.initVal[:], s.hVal[:4])
-
-		s.Reset()
-		return s, nil
-	}
-	if p.BlockSize == Size512 {
-		s := new(skein512)
-		if p.HashSize < 1 || p.HashSize > Size512 {
-			p.HashSize = Size512
-		}
-		s.hsize = p.HashSize
-
-		if p.Key != nil {
-			s.addParam(keyParam, p.Key)
-		}
-		s.addConfig(s.hsize)
-		if p.PublicKey != nil {
-			s.addParam(publicKeyParam, p.PublicKey)
-		}
-		if p.KeyID != nil {
-			s.addParam(keyIDParam, p.KeyID)
-		}
-		if p.Nonce != nil {
-			s.addParam(nonceParam, p.Nonce)
-		}
-		copy(s.initVal[:], s.hVal[:8])
-
-		s.Reset()
-		return s, nil
-	}
-	if p.BlockSize == Size1024 {
-		s := new(skein1024)
-		if p.HashSize < 1 || p.HashSize > Size1024 {
-			p.HashSize = Size1024
-		}
-		s.hsize = p.HashSize
-
-		if p.Key != nil {
-			s.addParam(keyParam, p.Key)
-		}
-		s.addConfig(s.hsize)
-		if p.PublicKey != nil {
-			s.addParam(publicKeyParam, p.PublicKey)
-		}
-		if p.KeyID != nil {
-			s.addParam(keyIDParam, p.KeyID)
-		}
-		if p.Nonce != nil {
-			s.addParam(nonceParam, p.Nonce)
-		}
-		copy(s.initVal[:], s.hVal[:16])
-
-		s.Reset()
-		return s, nil
-	}
-
-	return nil, errors.New("invalid block size for skein")
-}
-
-// New512 returns a hash.Hash computing the Skein-512 checksum.
-// If the given size is not between 1 and 64 inclusively, the
-// default hash size (64) is used.
-func New512(size int) hash.Hash {
-	s := new(skein512)
-	if size < 1 || size > Size512 {
-		s.hsize = Size512
-	} else {
-		s.hsize = size
-	}
-
-	switch s.hsize {
-	default:
-		s.addConfig(s.hsize)
-		copy(s.initVal[:], s.hVal[:8])
-	case 16:
-		s.initVal = iv512_128
-	case 20:
-		s.initVal = iv512_160
-	case 28:
-		s.initVal = iv512_224
-	case 32:
-		s.initVal = iv512_256
-	case 48:
-		s.initVal = iv512_384
-	case Size512:
-		s.initVal = iv512_512
-	}
-
-	s.Reset()
-	return s
-}
-
-// Helper functions
 
 // Convert a 32 byte array to 4 64 bit words
 func toWords256(msg *[4]uint64, in *[Size256]byte) {
@@ -395,4 +145,154 @@ func xor1024(hVal *[17]uint64, message, msg *[16]uint64) {
 	hVal[13] = message[13] ^ msg[13]
 	hVal[14] = message[14] ^ msg[14]
 	hVal[15] = message[15] ^ msg[15]
+}
+
+func (s *skein256) initialize(p *Params) {
+	if p.HashSize < 1 || p.HashSize > Size256 {
+		p.HashSize = Size256
+	}
+	s.hsize = p.HashSize
+
+	if p.Key != nil {
+		s.addParam(keyParam, p.Key)
+	}
+	s.addConfig(s.hsize)
+	if p.PublicKey != nil {
+		s.addParam(publicKeyParam, p.PublicKey)
+	}
+	if p.KeyID != nil {
+		s.addParam(keyIDParam, p.KeyID)
+	}
+	if p.Nonce != nil {
+		s.addParam(nonceParam, p.Nonce)
+	}
+	copy(s.initVal[:], s.hVal[:4])
+
+	s.Reset()
+}
+
+// Add a parameter (secret key, nonce etc.) to the hash function
+func (s *skein256) addParam(ptype uint64, param []byte) {
+	s.tweak[0] = 0
+	s.tweak[1] = ptype<<56 | firstBlock
+	s.Write(param)
+	s.finalize()
+}
+
+// Add the configuration block to the hash function
+func (s *skein256) addConfig(hashsize int) {
+	var c [32]byte
+	copy(c[:], schemaId)
+
+	bits := uint64(hashsize * 8)
+	c[8] = byte(bits)
+	c[9] = byte(bits >> 8)
+	c[10] = byte(bits >> 16)
+	c[11] = byte(bits >> 24)
+	c[12] = byte(bits >> 32)
+	c[13] = byte(bits >> 40)
+	c[14] = byte(bits >> 48)
+	c[15] = byte(bits >> 56)
+
+	s.addParam(configParam, c[:])
+}
+
+func (s *skein512) initialize(p *Params) {
+	if p.HashSize < 1 || p.HashSize > Size512 {
+		p.HashSize = Size512
+	}
+	s.hsize = p.HashSize
+
+	if p.Key != nil {
+		s.addParam(keyParam, p.Key)
+	}
+	s.addConfig(s.hsize)
+	if p.PublicKey != nil {
+		s.addParam(publicKeyParam, p.PublicKey)
+	}
+	if p.KeyID != nil {
+		s.addParam(keyIDParam, p.KeyID)
+	}
+	if p.Nonce != nil {
+		s.addParam(nonceParam, p.Nonce)
+	}
+	copy(s.initVal[:], s.hVal[:8])
+
+	s.Reset()
+}
+
+// Add a parameter (secret key, nonce etc.) to the hash function
+func (s *skein512) addParam(ptype uint64, param []byte) {
+	s.tweak[0] = 0
+	s.tweak[1] = ptype<<56 | firstBlock
+	s.Write(param)
+	s.finalize()
+}
+
+// Add the configuration block to the hash function
+func (s *skein512) addConfig(hashsize int) {
+	var c [32]byte
+	copy(c[:], schemaId)
+
+	bits := uint64(hashsize * 8)
+	c[8] = byte(bits)
+	c[9] = byte(bits >> 8)
+	c[10] = byte(bits >> 16)
+	c[11] = byte(bits >> 24)
+	c[12] = byte(bits >> 32)
+	c[13] = byte(bits >> 40)
+	c[14] = byte(bits >> 48)
+	c[15] = byte(bits >> 56)
+
+	s.addParam(configParam, c[:])
+}
+
+func (s *skein1024) initialize(p *Params) {
+	if p.HashSize < 1 || p.HashSize > Size1024 {
+		p.HashSize = Size1024
+	}
+	s.hsize = p.HashSize
+
+	if p.Key != nil {
+		s.addParam(keyParam, p.Key)
+	}
+	s.addConfig(s.hsize)
+	if p.PublicKey != nil {
+		s.addParam(publicKeyParam, p.PublicKey)
+	}
+	if p.KeyID != nil {
+		s.addParam(keyIDParam, p.KeyID)
+	}
+	if p.Nonce != nil {
+		s.addParam(nonceParam, p.Nonce)
+	}
+	copy(s.initVal[:], s.hVal[:16])
+
+	s.Reset()
+}
+
+// Add a parameter (secret key, nonce etc.) to the hash function
+func (s *skein1024) addParam(ptype uint64, param []byte) {
+	s.tweak[0] = 0
+	s.tweak[1] = ptype<<56 | firstBlock
+	s.Write(param)
+	s.finalize()
+}
+
+// Add the configuration block to the hash function
+func (s *skein1024) addConfig(hashsize int) {
+	var c [32]byte
+	copy(c[:], schemaId)
+
+	bits := uint64(hashsize * 8)
+	c[8] = byte(bits)
+	c[9] = byte(bits >> 8)
+	c[10] = byte(bits >> 16)
+	c[11] = byte(bits >> 24)
+	c[12] = byte(bits >> 32)
+	c[13] = byte(bits >> 40)
+	c[14] = byte(bits >> 48)
+	c[15] = byte(bits >> 56)
+
+	s.addParam(configParam, c[:])
 }

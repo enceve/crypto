@@ -12,7 +12,7 @@ func TestEncryptDecrypt(t *testing.T) {
 	buf, src := make([]byte, 32), make([]byte, 32)
 
 	// 256 bit key
-	c, err := New(make([]byte, 32), make([]byte, 16))
+	c, err := NewCipher(make([]byte, 32), make([]byte, 16))
 	if err != nil {
 		t.Fatalf("Failed to create Threefish-256 instance: %s", err)
 	}
@@ -25,7 +25,7 @@ func TestEncryptDecrypt(t *testing.T) {
 	buf, src = make([]byte, 64), make([]byte, 64)
 
 	// 512 bit key
-	c, err = New(make([]byte, 64), make([]byte, 16))
+	c, err = NewCipher(make([]byte, 64), make([]byte, 16))
 	if err != nil {
 		t.Fatalf("Failed to create Threefish-512 instance: %s", err)
 	}
@@ -38,7 +38,7 @@ func TestEncryptDecrypt(t *testing.T) {
 	buf, src = make([]byte, 128), make([]byte, 128)
 
 	// 1024 bit key
-	c, err = New(make([]byte, 128), make([]byte, 16))
+	c, err = NewCipher(make([]byte, 128), make([]byte, 16))
 	if err != nil {
 		t.Fatalf("Failed to create Threefish-1024 instance: %s", err)
 	}

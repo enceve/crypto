@@ -10,7 +10,7 @@ import (
 // Benchmarks
 
 func BenchmarkEncrypt256(b *testing.B) {
-	c, err := New256(make([]byte, 32), make([]byte, 16))
+	c, err := NewCipher(make([]byte, 32), make([]byte, 16))
 	if err != nil {
 		b.Fatalf("Failed to create threefish-256 instance: %s", err)
 	}
@@ -22,7 +22,7 @@ func BenchmarkEncrypt256(b *testing.B) {
 }
 
 func BenchmarkEncrypt512(b *testing.B) {
-	c, err := New512(make([]byte, 64), make([]byte, 16))
+	c, err := NewCipher(make([]byte, 64), make([]byte, 16))
 	if err != nil {
 		b.Fatalf("Failed to create threefish-256 instance: %s", err)
 	}
@@ -34,7 +34,7 @@ func BenchmarkEncrypt512(b *testing.B) {
 }
 
 func BenchmarkEncrypt1024(b *testing.B) {
-	c, err := New1024(make([]byte, 128), make([]byte, 16))
+	c, err := NewCipher(make([]byte, 128), make([]byte, 16))
 	if err != nil {
 		b.Fatalf("Failed to create threefish-256 instance: %s", err)
 	}
@@ -46,7 +46,7 @@ func BenchmarkEncrypt1024(b *testing.B) {
 }
 
 func BenchmarkDecrypt256(b *testing.B) {
-	c, err := New256(make([]byte, 32), make([]byte, 16))
+	c, err := NewCipher(make([]byte, 32), make([]byte, 16))
 	if err != nil {
 		b.Fatalf("Failed to create threefish-256 instance: %s", err)
 	}
@@ -58,7 +58,7 @@ func BenchmarkDecrypt256(b *testing.B) {
 }
 
 func BenchmarkDecrypt512(b *testing.B) {
-	c, err := New512(make([]byte, 64), make([]byte, 16))
+	c, err := NewCipher(make([]byte, 64), make([]byte, 16))
 	if err != nil {
 		b.Fatalf("Failed to create threefish-256 instance: %s", err)
 	}
@@ -70,7 +70,7 @@ func BenchmarkDecrypt512(b *testing.B) {
 }
 
 func BenchmarkDecrypt1024(b *testing.B) {
-	c, err := New1024(make([]byte, 128), make([]byte, 16))
+	c, err := NewCipher(make([]byte, 128), make([]byte, 16))
 	if err != nil {
 		b.Fatalf("Failed to create threefish-256 instance: %s", err)
 	}
