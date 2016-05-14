@@ -25,15 +25,18 @@ var vectors []testVector = []testVector{
 // Tests the SipHash implementation
 func TestVectors(t *testing.T) {
 	for i, v := range vectors {
-		key, err := hex.DecodeString(v.key)
+		var key [16]byte
+		k, err := hex.DecodeString(v.key)
 		if err != nil {
 			t.Fatalf("Test vector %d: Failed to decode hex key: %s", i, err)
 		}
+		copy(key[:], k)
+
 		msg, err := hex.DecodeString(v.msg)
 		if err != nil {
 			t.Fatalf("Test vector %d: Failed to decode hex msg: %s", i, err)
 		}
-		h, err := New(key)
+		h, err := New(key[:])
 		if err != nil {
 			t.Fatalf("Test vector %d: Failed to create Siphash instance: %s", i, err)
 		}
@@ -47,7 +50,7 @@ func TestVectors(t *testing.T) {
 		if sum != v.hash {
 			t.Fatalf("Test vector %d: Hash values don't match - found %x expected %x", i, sum, v.hash)
 		}
-		sum, err = Sum64(msg, key)
+		sum = Sum64(msg, &key)
 		if err != nil {
 			t.Fatalf("Test vector %d: Failed to calculate MAC: %s", i, err)
 		}

@@ -30,7 +30,7 @@ func TestEncryptDecrypt(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to read from random source: %s", err)
 	}
-	c, err := New(key)
+	c, err := NewCipher(key)
 	if err != nil {
 		t.Fatalf("Failed to create Serpent instance: %s", err)
 	}
@@ -46,7 +46,7 @@ func TestEncryptDecrypt(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to read from random source: %s", err)
 	}
-	c, err = New(key)
+	c, err = NewCipher(key)
 	if err != nil {
 		t.Fatalf("Failed to create Serpent instance: %s", err)
 	}
@@ -62,7 +62,7 @@ func TestEncryptDecrypt(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to read from random source: %s", err)
 	}
-	c, err = New(key)
+	c, err = NewCipher(key)
 	if err != nil {
 		t.Fatalf("Failed to create Serpent instance: %s", err)
 	}

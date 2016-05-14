@@ -4,13 +4,13 @@
 
 package siphash
 
-// Fills and processes the buffer of the siphash struct.
-func flush(h *siphash) {
+// fills and processes the buffer of the siphash struct.
+func flush(h *hashFunc) {
 	blocks(h, h.buf[:])
 }
 
 // finish the hash calculation
-func finalize(h *siphash) uint64 {
+func siphashFinalize(h *hashFunc) uint64 {
 	flush(h)
 
 	v0, v1, v2, v3 := h.v0, h.v1, h.v2, h.v3
@@ -96,7 +96,7 @@ func finalize(h *siphash) uint64 {
 }
 
 // updates the hash value by processing the p slice
-func blocks(h *siphash, p []uint8) {
+func siphashCore(h *hashFunc, p []uint8) {
 	v0, v1, v2, v3 := h.v0, h.v1, h.v2, h.v3
 
 	for i := 0; i < len(p); i += BlockSize {

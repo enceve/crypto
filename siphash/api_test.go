@@ -12,7 +12,7 @@ import (
 
 // Tests Blocksize() declared in hash.Hash
 func TestBlockSize(t *testing.T) {
-	h, err := New(make([]byte, KeySize))
+	h, err := New(make([]byte, 16))
 	if err != nil {
 		t.Fatalf("Could not create siphash instance: %s", err)
 	}
@@ -23,7 +23,7 @@ func TestBlockSize(t *testing.T) {
 
 // Tests Size() declared in hash.Hash
 func TestSize(t *testing.T) {
-	h, err := New(make([]byte, KeySize))
+	h, err := New(make([]byte, 16))
 	if err != nil {
 		t.Fatalf("Could not create siphash instance: %s", err)
 	}
@@ -34,11 +34,11 @@ func TestSize(t *testing.T) {
 
 // Tests Reset() declared in hash.Hash
 func TestReset(t *testing.T) {
-	h, err := New(make([]byte, KeySize))
+	h, err := New(make([]byte, 16))
 	if err != nil {
 		t.Fatalf("Could not create siphash instance: %s", err)
 	}
-	s, ok := h.(*siphash)
+	s, ok := h.(*hashFunc)
 	if !ok {
 		t.Fatal("Impossible situation: New returns no siphash struct")
 	}
@@ -71,7 +71,7 @@ func TestReset(t *testing.T) {
 
 // Tests Write(p []byte) declared in hash.Hash
 func TestWrite(t *testing.T) {
-	key := make([]byte, KeySize)
+	key := make([]byte, 16)
 	h, err := New(key)
 	if err != nil {
 		t.Fatalf("Failed to create instance of siphash - Cause: %s", err)
@@ -96,7 +96,8 @@ func TestWrite(t *testing.T) {
 
 // Tests Sum(b []byte) declared in hash.Hash
 func TestSum(t *testing.T) {
-	h, err := New(make([]byte, KeySize))
+	var key [16]byte
+	h, err := New(key[:])
 	if err != nil {
 		t.Fatalf("Failed to create siphash instance: %s", err)
 	}
@@ -107,11 +108,8 @@ func TestSum(t *testing.T) {
 	h.Write(one[:])
 
 	sum1 := h.Sum(nil)
-	sum2, err := Sum(append(make([]byte, BlockSize), one[:]...), make([]byte, KeySize))
-	if err != nil {
-		t.Fatalf("Failed to calculate siphash sum: %s", err)
-	}
-
+	var sum2 [Size]byte
+	Sum(&sum2, append(make([]byte, BlockSize), one[:]...), &key)
 	if !bytes.Equal(sum1, sum2[:]) {
 		t.Fatalf("Hash does not match:\nFound:    %s\nExpected: %s", hex.EncodeToString(sum1), hex.EncodeToString(sum2[:]))
 	}
@@ -135,29 +133,28 @@ func TestNew(t *testing.T) {
 
 // Tests Sum(msg, key []byte) declared here (siphash)
 func TestSumFunc(t *testing.T) {
-	h, err := New(make([]byte, KeySize))
+	var key [16]byte
+	h, err := New(key[:])
 	if err != nil {
 		t.Fatalf("Failed to create siphash instance: %s", err)
 	}
 
 	h.Write(nil)
 	sum1 := h.Sum(nil)
-	sum2, err := Sum(nil, make([]byte, KeySize))
-	if err != nil {
-		t.Fatalf("Failed to calculate the sum: %s", err)
-	}
+	var sum2 [Size]byte
+	Sum(&sum2, nil, &key)
 	if !bytes.Equal(sum1, sum2[:]) {
 		t.Fatalf("Hash does not match:\nFound:    %s\nExpected: %s", hex.EncodeToString(sum1), hex.EncodeToString(sum2[:]))
 	}
 
-	h, err = New(make([]byte, KeySize))
+	h, err = New(key[:])
 	if err != nil {
 		t.Fatalf("Failed to create siphash instance: %s", err)
 	}
 
 	h.Write(make([]byte, 1))
 	sum1 = h.Sum(nil)
-	sum2, err = Sum(make([]byte, 1), make([]byte, KeySize))
+	Sum(&sum2, make([]byte, 1), &key)
 	if err != nil {
 		t.Fatalf("Failed to calculate the sum: %s", err)
 	}

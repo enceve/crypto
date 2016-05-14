@@ -3,6 +3,8 @@
 
 package serpent
 
+const phi = 0x9e3779b9 // The Serpent phi constant (sqrt(5) - 1) * 2**31
+
 // The key schedule of serpent.
 // Serpent takes an 128, 192 or 256 bit key and expand/transform it to 8 x 32 bit words.
 // These 8 words are transformed to other 8 words. From the resulting 8 words the

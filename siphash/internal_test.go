@@ -20,23 +20,22 @@ func BenchmarkWrite(b *testing.B) {
 }
 
 func BenchmarkSum(b *testing.B) {
-	key := make([]byte, 16)
-	msg := make([]byte, BlockSize)
+	var key [16]byte
+	var out [Size]byte
+	msg := make([]byte, 1500)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		Sum(msg, key)
+		Sum(&out, msg, &key)
 	}
 }
 
 func BenchmarkVerify(b *testing.B) {
-	key := make([]byte, 16)
-	msg := make([]byte, BlockSize)
-	hash, err := Sum(msg, key)
-	if err != nil {
-		b.Fatalf("Failed to calculate checksum - Cause: %s", err)
-	}
+	var key [16]byte
+	var hash [Size]byte
+	msg := make([]byte, 1500)
+	Sum(&hash, msg, &key)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		Verify(hash, msg, key)
+		Verify(&hash, msg, &key)
 	}
 }

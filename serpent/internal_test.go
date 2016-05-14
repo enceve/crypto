@@ -153,7 +153,7 @@ func TestLinear(t *testing.T) {
 // Benchmarks
 
 func BenchmarkEncrypt(b *testing.B) {
-	c, err := New(make([]byte, 16))
+	c, err := NewCipher(make([]byte, 16))
 	if err != nil {
 		b.Fatalf("Failed to create Serpent instance - Cause: %s", err)
 	}
@@ -165,7 +165,7 @@ func BenchmarkEncrypt(b *testing.B) {
 }
 
 func BenchmarkDecrypt(b *testing.B) {
-	c, err := New(make([]byte, 16))
+	c, err := NewCipher(make([]byte, 16))
 	if err != nil {
 		b.Fatalf("Failed to create Serpent instance - Cause: %s", err)
 	}
@@ -178,7 +178,7 @@ func BenchmarkDecrypt(b *testing.B) {
 
 func BenchmarkKeySchedule(b *testing.B) {
 	key := make([]byte, 32)
-	c := new(serpentCipher)
+	c := new(blockCipher)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		keySchedule(key, &(c.sk))

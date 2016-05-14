@@ -68,7 +68,7 @@ func TestVectors(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Test vector %d: Failed to decode hex ciphertext: %s", i, err)
 		}
-		c, err := New(key)
+		c, err := NewCipher(key)
 		if err != nil {
 			t.Fatalf("Test vector %d: Failed to create cipher instance: %s", i, err)
 		}
