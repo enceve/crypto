@@ -53,7 +53,7 @@ type Padding interface {
 	Unpad(src []byte) ([]byte, error)
 }
 
-// Returns a new Padding implementing the ANSI X.923 scheme.
+// NewX923 returns a new pad.Padding implementing the ANSI X.923 scheme.
 // Only block sizes between 1 and 255 are legal.
 // This function panics if the blocksize is smaller than 1
 // or greater than 255.
@@ -65,11 +65,11 @@ func NewX923(blocksize int) Padding {
 	return pad
 }
 
-// Returns a new Padding implementing the PKCS 7 scheme.
+// NewPKCS7 returns a new pad.Padding implementing the PKCS 7 scheme.
 // Only block sizes between 1 and 255 are legal.
 // This function panics if the blocksize is smaller than 1
 // or greater than 255.
-func NewPkcs7(blocksize int) Padding {
+func NewPKCS7(blocksize int) Padding {
 	if blocksize < 1 || blocksize > 255 {
 		panic("illegal blocksize - size must between 0 and 256")
 	}
@@ -77,14 +77,14 @@ func NewPkcs7(blocksize int) Padding {
 	return pad
 }
 
-// Returns a new Padding, which uses the padding scheme
+// NewISO10126 returns a new pad.Padding, which uses the padding scheme
 // described in ISO 10126. The padding bytes are taken
 // form the given rand argument. This reader should return
 // random data.
 // Only block sizes between 1 and 255 are legal.
 // This function panics if the blocksize is smaller than 1
 // or greater than 255.
-func NewIso10126(blocksize int, rand io.Reader) Padding {
+func NewISO10126(blocksize int, rand io.Reader) Padding {
 	if blocksize < 1 || blocksize > 255 {
 		panic("illegal blocksize - size must between 0 and 256")
 	}

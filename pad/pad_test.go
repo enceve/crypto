@@ -16,7 +16,7 @@ var paddings []Padding = []Padding{
 	NewIso10126(blocksize, rand.Reader),
 }
 
-func TestPkcs7(t *testing.T) {
+func TestPKCS7(t *testing.T) {
 	p := NewPkcs7(blocksize)
 	padded := p.Pad(make([]byte, blocksize-4))
 	for i := blocksize - 4; i < blocksize; i++ {
@@ -44,7 +44,7 @@ func TestX923(t *testing.T) {
 	}
 }
 
-func TestPaddings(t *testing.T) {
+func TestCommon(t *testing.T) {
 	for i := range paddings {
 		generalPaddingTest(t, paddings[i])
 	}
