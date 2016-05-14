@@ -11,13 +11,13 @@ import (
 const blocksize = 16
 
 var paddings []Padding = []Padding{
-	NewPkcs7(blocksize),
+	NewPKCS7(blocksize),
 	NewX923(blocksize),
-	NewIso10126(blocksize, rand.Reader),
+	NewISO10126(blocksize, rand.Reader),
 }
 
 func TestPKCS7(t *testing.T) {
-	p := NewPkcs7(blocksize)
+	p := NewPKCS7(blocksize)
 	padded := p.Pad(make([]byte, blocksize-4))
 	for i := blocksize - 4; i < blocksize; i++ {
 		if padded[i] != 4 {
@@ -44,7 +44,7 @@ func TestX923(t *testing.T) {
 	}
 }
 
-func TestCommon(t *testing.T) {
+func TestPaddings(t *testing.T) {
 	for i := range paddings {
 		generalPaddingTest(t, paddings[i])
 	}
