@@ -6,7 +6,7 @@ package siphash
 
 // fills and processes the buffer of the siphash struct.
 func flush(h *hashFunc) {
-	blocks(h, h.buf[:])
+	siphashCore(h, h.buf[:])
 }
 
 // finish the hash calculation

@@ -160,7 +160,7 @@ func TestNew(t *testing.T) {
 	}
 
 	// Test 256 bit block cipher
-	c, err = threefish.New256(make([]byte, 32), make([]byte, 16))
+	c, err = threefish.NewCipher(make([]byte, 32), make([]byte, 16))
 	if err != nil {
 		t.Fatalf("Could not create Threefish-256 instance: %s", err)
 	}
@@ -170,7 +170,7 @@ func TestNew(t *testing.T) {
 	}
 
 	// Test 512 bit block cipher
-	c, err = threefish.New512(make([]byte, 64), make([]byte, 16))
+	c, err = threefish.NewCipher(make([]byte, 64), make([]byte, 16))
 	if err != nil {
 		t.Fatalf("Could not create Threefish-512 instance: %s", err)
 	}
@@ -180,7 +180,7 @@ func TestNew(t *testing.T) {
 	}
 
 	// Test 1024 bit block cipher
-	c, err = threefish.New1024(make([]byte, 128), make([]byte, 16))
+	c, err = threefish.NewCipher(make([]byte, 128), make([]byte, 16))
 	if err != nil {
 		t.Fatalf("Could not create Threefish-1024 instance: %s", err)
 	}
