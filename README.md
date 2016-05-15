@@ -2,7 +2,7 @@
 
 [![Build Status](https://api.travis-ci.org/EncEve/crypto.svg?branch=master)](https://api.travis-ci.org/EncEve/crypto)
 [![Godoc Reference](https://godoc.org/github.com/EncEve/crypto?status.svg)](https://godoc.org/github.com/EncEve/crypto)
-[![Code Report](https://goreportcard.com/report/github.com/EncEve/crypto)](https://goreportcard.com/report/github.com/EncEve/crypto)
+[![Go Report](https://goreportcard.com/badge/github.com/EncEve/crypto)](https://goreportcard.com/report/github.com/EncEve/crypto)
 
 ### Introduction
 
