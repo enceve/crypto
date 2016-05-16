@@ -3,8 +3,6 @@
 
 package threefish
 
-const C240 = 0x1bd11bdaa9fc1a22 // C240 is the key schedule constant
-
 const (
 	blockSize256  = 32  // the blocksize of threefish-256 in bytes
 	blockSize512  = 64  // the blocksize of threefish-512 in bytes

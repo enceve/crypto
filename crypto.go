@@ -1,7 +1,7 @@
 // Use of this source code is governed by a license
 // that can be found in the LICENSE file.
 
-// The crypto package contains commen and general useful
+// Package crypto contains commen and general useful
 // cryptographic functions and types.
 package crypto
 
@@ -15,7 +15,7 @@ func (k KeySizeError) Error() string {
 	return "invalid key size " + strconv.Itoa(int(k))
 }
 
-// A KeySizeError indicates, that the size of a given key
+// A NonceSizeError indicates, that the size of a given key
 // does not match the expected size.
 type NonceSizeError int
 

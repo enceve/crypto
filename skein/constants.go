@@ -4,9 +4,12 @@
 package skein
 
 const (
-	Size1024 = 128 // The max. hash and block size of Skein-1024 in bytes.
-	Size512  = 64  // The max. hash and block size of Skein-512 in bytes.
-	Size256  = 32  // The max. hash and block of Skein-256 in bytes.
+	// The max. hash and block size of Skein-1024 in bytes.
+	Size1024 = 128
+	// The max. hash and block size of Skein-512 in bytes.
+	Size512 = 64
+	// The max. hash and block of Skein-256 in bytes.
+	Size256 = 32
 )
 
 // The different parameter types

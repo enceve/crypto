@@ -1,7 +1,7 @@
 // Use of this source code is governed by a license
 // that can be found in the LICENSE file.
 
-// The package siphash implements a hash / MAC function
+// Package siphash implements a hash / MAC function
 // developed Jean-Philippe Aumasson and Daniel J Bernstein
 // in 2012. SipHash computes 64-bit message authentication
 // code from a variable-length message and a 128-bit secret
@@ -27,8 +27,10 @@ const (
 )
 
 const (
-	BlockSize = 8 // The block size of SipHash in bytes.
-	Size      = 8 // The size of hash / MAC in bytes.
+	// The block size of SipHash in bytes.
+	BlockSize = 8
+	// The size of hash / MAC in bytes.
+	Size = 8
 )
 
 // New returns a hash.Hash64 computing the SipHash checksum.
@@ -61,8 +63,8 @@ func Sum(out *[Size]byte, msg []byte, key *[16]byte) {
 	out[7] = byte(r >> 56)
 }
 
-// Sum generates and returns the 64 bit authenticator
-// for msg using a 128 bit (16 byte) key
+// Sum64 generates and returns the 64 bit authenticator
+// for msg using a 128 bit (16 byte) key.
 func Sum64(msg []byte, key *[16]byte) uint64 {
 	h := new(hashFunc)
 	h.k0 = uint64(key[0]) | uint64(key[1])<<8 | uint64(key[2])<<16 | uint64(key[3])<<24 |

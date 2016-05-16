@@ -1,7 +1,7 @@
 // Use of this source code is governed by a license
 // that can be found in the LICENSE file.
 
-// The threefish package implements the tweakable
+// Package threefish implements the tweakable
 // block cipher Threefish designed by Niels Ferguson,
 // Stefan Lucks, Bruce Schneier, Doug Whiting,
 // Mihir Bellare, Tadayoshi Kohno, Jon Callas and
@@ -20,9 +20,14 @@ import (
 	"github.com/EncEve/crypto"
 )
 
-const TweakSize = 16 // the size of the tweak in bytes.
+const (
+	// The size of the tweak in bytes.
+	TweakSize = 16
+	// C240 is the key schedule constant
+	C240 = 0x1bd11bdaa9fc1a22
+)
 
-// New returns a cipher.Block implementing the Threefish cipher.
+// NewCipher returns a cipher.Block implementing the Threefish cipher.
 // The length of the key must be 32 (256 bit), 64 (512 bit)
 // or 128 (1024 bit). The length of the tweak must be 16 (128 bit).
 // The returned cipher implements:

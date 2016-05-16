@@ -15,8 +15,8 @@ func TestBlockSize(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Could not create Poly1305 instance: %s", err)
 	}
-	if bs := h.BlockSize(); bs != TagSize || bs != 16 {
-		t.Fatalf("BlockSize() returned: %d - but expected: %d", bs, 16)
+	if bs := h.BlockSize(); bs != TagSize {
+		t.Fatalf("BlockSize() returned: %d - but expected: %d", bs, TagSize)
 	}
 }
 
@@ -26,8 +26,8 @@ func TestSize(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Could not create Poly1305 instance: %s", err)
 	}
-	if s := h.Size(); s != TagSize || s != 16 {
-		t.Fatalf("Size() returned: %d - but expected: %d", s, 16)
+	if s := h.Size(); s != TagSize {
+		t.Fatalf("Size() returned: %d - but expected: %d", s, TagSize)
 	}
 }
 

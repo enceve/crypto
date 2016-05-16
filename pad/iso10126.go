@@ -55,7 +55,7 @@ func (p *isoPadding) Unpad(src []byte) ([]byte, error) {
 
 // verify the iso10126 padding
 func verifyISO(block []byte, length int) (int, error) {
-	var err error = nil
+	var err error
 	padLen := block[length-1]
 	if padLen <= 0 || int(padLen) > length {
 		err = LengthError(padLen)

@@ -47,7 +47,7 @@ func (p pkcs7Padding) Unpad(src []byte) ([]byte, error) {
 
 // verify the pkcs7 padding in (nearly) constant time
 func verifyPkcs7ConstTime(block []byte, blocksize int) (int, error) {
-	var err error = nil
+	var err error
 	padLen := block[blocksize-1]
 	if padLen <= 0 || int(padLen) > blocksize {
 		err = LengthError(padLen)

@@ -16,8 +16,8 @@ func TestBlockSize(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Could not create blake2s instance: %s", err)
 	}
-	if bs := h.BlockSize(); bs != BlockSize || bs != 64 {
-		t.Fatalf("BlockSize() returned: %d - but expected: %d", bs, 64)
+	if bs := h.BlockSize(); bs != BlockSize {
+		t.Fatalf("BlockSize() returned: %d - but expected: %d", bs, BlockSize)
 	}
 }
 
@@ -27,15 +27,15 @@ func TestSize(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Could not create blake2s instance: %s", err)
 	}
-	if s := h.Size(); s != Size || s != 32 {
-		t.Fatalf("Size() returned: %d - but expected: %d", s, 32)
+	if s := h.Size(); s != Size {
+		t.Fatalf("Size() returned: %d - but expected: %d", s, Size)
 	}
 
 	h, err = New(&Params{HashSize: 16})
 	if err != nil {
 		t.Fatalf("Could not create blake2s instance: %s", err)
 	}
-	if s := h.Size(); s != Size/2 || s != 16 {
+	if s := h.Size(); s != 16 {
 		t.Fatalf("Size() returned: %d - but expected: %d", s, 16)
 	}
 }

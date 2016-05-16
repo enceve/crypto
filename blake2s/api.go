@@ -1,7 +1,7 @@
 // Use of this source code is governed by a license
 // that can be found in the LICENSE file.
 
-// The blake2s package implements the blake2s hash function.
+// Package blake2s implements the Blake2s hash function.
 // Blake2s is the 32 bit version of the blake2 hash function
 // and supports hash values from 8 to 256 bit (1 to 32 byte).
 // The package API directly supports 160 and 256 bit
@@ -15,7 +15,7 @@ import (
 	"hash"
 )
 
-// The parameters for configuring the blake2s hash function.
+// Params contains the configuration for the blake2s hash function.
 // All values are optional. If the HashSize is not between 1
 // and 32 inclusively, it will be set to the default value.
 type Params struct {
@@ -52,7 +52,7 @@ func Sum(msg []byte, p *Params) ([]byte, error) {
 	return h.Sum(nil), nil
 }
 
-// Returns a new hash.Hash computing the blake2s checksum.
+// New returns a new hash.Hash computing the blake2s checksum.
 // The Params argument must not be nil and must contain valid
 // parameters.
 func New(p *Params) (hash.Hash, error) {
@@ -82,7 +82,7 @@ type hashFunc struct {
 
 func (h *hashFunc) BlockSize() int { return BlockSize }
 
-func (b *hashFunc) Size() int { return b.hsize }
+func (h *hashFunc) Size() int { return h.hsize }
 
 func (h *hashFunc) Write(p []byte) (int, error) {
 	n := len(p)

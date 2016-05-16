@@ -1,7 +1,7 @@
 // Use of this source code is governed by a license
 // that can be found in the LICENSE file.
 
-// The serpent package implements the Serpent block cipher
+// Package serpent implements the Serpent block cipher
 // submitted to the AES challenge. Serpent was designed by
 // Ross Anderson, Eli Biham und Lars Knudsen.
 // The block cipher takes a 128, 192 or 256 bit key and
@@ -14,9 +14,10 @@ import (
 	"github.com/EncEve/crypto"
 )
 
-const BlockSize = 16 // The Serpent block size in bytes.
+// The Serpent block size in bytes.
+const BlockSize = 16
 
-// New returns a new cipher.Block implementing the serpent block cipher.
+// NewCipher returns a new cipher.Block implementing the serpent block cipher.
 // The key argument must be 128, 192 or 256 bit (16, 24, 32 byte).
 func NewCipher(key []byte) (cipher.Block, error) {
 	if k := len(key); k != 16 && k != 24 && k != 32 {

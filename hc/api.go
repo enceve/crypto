@@ -1,7 +1,7 @@
 // Use of this source code is governed by a license
 // that can be found in the LICENSE file.
 
-// The hc package implements the both stream ciphers
+// Package hc implements the both stream ciphers
 // HC-128 and HC-256 from the eSTREAM portfolio (software).
 // Both ciphers were designed by Hongjun Wu.
 // HC-128 and HC-256 are fast stream ciphers after[!]

@@ -16,8 +16,8 @@ func TestBlockSize(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Could not create siphash instance: %s", err)
 	}
-	if bs := h.BlockSize(); bs != BlockSize || bs != 8 {
-		t.Fatalf("BlockSize() returned: %d - but expected: %d", bs, 8)
+	if bs := h.BlockSize(); bs != BlockSize {
+		t.Fatalf("BlockSize() returned: %d - but expected: %d", bs, BlockSize)
 	}
 }
 
@@ -27,8 +27,8 @@ func TestSize(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Could not create siphash instance: %s", err)
 	}
-	if bs := h.Size(); bs != Size || bs != 8 {
-		t.Fatalf("BlockSize() returned: %d - but expected: %d", bs, 8)
+	if bs := h.Size(); bs != Size {
+		t.Fatalf("BlockSize() returned: %d - but expected: %d", bs, BlockSize)
 	}
 }
 

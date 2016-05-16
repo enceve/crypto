@@ -45,7 +45,7 @@ func (p x923Padding) Unpad(src []byte) ([]byte, error) {
 
 // verify the X923 padding in (nearly) constant time
 func verifyX923ConstTime(block []byte, blocksize int) (int, error) {
-	var err error = nil
+	var err error
 	padLen := block[blocksize-1]
 	if padLen <= 0 || int(padLen) > blocksize {
 		err = LengthError(padLen)

@@ -1,7 +1,7 @@
 // Use of this source code is governed by a license
 // that can be found in the LICENSE file.
 
-// The blake2b package implements the blake2b hash function
+// Package blake2b implements the Blake2b hash function
 // based on the RFC 7693 (https://tools.ietf.org/html/rfc7693).
 // Blake2b is the 64 bit version of the blake2 hash function
 // and supports hash values from 8 to 512 bit (1 to 64 byte).
@@ -16,7 +16,7 @@ import (
 	"hash"
 )
 
-// The parameters for configuring the blake2b hash function.
+// Params contains the configuration for the blake2b hash function.
 // All values are optional. If the HashSize is not between 1
 // and 64 inclusively, it will be set to the default value.
 type Params struct {

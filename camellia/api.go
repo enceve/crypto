@@ -1,7 +1,7 @@
 // Use of this source code is governed by a license
 // that can be found in the LICENSE file.
 
-// The camellia package implements the camellia block cipher.
+// Package camellia implements the camellia block cipher.
 // The cipher has block size of 128 bit (16 byte) and
 // accepts 128, 192 or 256 bit keys (16, 24, 32 byte).
 // Camellia was jointly developed by Mitsubishi Electric
@@ -15,7 +15,8 @@ import (
 	"github.com/EncEve/crypto"
 )
 
-const BlockSize = 16 // The block size of the camellia block cipher in bytes.
+// The block size of the camellia block cipher in bytes.
+const BlockSize = 16
 
 // NewCipher returns a new cipher.Block implementing the camellia cipher.
 // The key argument must be 128, 192 or 256 bit (16, 24, 32 byte).

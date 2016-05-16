@@ -16,51 +16,51 @@ func TestBlockSize(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Could not create Skein-256 instance: %s", err)
 	}
-	if bs := h.BlockSize(); bs != Size256 || bs != 32 {
-		t.Fatalf("BlockSize() returned: %d - but expected: %d", bs, 32)
+	if bs := h.BlockSize(); bs != Size256 {
+		t.Fatalf("BlockSize() returned: %d - but expected: %d", bs, Size256)
 	}
 
 	h, err = New(&Params{BlockSize: Size512})
 	if err != nil {
 		t.Fatalf("Could not create Skein-512 instance: %s", err)
 	}
-	if bs := h.BlockSize(); bs != Size512 || bs != 64 {
-		t.Fatalf("BlockSize() returned: %d - but expected: %d", bs, 64)
+	if bs := h.BlockSize(); bs != Size512 {
+		t.Fatalf("BlockSize() returned: %d - but expected: %d", bs, Size512)
 	}
 
 	h, err = New(&Params{BlockSize: Size1024})
 	if err != nil {
 		t.Fatalf("Could not create Skein-1024 instance: %s", err)
 	}
-	if bs := h.BlockSize(); bs != Size1024 || bs != 128 {
-		t.Fatalf("BlockSize() returned: %d - but expected: %d", bs, 128)
+	if bs := h.BlockSize(); bs != Size1024 {
+		t.Fatalf("BlockSize() returned: %d - but expected: %d", bs, Size1024)
 	}
 }
 
 // Tests Size() declared in hash.Hash
 func TestSize(t *testing.T) {
-	h, err := New(&Params{BlockSize: Size256, HashSize: 20})
+	h, err := New(&Params{BlockSize: Size256, HashSize: Size256})
 	if err != nil {
 		t.Fatalf("Could not create Skein-256 instance: %s", err)
 	}
-	if s := h.Size(); s != 20 {
-		t.Fatalf("Size() returned: %d - but expected: %d", s, 20)
+	if s := h.Size(); s != Size256 {
+		t.Fatalf("Size() returned: %d - but expected: %d", s, Size256)
 	}
 
 	h, err = New(&Params{BlockSize: Size512, HashSize: Size512})
 	if err != nil {
 		t.Fatalf("Could not create Skein-512 instance: %s", err)
 	}
-	if s := h.Size(); s != Size512 || s != 64 {
-		t.Fatalf("Size() returned: %d - but expected: %d", s, 64)
+	if s := h.Size(); s != Size512 {
+		t.Fatalf("Size() returned: %d - but expected: %d", s, Size512)
 	}
 
 	h, err = New(&Params{BlockSize: Size1024, HashSize: Size1024})
 	if err != nil {
 		t.Fatalf("Could not create Skein-1024 instance: %s", err)
 	}
-	if s := h.Size(); s != Size1024 || s != 128 {
-		t.Fatalf("Size() returned: %d - but expected: %d", s, 128)
+	if s := h.Size(); s != Size1024 {
+		t.Fatalf("Size() returned: %d - but expected: %d", s, Size1024)
 	}
 }
 

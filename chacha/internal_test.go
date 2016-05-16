@@ -69,6 +69,6 @@ func BenchmarkOpen(b *testing.B) {
 	ciphertext = c.Seal(ciphertext, nonce, msg, data)
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		dst, err = c.Open(dst, nonce, ciphertext, data)
+		dst, _ = c.Open(dst, nonce, ciphertext, data)
 	}
 }

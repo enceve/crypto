@@ -51,6 +51,9 @@ func TestReset(t *testing.T) {
 		t.Fatalf("Could not create AES instance: %s", err)
 	}
 	h, err := New(cipher)
+	if err != nil {
+		t.Fatalf("Failed to use CMac with the specified cipher")
+	}
 	c, ok := h.(*macFunc)
 	if !ok {
 		t.Fatal("Impossible situation: New returns no CMac struct")

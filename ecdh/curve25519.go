@@ -31,7 +31,7 @@ func (c *Curve25519) GenerateKey(rand io.Reader) (private, public *[32]byte, err
 	return
 }
 
-// Computes the secret value from the own private key and
+// ComputeSecret computes the secret value from the own private key and
 // the peers public key. This function does the Diffie-Hellman
 // exchange.
 func (c *Curve25519) ComputeSecret(secret, private, peersPublic *[32]byte) {

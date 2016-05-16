@@ -1,7 +1,7 @@
 // Use of this source code is governed by a license
 // that can be found in the LICENSE file.
 
-// The chacha package implements D J Bernstein's Chacha20 stream cipher algorithm
+// Package chacha implements D J Bernstein's Chacha20 stream cipher algorithm
 // and the ChaCha20-Poly1305 AEAD construction described in RFC 7539. Notice that
 // this implementation of ChaCha20 can only process 64 x 2^32 bytes (256 GB)
 // for one specific key and nonce combination.
@@ -17,8 +17,10 @@ import (
 )
 
 const (
-	NonceSize = 12               // The size of the nonce for ChaCha20 in bytes.
-	TagSize   = poly1305.TagSize // The max. size of the auth. tag for the ChaCha-Poly1305 AEAD cipher in bytes.
+	// The size of the nonce for ChaCha20 in bytes.
+	NonceSize = 12
+	// The max. size of the auth. tag for the ChaCha-Poly1305 AEAD cipher in bytes.
+	TagSize = poly1305.TagSize
 )
 
 // XORKeyStream xor`s each byte in the given src with a byte from the

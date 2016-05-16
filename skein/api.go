@@ -1,7 +1,7 @@
 // Use of this source code is governed by a license
 // that can be found in the LICENSE file
 
-// The skein package implements the skein hash functions
+// Package skein implements the skein hash functions
 // developed by Niels Ferguson, Stefan Lucks, Bruce Schneier,
 // Doug Whiting, Mihir Bellare, Tadayoshi Kohno, Jon Callas,
 // and Jesse Walker.
@@ -28,7 +28,7 @@ import (
 	"hash"
 )
 
-// The configuration parameters for skein.
+// Params contains the Skein configuration parameters.
 // The BlockSize field is required and must be set
 // to a valid value (32, 64, 128). If the HashSize
 // is not set (or invalid), the default value, which

@@ -23,7 +23,8 @@ import (
 	"github.com/EncEve/crypto"
 )
 
-const TagSize = 16 // The size of the poly1305 authentication tag in bytes.
+// The size of the poly1305 authentication tag in bytes.
+const TagSize = 16
 
 // Verify returns true if and only if the mac is a valid authenticator
 // for msg with the given key.

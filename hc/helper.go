@@ -1,14 +1,6 @@
 // Use of this source code is governed by a license
 // that can be found in the LICENSE file.
 
-// The hc package implements the both stream ciphers
-// HC-128 and HC-256 from the eSTREAM portfolio (software).
-// Both ciphers were designed by Hongjun Wu.
-// HC-128 and HC-256 are fast stream ciphers after[!]
-// initialization. This may not be an issue, but if keys
-// change too often, both ciphers spend a lot of time in
-// initialization. In this case another cipher may perform
-// better.
 package hc
 
 const (
@@ -47,10 +39,10 @@ func (c *streamCipher128) initialize(key, nonce []byte) {
 
 	// do 1024 iterations for initialization
 	c.ctr = 0
-	for i, _ := range c.p {
+	for i := range c.p {
 		c.p[i] = c.keystream128()
 	}
-	for i, _ := range c.q {
+	for i := range c.q {
 		c.q[i] = c.keystream128()
 	}
 	c.ctr = 0

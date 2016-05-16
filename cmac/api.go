@@ -1,7 +1,7 @@
 // Use of this source code is governed by a license
 // that can be found in the LICENSE file.
 
-// The cmac package implements the fast CMac MAC based on
+// Package cmac implements the fast CMac MAC based on
 // a block cipher. This mode of operation fixes security
 // deficiencies of CBC-MAC (CBC-MAC is secure only for
 // fixed-length messages). CMac is equal to OMAC1.

@@ -4,8 +4,10 @@
 package blake2s
 
 const (
-	BlockSize = 64 // The block size of blake2s in bytes.
-	Size      = 32 // The max. hash size of blake2s in bytes.
+	// The block size of blake2s in bytes.
+	BlockSize = 64
+	// The max. hash size of blake2s in bytes.
+	Size = 32
 )
 
 const (
