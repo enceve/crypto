@@ -4,14 +4,9 @@
 
 package siphash
 
-// fills and processes the buffer of the siphash struct.
-func flush(h *hashFunc) {
-	siphashCore(h, h.buf[:])
-}
-
 // finish the hash calculation
 func siphashFinalize(h *hashFunc) uint64 {
-	flush(h)
+	siphashCore(h, h.buf[:])
 
 	v0, v1, v2, v3 := h.v0, h.v1, h.v2, h.v3
 	v2 ^= 0xff

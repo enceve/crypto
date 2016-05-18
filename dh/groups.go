@@ -75,7 +75,7 @@ func initAll() {
 	initRFC3526_4096()
 }
 
-// RFC3526_3072 creates a new dh.Group consisting of the prime
+// RFC3526_2048 creates a new dh.Group consisting of the prime
 // and the generator. The prime (and generator) are
 // described in RFC 3526 (3.). The prime is a 2048 bit value.
 func RFC3526_2048() *Group {

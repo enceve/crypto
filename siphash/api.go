@@ -124,7 +124,7 @@ func (h *hashFunc) Write(src []byte) (int, error) {
 		}
 		h.off += f
 		if h.off == BlockSize {
-			flush(h)
+			siphashCore(h, h.buf[:])
 			h.off = 0
 		}
 		in = in[f:]

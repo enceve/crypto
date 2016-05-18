@@ -11,7 +11,3 @@ func siphashCore(h *hashFunc, p []uint8)
 // finish the hash calculation
 //go:noescape
 func siphashFinalize(h *hashFunc) uint64
-
-// fills and processes the buffer of the siphash struct.
-//go:noescape
-func flush(h *hashFunc)
