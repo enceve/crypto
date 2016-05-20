@@ -5,7 +5,7 @@
 // and the ChaCha20-Poly1305 AEAD construction described in RFC 7539. Notice that
 // this implementation of ChaCha20 can only process 64 x 2^32 bytes (256 GB)
 // for one specific key and nonce combination.
-package chacha
+package chacha20
 
 import (
 	"crypto/cipher"

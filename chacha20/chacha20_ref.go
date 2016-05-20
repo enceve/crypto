@@ -1,7 +1,9 @@
 // Use of this source code is governed by a license
 // that can be found in the LICENSE file.
 
-package chacha
+// +build !amd64
+
+package chacha20
 
 // The chacha core function for updating
 // the state and extract the keystream.
