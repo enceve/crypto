@@ -13,34 +13,8 @@ const (
 	const3 = 0x6b206574
 )
 
-// genericXORKeyStream produces the ChaCha20/x keystream, xor's it with src and writes the
-// result to dst. The rounds argument determines the number of chacha-rounds
-// (common are 20, 12 and 8) .
-func genericXORKeyStream(dst, src []byte, key *[32]byte, nonce *[12]byte, ctr uint32, rounds int) {
-	if len(dst) < len(src) {
-		panic("dst buffer is to small")
-	}
-	var state [16]uint32
-	var buf [64]byte
-
-	initialize(key, nonce, &state)
-	state[12] = ctr
-	length := len(src)
-	n := length - (length % 64)
-	for i := 0; i < n; i += 64 {
-		chachaCore(&buf, &state, rounds)
-		state[12]++ // inc. counter
-		for j, v := range buf {
-			dst[i+j] = src[i+j] ^ v
-		}
-	}
-	if n < length {
-		chachaCore(&buf, &state, rounds)
-		for j, v := range buf[:length-n] {
-			dst[n+j] = src[n+j] ^ v
-		}
-	}
-}
+// func genericXORKeyStream(dst, src []byte, key *[32]byte, nonce *[12]byte, ctr uint32, rounds int)
+// can be found in chacha20_ref.go or in chacha20_amd64.go
 
 // authenticate calculates the poly1305 tag from
 // the given ciphertext and additional data.

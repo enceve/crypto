@@ -1,7 +1,7 @@
 // Use of this source code is governed by a license
 // that can be found in the LICENSE file.
 
-// Package chacha implements D J Bernstein's Chacha20 stream cipher algorithm
+// Package chacha20 implements D J Bernstein's Chacha20 stream cipher algorithm
 // and the ChaCha20-Poly1305 AEAD construction described in RFC 7539. Notice that
 // this implementation of ChaCha20 can only process 64 x 2^32 bytes (256 GB)
 // for one specific key and nonce combination.
@@ -97,45 +97,8 @@ type chacha20 struct {
 	off    int
 }
 
-func (c *chacha20) XORKeyStream(dst, src []byte) {
-	length := len(src)
-	if len(dst) < length {
-		panic("dst buffer to small")
-	}
-	if c.off > 0 {
-		left := 64 - c.off
-		if left > length {
-			left = length
-		}
-		for i := 0; i < left; i++ {
-			dst[i] = src[i] ^ c.stream[c.off+i]
-		}
-		src = src[left:]
-		dst = dst[left:]
-		length -= left
-		c.off += left
-		if c.off == 64 {
-			c.off = 0
-		}
-	}
-
-	n := length - (length % 64)
-	for i := 0; i < n; i += 64 {
-		chachaCore(&(c.stream), &(c.state), 20)
-		c.state[12]++ // inc. counter
-		for j := range c.stream {
-			dst[i+j] = src[i+j] ^ c.stream[j]
-		}
-	}
-	if n < length {
-		chachaCore(&(c.stream), &(c.state), 20)
-		c.state[12]++ // inc. counter
-		for j, v := range c.stream[:length-n] {
-			dst[n+j] = src[n+j] ^ v
-		}
-		c.off += (length - n)
-	}
-}
+// func (c *chacha20) XORKeyStream(dst, src []byte) can be found in
+// chacha20_ref.go or in chacha20_amd64.go
 
 // The AEAD cipher ChaCha20-Poly1305
 type aeadCipher struct {

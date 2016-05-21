@@ -5,8 +5,79 @@
 
 package chacha20
 
-// The chacha core function for updating
-// the state and extract the keystream.
+// genericXORKeyStream produces the ChaCha20/x keystream, xor's it with src and writes the
+// result to dst. The rounds argument determines the number of chacha-rounds
+// (common are 20, 12 and 8) .
+func genericXORKeyStream(dst, src []byte, key *[32]byte, nonce *[12]byte, ctr uint32, rounds int) {
+	length := len(src)
+	if len(dst) < length {
+		panic("dst buffer is to small")
+	}
+	var state [16]uint32
+	var buf [64]byte
+
+	initialize(key, nonce, &state)
+	state[12] = ctr
+
+	n := length - (length % 64)
+	for i := 0; i < n; i += 64 {
+		chachaCore(&buf, &state, rounds)
+		state[12]++ // inc. counter
+		for j, v := range buf {
+			dst[i+j] = src[i+j] ^ v
+		}
+	}
+	if n < length {
+		chachaCore(&buf, &state, rounds)
+		state[12]++ // inc. counter
+		for j, v := range buf[:length-n] {
+			dst[n+j] = src[n+j] ^ v
+		}
+	}
+}
+
+func (c *chacha20) XORKeyStream(dst, src []byte) {
+	length := len(src)
+	if len(dst) < length {
+		panic("dst buffer to small")
+	}
+	if c.off > 0 {
+		left := 64 - c.off
+		if left > length {
+			left = length
+		}
+		for i := 0; i < left; i++ {
+			dst[i] = src[i] ^ c.stream[c.off+i]
+		}
+		src = src[left:]
+		dst = dst[left:]
+		length -= left
+		c.off += left
+		if c.off == 64 {
+			c.off = 0
+		}
+	}
+
+	n := length - (length % 64)
+	for i := 0; i < n; i += 64 {
+		chachaCore(&(c.stream), &(c.state), 20)
+		c.state[12]++ // inc. counter
+		for j, v := range c.stream {
+			dst[i+j] = src[i+j] ^ v
+		}
+	}
+	if n < length {
+		chachaCore(&(c.stream), &(c.state), 20)
+		c.state[12]++ // inc. counter
+		for j, v := range c.stream[:length-n] {
+			dst[n+j] = src[n+j] ^ v
+		}
+		c.off += (length - n)
+	}
+}
+
+// Computes ChaCha20|r keystream. The keystream is writen to dst.
+// The state is NOT changed/updated
 func chachaCore(dst *[64]byte, state *[16]uint32, rounds int) {
 	v00, v01, v02, v03 := state[0], state[1], state[2], state[3]
 	v04, v05, v06, v07 := state[4], state[5], state[6], state[7]
