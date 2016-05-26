@@ -47,8 +47,12 @@ var precomputed [12][16]byte = [12][16]byte{
 	{14, 4, 9, 13, 15, 6, 8, 10, 1, 0, 11, 5, 7, 3, 2, 12}, // equal to the secound
 }
 
-// predefined parameters for the common hash sizes 256 and 512 bit
+// predefined inital hVal for the common 512 bit hash
 var (
-	params512 *Params = &Params{HashSize: Size}
-	params256 *Params = &Params{HashSize: 32}
+	hVal512 = [8]uint64{
+		0x6a09e667f2bdc948, 0xbb67ae8584caa73b,
+		0x3c6ef372fe94f82b, 0xa54ff53a5f1d36f1,
+		0x510e527fade682d1, 0x9b05688c2b3e6c1f,
+		0x1f83d9abfb41bd6b, 0x5be0cd19137e2179,
+	}
 )

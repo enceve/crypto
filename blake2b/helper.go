@@ -54,25 +54,25 @@ func (h *hashFunc) initialize(conf *Params) {
 
 // Finalize the hash by adding padding bytes (if necessary)
 // and extract the hash to a byte array.
-func (h *hashFunc) finalize(out *[Size]byte) {
+func finalize(out *[Size]byte, hVal *[8]uint64, ctr *[2]uint64, buf *[BlockSize]byte, off int) {
 	// sub the padding length form the counter
-	diff := BlockSize - uint64(h.off)
-	if h.ctr[0] < diff {
-		h.ctr[1]--
+	diff := BlockSize - uint64(off)
+	if ctr[0] < diff {
+		ctr[1]--
 	}
-	h.ctr[0] -= diff
+	ctr[0] -= diff
 
 	// pad the buffer
-	for i := h.off; i < BlockSize; i++ {
-		h.buf[i] = 0
+	for i := off; i < BlockSize; i++ {
+		buf[i] = 0
 	}
 
 	// process last block
-	blake2bCore(&(h.hVal), &(h.ctr), lastBlock, h.buf[:])
+	blake2bCore(hVal, ctr, lastBlock, buf[:])
 
 	// extract hash
 	j := 0
-	for _, s := range h.hVal {
+	for _, s := range hVal {
 		out[j+0] = byte(s >> 0)
 		out[j+1] = byte(s >> 8)
 		out[j+2] = byte(s >> 16)

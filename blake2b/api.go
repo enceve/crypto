@@ -26,23 +26,23 @@ type Params struct {
 }
 
 // Sum512 returns the 512 bit blake2b checksum of the msg.
-func Sum512(msg []byte) [Size]byte {
-	h := new(hashFunc)
-	h.initialize(params512)
-	h.Write(msg)
-	var out [64]byte
-	h.Sum(out[:0])
-	return out
-}
+func Sum512(out *[Size]byte, msg []byte) {
+	var (
+		hVal [8]uint64
+		ctr  [2]uint64
+		buf  [BlockSize]byte
+		off  int
+	)
+	hVal = hVal512
 
-// Sum256 returns the 256 bit blake2b checksum of the msg.
-func Sum256(msg []byte) [32]byte {
-	h := new(hashFunc)
-	h.initialize(params256)
-	h.Write(msg)
-	var out [32]byte
-	h.Sum(out[:0])
-	return out
+	msgLen := len(msg)
+	n := msgLen & (^(BlockSize - 1))
+	if msgLen > n {
+		blake2bCore(&hVal, &ctr, msgBlock, msg[:n])
+		msg = msg[n:]
+	}
+	off += copy(buf[:], msg)
+	finalize(out, &hVal, &ctr, &buf, off)
 }
 
 // Sum computes the blake2b checksum of the msg.
@@ -125,6 +125,6 @@ func (h *hashFunc) Reset() {
 func (h *hashFunc) Sum(b []byte) []byte {
 	h0 := *h
 	var out [Size]byte
-	h0.finalize(&out)
+	finalize(&out, &(h0.hVal), &(h0.ctr), &(h0.buf), h.off)
 	return append(b, out[:h0.hsize]...)
 }
