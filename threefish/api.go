@@ -17,7 +17,7 @@ package threefish
 import (
 	"crypto/cipher"
 
-	"github.com/EncEve/crypto"
+	"github.com/enceve/crypto"
 )
 
 const (

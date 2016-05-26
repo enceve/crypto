@@ -11,7 +11,7 @@ import (
 	"encoding/hex"
 	"testing"
 
-	"github.com/EncEve/crypto/threefish"
+	"github.com/enceve/crypto/threefish"
 )
 
 // Tests Blocksize() declared in hash.Hash

@@ -3,7 +3,7 @@
 
 package skein
 
-import "github.com/EncEve/crypto/threefish"
+import "github.com/enceve/crypto/threefish"
 
 // Update the hash with the given full blocks.
 func skeinCore256(blocks []byte, hVal *[5]uint64, tweak *[3]uint64) {

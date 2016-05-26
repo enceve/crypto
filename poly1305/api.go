@@ -20,7 +20,7 @@ import (
 	"crypto/subtle"
 	"hash"
 
-	"github.com/EncEve/crypto"
+	"github.com/enceve/crypto"
 )
 
 // The size of the poly1305 authentication tag in bytes.

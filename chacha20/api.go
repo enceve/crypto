@@ -12,8 +12,8 @@ import (
 	"crypto/subtle"
 	"errors"
 
-	"github.com/EncEve/crypto"
-	"github.com/EncEve/crypto/poly1305"
+	"github.com/enceve/crypto"
+	"github.com/enceve/crypto/poly1305"
 )
 
 const (

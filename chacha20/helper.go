@@ -3,7 +3,7 @@
 
 package chacha20
 
-import "github.com/EncEve/crypto/poly1305"
+import "github.com/enceve/crypto/poly1305"
 
 // The four RFC 7539 constants
 const (

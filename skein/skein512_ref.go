@@ -4,7 +4,7 @@
 package skein
 
 import (
-	"github.com/EncEve/crypto/threefish"
+	"github.com/enceve/crypto/threefish"
 )
 
 // Update the hash with the given full blocks.

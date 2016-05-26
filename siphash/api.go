@@ -15,7 +15,7 @@ import (
 	"crypto/subtle"
 	"hash"
 
-	"github.com/EncEve/crypto"
+	"github.com/enceve/crypto"
 )
 
 // The four initialization constants

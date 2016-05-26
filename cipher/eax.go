@@ -12,8 +12,8 @@ import (
 	"errors"
 	"hash"
 
-	"github.com/EncEve/crypto"
-	"github.com/EncEve/crypto/cmac"
+	"github.com/enceve/crypto"
+	"github.com/enceve/crypto/cmac"
 )
 
 const (

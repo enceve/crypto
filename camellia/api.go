@@ -12,7 +12,7 @@ package camellia
 import (
 	"crypto/cipher"
 
-	"github.com/EncEve/crypto"
+	"github.com/enceve/crypto"
 )
 
 // The block size of the camellia block cipher in bytes.

@@ -14,7 +14,7 @@ package hc
 import (
 	"crypto/cipher"
 
-	"github.com/EncEve/crypto"
+	"github.com/enceve/crypto"
 )
 
 // NewCipher128 returns a new cipher.Stream implementing the
