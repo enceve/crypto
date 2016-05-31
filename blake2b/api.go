@@ -1,14 +1,10 @@
 // Use of this source code is governed by a license
 // that can be found in the LICENSE file.
 
-// Package blake2b implements the Blake2b hash function
-// based on the RFC 7693 (https://tools.ietf.org/html/rfc7693).
-// Blake2b is the 64 bit version of the blake2 hash function
-// and supports hash values from 8 to 512 bit (1 to 64 byte).
-// The package API directly supports 256 and 512 bit
-// hash values, but custom sizes can be used as well.
-// Furthermore blake2b supports randomized hashing and can be
-// used as a MAC.
+// Package blake2b implements the BLAKE2b hash function
+// based on the RFC 7693.
+// BLAKE2b computes hash values from 8 to 512 bit (1 to 64 byte),
+// supports randomized hashing and can be used as a MAC.
 package blake2b
 
 import (
@@ -25,7 +21,8 @@ type Params struct {
 	Salt     []byte // The salt (length must between 0 and 16)
 }
 
-// Sum512 returns the 512 bit blake2b checksum of the msg.
+// Sum512 computes the 512 bit BLAKE2b checksum of msg and writes the
+// hash to out.
 func Sum512(out *[Size]byte, msg []byte) {
 	var (
 		hVal [8]uint64
@@ -45,8 +42,8 @@ func Sum512(out *[Size]byte, msg []byte) {
 	finalize(out, &hVal, &ctr, &buf, off)
 }
 
-// Sum computes the blake2b checksum of the msg.
-// The Params argument contains the blake2b configuration.
+// Sum computes the BLAKE2b checksum of msg.
+// The Params argument contains the BLAKE2b configuration.
 func Sum(msg []byte, p *Params) ([]byte, error) {
 	h, err := New(p)
 	if err != nil {
@@ -56,8 +53,8 @@ func Sum(msg []byte, p *Params) ([]byte, error) {
 	return h.Sum(nil), nil
 }
 
-// New returns a new hash.Hash computing the blake2b checksum.
-// The Params argument contains the blake2b configuration.
+// New returns a new hash.Hash computing the BLAKE2b checksum.
+// The Params argument contains the BLAKE2b configuration.
 func New(p *Params) (hash.Hash, error) {
 	if p == nil {
 		return nil, errors.New("p argument must not be nil")
@@ -70,7 +67,7 @@ func New(p *Params) (hash.Hash, error) {
 	return b, nil
 }
 
-// the blake2b hash function
+// the BLAKE2b hash function
 type hashFunc struct {
 	hVal [8]uint64       // the chain values
 	ctr  [2]uint64       // the counter (max 2^128 bytes)
@@ -125,6 +122,6 @@ func (h *hashFunc) Reset() {
 func (h *hashFunc) Sum(b []byte) []byte {
 	h0 := *h
 	var out [Size]byte
-	finalize(&out, &(h0.hVal), &(h0.ctr), &(h0.buf), h.off)
+	finalize(&out, &(h0.hVal), &(h0.ctr), &(h0.buf), h0.off)
 	return append(b, out[:h0.hsize]...)
 }

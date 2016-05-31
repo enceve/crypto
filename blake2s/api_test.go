@@ -42,7 +42,7 @@ func TestSize(t *testing.T) {
 
 // Tests Reset() declared in hash.Hash
 func TestReset(t *testing.T) {
-	h, err := New(&Params{HashSize: Size})
+	h, err := New(&Params{HashSize: Size, Key: make([]byte, keySize)})
 	if err != nil {
 		t.Fatalf("Could not create blake2s instance: %s", err)
 	}
@@ -123,7 +123,8 @@ func TestSum(t *testing.T) {
 	h.Write(one[:])
 
 	sum1 := h.Sum(nil)
-	sum2 := Sum256(append(make([]byte, BlockSize), one[:]...))
+	var sum2 [Size]byte
+	Sum256(&sum2, append(make([]byte, BlockSize), one[:]...))
 
 	if !bytes.Equal(sum1, sum2[:]) {
 		t.Fatalf("Hash does not match:\nFound:    %s\nExpected: %s", hex.EncodeToString(sum1), hex.EncodeToString(sum2[:]))
@@ -132,8 +133,12 @@ func TestSum(t *testing.T) {
 
 // Tests New(p *Params) declared here (blake2s)
 func TestNew(t *testing.T) {
+	_, err := New(nil)
+	if err == nil {
+		t.Fatalf("New accepts nil for Params argument", err)
+	}
 	p := &Params{}
-	_, err := New(p)
+	_, err = New(p)
 	if err != nil {
 		t.Fatalf("Failed to create blake2s instance: %s", err)
 	}
@@ -171,37 +176,6 @@ func TestNew(t *testing.T) {
 	p.Salt = nil
 }
 
-// Tests Sum160(msg []byte) declared here (blake2s)
-func TestSum160(t *testing.T) {
-	h, err := New(&Params{HashSize: 20})
-	if err != nil {
-		t.Fatalf("Failed to create blake2s instance: %s", err)
-	}
-
-	h.Write(nil)
-	sum1 := h.Sum(nil)
-	sum2 := Sum160(nil)
-	if !bytes.Equal(sum1, sum2[:]) {
-		t.Fatalf("Hash does not match:\nFound:    %s\nExpected: %s", hex.EncodeToString(sum1), hex.EncodeToString(sum2[:]))
-	}
-	h.Reset()
-
-	h.Write(make([]byte, 1))
-	sum1 = h.Sum(nil)
-	sum2 = Sum160(make([]byte, 1))
-	if !bytes.Equal(sum1, sum2[:]) {
-		t.Fatalf("Hash does not match:\nFound:    %s\nExpected: %s", hex.EncodeToString(sum1), hex.EncodeToString(sum2[:]))
-	}
-	h.Reset()
-
-	h.Write(make([]byte, BlockSize+1))
-	sum1 = h.Sum(nil)
-	sum2 = Sum160(make([]byte, BlockSize+1))
-	if !bytes.Equal(sum1, sum2[:]) {
-		t.Fatalf("Hash does not match:\nFound:    %s\nExpected: %s", hex.EncodeToString(sum1), hex.EncodeToString(sum2[:]))
-	}
-}
-
 // Tests Sum256(msg []byte) declared here (blake2s)
 func TestSum256(t *testing.T) {
 	h, err := New(&Params{HashSize: Size})
@@ -211,7 +185,8 @@ func TestSum256(t *testing.T) {
 
 	h.Write(nil)
 	sum1 := h.Sum(nil)
-	sum2 := Sum256(nil)
+	var sum2 [Size]byte
+	Sum256(&sum2, nil)
 	if !bytes.Equal(sum1, sum2[:]) {
 		t.Fatalf("Hash does not match:\nFound:    %s\nExpected: %s", hex.EncodeToString(sum1), hex.EncodeToString(sum2[:]))
 	}
@@ -219,7 +194,7 @@ func TestSum256(t *testing.T) {
 
 	h.Write(make([]byte, 1))
 	sum1 = h.Sum(nil)
-	sum2 = Sum256(make([]byte, 1))
+	Sum256(&sum2, make([]byte, 1))
 	if !bytes.Equal(sum1, sum2[:]) {
 		t.Fatalf("Hash does not match:\nFound:    %s\nExpected: %s", hex.EncodeToString(sum1), hex.EncodeToString(sum2[:]))
 	}
@@ -227,7 +202,7 @@ func TestSum256(t *testing.T) {
 
 	h.Write(make([]byte, BlockSize+1))
 	sum1 = h.Sum(nil)
-	sum2 = Sum256(make([]byte, BlockSize+1))
+	Sum256(&sum2, make([]byte, BlockSize+1))
 	if !bytes.Equal(sum1, sum2[:]) {
 		t.Fatalf("Hash does not match:\nFound:    %s\nExpected: %s", hex.EncodeToString(sum1), hex.EncodeToString(sum2[:]))
 	}
@@ -235,6 +210,10 @@ func TestSum256(t *testing.T) {
 
 // Tests Sum(msg []byte. p *Params) declared here (blake2s)
 func TestSumFunc(t *testing.T) {
+	_, err := Sum(make([]byte, BlockSize), nil)
+	if err == nil {
+		t.Fatalf("Sum accepts nil for Params argument: %s", err)
+	}
 	p := &Params{}
 	h, err := New(p)
 	if err != nil {

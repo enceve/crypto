@@ -23,12 +23,12 @@ TEXT ·siphashCore(SB),4,$0-32
     MOVQ h+0(FP), BX
     MOVQ 0(BX), R9		        // R9 = v0
     MOVQ 8(BX), R10		        // R10 = v1
-    MOVQ 16(BX), R11	        		// R11 = v2
-    MOVQ 24(BX), R12	        		// R12 = v3
-    MOVQ p+8(FP), DI	        		// DI = *uint64
+    MOVQ 16(BX), R11	        // R11 = v2
+    MOVQ 24(BX), R12	        // R12 = v3
+    MOVQ p+8(FP), DI	        // DI = *uint64
     MOVQ p_len+16(FP), SI	    // SI = nblocks
     XORL DX, DX		            // DX = index (0)
-    SHRQ $3, SI 		        		// SI /= 8
+    SHRQ $3, SI 		        // SI /= 8
 body:
     CMPQ DX, SI
     JGE  end
@@ -49,11 +49,11 @@ end:
 // siphashFinalize(h *hashFunc) uint64
 TEXT ·siphashFinalize(SB),4,$0-16
     MOVQ h+0(FP), BX
-    MOVQ 0(BX), R9		// R9 = v0
-    MOVQ 8(BX), R10		// R10 = v1
+    MOVQ 0(BX), R9			// R9 = v0
+    MOVQ 8(BX), R10			// R10 = v1
     MOVQ 16(BX), R11		// R11 = v2
     MOVQ 24(BX), R12		// R12 = v3
-    MOVQ 48(BX), CX		// CX = d.x[:]
+    MOVQ 48(BX), CX			// CX = d.x[:]
     XORQ CX, R12
     ROUND(R9, R10, R11, R12)
     ROUND(R9, R10, R11, R12)

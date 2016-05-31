@@ -113,36 +113,38 @@ func (h *macFunc) Reset() {
 
 func (h *macFunc) Write(p []byte) (int, error) {
 	bs := len(h.buf)
-	left := bs - h.off
+	length := len(p)
 
-	n := len(p)
-	if n > left {
+	// fill and process buffer (if neccessary)
+	if left := bs - h.off; len(p) > left {
 		xor(h.buf[h.off:], p[:left])
 		p = p[left:]
+		length -= left
 		h.cipher.Encrypt(h.buf, h.buf)
 		h.off = 0
 	}
 
-	length := len(p)
+	// proccess complete blocks accept for the last
 	if length > bs {
-		nn := length - (length % bs)
-		if nn == length {
-			nn -= bs
+		n := length & (^(bs - 1))
+		if n == length {
+			n -= bs
 		}
-		for i := 0; i < nn; i += bs {
+		for i := 0; i < n; i += bs {
 			for j, v := range p[i : i+bs] {
 				h.buf[j] ^= v
 			}
 			h.cipher.Encrypt(h.buf, h.buf)
 		}
-		p = p[nn:]
+		p = p[n:]
 	}
 
-	if len(p) > 0 {
+	// proccess the last (may incomplete block)
+	if n := len(p); n > 0 {
 		xor(h.buf[h.off:], p)
-		h.off += len(p)
+		h.off += n
 	}
-	return n, nil
+	return length, nil
 }
 
 func (h *macFunc) Sum(b []byte) []byte {

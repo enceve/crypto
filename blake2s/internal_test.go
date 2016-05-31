@@ -47,18 +47,11 @@ func BenchmarkWrite(b *testing.B) {
 	}
 }
 
-func BenchmarkSum160(b *testing.B) {
-	buf := make([]byte, BlockSize)
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		Sum160(buf)
-	}
-}
-
 func BenchmarkSum256(b *testing.B) {
 	buf := make([]byte, BlockSize)
+	var out [Size]byte
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		Sum256(buf)
+		Sum256(&out, buf)
 	}
 }

@@ -1,13 +1,9 @@
 // Use of this source code is governed by a license
 // that can be found in the LICENSE file.
 
-// Package blake2s implements the Blake2s hash function.
-// Blake2s is the 32 bit version of the blake2 hash function
-// and supports hash values from 8 to 256 bit (1 to 32 byte).
-// The package API directly supports 160 and 256 bit
-// hash values, but custom sizes can be used as well.
-// Furthermore blake2s supports randomized hashing and can be
-// used as a MAC.
+// Package blake2s implements the BLAKE2s hash function.
+// BLAKE2s computes hash values from 8 to 256 bit (1 to 32 byte),
+// supports randomized hashing and can be used as a MAC.
 package blake2s
 
 import (
@@ -24,23 +20,28 @@ type Params struct {
 	Salt     []byte // The salt (length must between 0 and 8)
 }
 
-// Sum256 returns the 256 bit blake2s checksum of the msg.
-func Sum256(msg []byte) []byte {
-	h := new(hashFunc)
-	h.initialize(params256)
-	h.Write(msg)
-	return h.Sum(nil)
+// Sum256 computes the 256 bit blake2s checksum of msg and writes
+// it to out.
+func Sum256(out *[Size]byte, msg []byte) {
+	var (
+		hVal [8]uint32
+		ctr  [2]uint32
+		buf  [BlockSize]byte
+		off  int
+	)
+	hVal = hVal256
+
+	msgLen := len(msg)
+	n := msgLen & (^(BlockSize - 1))
+	if msgLen > n {
+		blake2sCore(&hVal, &ctr, msgBlock, msg[:n])
+		msg = msg[n:]
+	}
+	off += copy(buf[:], msg)
+	finalize(out, &hVal, &ctr, &buf, off)
 }
 
-// Sum160 returns the 160 bit blake2s checksum of the msg.
-func Sum160(msg []byte) []byte {
-	h := new(hashFunc)
-	h.initialize(params160)
-	h.Write(msg)
-	return h.Sum(nil)
-}
-
-// Sum returns the blake2s checksum of the msg.
+// Sum returns the blake2s checksum of msg.
 // The Params argument specifies the blake2s configuration
 // and if it's not valid a non-nil error is returned.
 func Sum(msg []byte, p *Params) ([]byte, error) {
@@ -122,6 +123,6 @@ func (h *hashFunc) Reset() {
 func (h *hashFunc) Sum(b []byte) []byte {
 	h0 := *h
 	var out [Size]byte
-	h0.finalize(&out)
+	finalize(&out, &(h0.hVal), &(h0.ctr), &(h0.buf), h0.off)
 	return append(b, out[:h0.hsize]...)
 }
