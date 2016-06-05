@@ -5,15 +5,15 @@
 
 package chacha20
 
-// Computes ChaCha20|r keystream. The keystream is writen to dst.
+// Computes ChaCha20|r keystream. The keystream is written to dst.
 // The state is NOT changed/updated
 func chachaCore(dst *[64]byte, state *[16]uint32, rounds int)
 
-// Computes ChaCha20|r keystream. The keystream is xor'd with src and writen to dst.
+// Computes ChaCha20|r keystream. The keystream is xor'd with src and written to dst.
 // The state is NOT changed/updated.
 func chachaCoreXOR(dst *byte, src *byte, state *[16]uint32, rounds int)
 
-// Computes 128 byte of the ChaCha20|r keystream. The keystream is xor'd with src and writen to dst.
+// Computes 128 byte of the ChaCha20|r keystream. The keystream is xor'd with src and written to dst.
 // The state is changed/updated. The function writes n128 * 128 bytes to dst.
 func chachaCoreXOR128(dst *byte, src *byte, n128 int, state *[16]uint32, rounds int)
 

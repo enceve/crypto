@@ -135,7 +135,7 @@ func TestSum(t *testing.T) {
 func TestNew(t *testing.T) {
 	_, err := New(nil)
 	if err == nil {
-		t.Fatalf("New accepts nil for Params argument", err)
+		t.Fatalf("New accepts nil for Params argument %s", err)
 	}
 	p := &Params{}
 	_, err = New(p)

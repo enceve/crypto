@@ -70,7 +70,7 @@ func TestVectors(t *testing.T) {
 	for i, v := range vectors {
 		h, err := New(v.params)
 		if err != nil {
-			t.Fatalf("Test vector %d : Failed to create new blake2s hash: %s", i, err)
+			t.Fatalf("Test vector %d : Failed to create new BLAKE2s hash: %s", i, err)
 		}
 		msg := decodeHex(t, v.msg)
 		expSum := decodeHex(t, v.hash)

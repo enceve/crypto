@@ -47,7 +47,7 @@ var precomputed [12][16]byte = [12][16]byte{
 	{14, 4, 9, 13, 15, 6, 8, 10, 1, 0, 11, 5, 7, 3, 2, 12}, // equal to the secound
 }
 
-// predefined inital hVal for the common 512 bit hash
+// predefined initial hVal for the common 512 bit hash
 var (
 	hVal512 = [8]uint64{
 		0x6a09e667f2bdc948, 0xbb67ae8584caa73b,

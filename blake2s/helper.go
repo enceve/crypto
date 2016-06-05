@@ -5,7 +5,7 @@ package blake2s
 
 import "errors"
 
-// Verify blake2s config parameters
+// Verify BLAKE2s config parameters
 func verifyParams(p *Params) error {
 	if p.HashSize < 1 || p.HashSize > Size {
 		p.HashSize = Size

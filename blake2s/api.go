@@ -1,7 +1,8 @@
 // Use of this source code is governed by a license
 // that can be found in the LICENSE file.
 
-// Package blake2s implements the BLAKE2s hash function.
+// Package blake2s implements the BLAKE2s hash function
+// based on the RFC 7693.
 // BLAKE2s computes hash values from 8 to 256 bit (1 to 32 byte),
 // supports randomized hashing and can be used as a MAC.
 package blake2s
@@ -11,16 +12,16 @@ import (
 	"hash"
 )
 
-// Params contains the configuration for the blake2s hash function.
+// Params contains the configuration for the BLAKE2s hash function.
 // All values are optional. If the HashSize is not between 1
 // and 32 inclusively, it will be set to the default value.
 type Params struct {
-	HashSize int    // The hash size of blake2s in bytes (default and max. is 32)
+	HashSize int    // The hash size of BLAKE2s in bytes (default and max. is 32)
 	Key      []byte // The key for MAC (length must between 0 and 32)
 	Salt     []byte // The salt (length must between 0 and 8)
 }
 
-// Sum256 computes the 256 bit blake2s checksum of msg and writes
+// Sum256 computes the 256 bit BLAKE2s checksum of msg and writes
 // it to out.
 func Sum256(out *[Size]byte, msg []byte) {
 	var (
@@ -41,8 +42,8 @@ func Sum256(out *[Size]byte, msg []byte) {
 	finalize(out, &hVal, &ctr, &buf, off)
 }
 
-// Sum returns the blake2s checksum of msg.
-// The Params argument specifies the blake2s configuration
+// Sum returns the BLAKE2s checksum of msg.
+// The Params argument specifies the BLAKE2s configuration
 // and if it's not valid a non-nil error is returned.
 func Sum(msg []byte, p *Params) ([]byte, error) {
 	h, err := New(p)
@@ -53,7 +54,7 @@ func Sum(msg []byte, p *Params) ([]byte, error) {
 	return h.Sum(nil), nil
 }
 
-// New returns a new hash.Hash computing the blake2s checksum.
+// New returns a new hash.Hash computing the BLAKE2s checksum.
 // The Params argument must not be nil and must contain valid
 // parameters.
 func New(p *Params) (hash.Hash, error) {
@@ -68,7 +69,7 @@ func New(p *Params) (hash.Hash, error) {
 	return b, nil
 }
 
-// the blake2s hash struct
+// the BLAKE2s hash struct
 type hashFunc struct {
 	hVal [8]uint32       // the chain values
 	ctr  [2]uint32       // the counter (max 2^64 bytes)

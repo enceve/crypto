@@ -4,9 +4,9 @@
 package blake2s
 
 const (
-	// The block size of blake2s in bytes.
+	// The block size of BLAKE2s in bytes.
 	BlockSize = 64
-	// The max. hash size of blake2s in bytes.
+	// The max. hash size of BLAKE2s in bytes.
 	Size = 32
 )
 
@@ -17,7 +17,7 @@ const (
 	lastBlock uint32 = 0xffffffff // The last block flag
 )
 
-// the blake2s iv constants
+// the BLAKE2s iv constants
 var iv = [8]uint32{
 	0x6a09e667,
 	0xbb67ae85,
@@ -29,7 +29,7 @@ var iv = [8]uint32{
 	0x5be0cd19,
 }
 
-// the precomputed values for blake2s
+// the precomputed values for BLAKE2s
 // there are 12 16-byte arrays - one for each round
 // the entries are calculated from the sigma constants.
 var precomputed [10][16]byte = [10][16]byte{

@@ -5,7 +5,7 @@
 
 package blake2s
 
-// the core blake2s function taking:
+// the core BLAKE2s function taking:
 //  - the 8 32 bit chan vales
 //  - the 2 32 counters
 //  - the final block flag

@@ -76,7 +76,7 @@ func (c *chacha20) XORKeyStream(dst, src []byte) {
 	}
 }
 
-// Computes ChaCha20|r keystream. The keystream is writen to dst.
+// Computes ChaCha20|r keystream. The keystream is written to dst.
 // The state is NOT changed/updated
 func chachaCore(dst *[64]byte, state *[16]uint32, rounds int) {
 	v00, v01, v02, v03 := state[0], state[1], state[2], state[3]

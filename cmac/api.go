@@ -115,7 +115,7 @@ func (h *macFunc) Write(p []byte) (int, error) {
 	bs := len(h.buf)
 	length := len(p)
 
-	// fill and process buffer (if neccessary)
+	// fill and process buffer (if necessary)
 	if left := bs - h.off; len(p) > left {
 		xor(h.buf[h.off:], p[:left])
 		p = p[left:]
@@ -124,7 +124,7 @@ func (h *macFunc) Write(p []byte) (int, error) {
 		h.off = 0
 	}
 
-	// proccess complete blocks accept for the last
+	// process complete blocks accept for the last
 	if length > bs {
 		n := length & (^(bs - 1))
 		if n == length {
@@ -139,7 +139,7 @@ func (h *macFunc) Write(p []byte) (int, error) {
 		p = p[n:]
 	}
 
-	// proccess the last (may incomplete block)
+	// process the last (may incomplete block)
 	if n := len(p); n > 0 {
 		xor(h.buf[h.off:], p)
 		h.off += n
