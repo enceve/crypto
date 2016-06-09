@@ -9,7 +9,6 @@ import (
 	"testing"
 )
 
-// Tests Blocksize() declared in hash.Hash
 func TestBlockSize(t *testing.T) {
 	h, err := New(make([]byte, 32))
 	if err != nil {
@@ -20,7 +19,6 @@ func TestBlockSize(t *testing.T) {
 	}
 }
 
-// Tests Size() declared in hash.Hash
 func TestSize(t *testing.T) {
 	h, err := New(make([]byte, 32))
 	if err != nil {
@@ -31,7 +29,6 @@ func TestSize(t *testing.T) {
 	}
 }
 
-// Tests Reset() declared in hash.Hash
 func TestReset(t *testing.T) {
 	h, err := New(make([]byte, 32))
 	if err != nil {
@@ -46,7 +43,6 @@ func TestReset(t *testing.T) {
 	}
 }
 
-// Tests Write(p []byte) declared in hash.Hash
 func TestWrite(t *testing.T) {
 	h, err := New(make([]byte, 32))
 	if err != nil {
@@ -70,7 +66,6 @@ func TestWrite(t *testing.T) {
 	}
 }
 
-// Tests Sum(b []byte) declared in hash.Hash
 func TestSum(t *testing.T) {
 	h, err := New(make([]byte, 32))
 	if err != nil {
@@ -93,7 +88,6 @@ func TestSum(t *testing.T) {
 	}
 }
 
-// Tests New(key []byte) declared here (poly1305)
 func TestNew(t *testing.T) {
 	_, err := New(make([]byte, 32))
 	if err != nil {
@@ -116,7 +110,6 @@ func TestNew(t *testing.T) {
 	}
 }
 
-// Tests Sum(out *[TagSize]byte, msg []byte, key *[32]byte) declared here (poly1305)
 func TestSumFunc(t *testing.T) {
 	h, err := New(make([]byte, 32))
 	if err != nil {
@@ -151,7 +144,6 @@ func TestSumFunc(t *testing.T) {
 	}
 }
 
-// Tests Verify(mac *[TagSize]byte, msg []byte, key *[32]byte) declared here (poly1305)
 func TestVerify(t *testing.T) {
 	for i, v := range vectors {
 		key, err := hex.DecodeString(v.key)
@@ -176,5 +168,155 @@ func TestVerify(t *testing.T) {
 		if !Verify(&sum, msg, &k) {
 			t.Fatalf("Test vector %d : Poly1305 Verification failed", i)
 		}
+	}
+}
+
+func BenchmarkSum64B(b *testing.B) {
+	var key [32]byte
+	var tag [16]byte
+
+	msg := make([]byte, 64)
+	b.SetBytes(64)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		Sum(&tag, msg, &key)
+	}
+}
+
+func BenchmarkSum256B(b *testing.B) {
+	var key [32]byte
+	var tag [16]byte
+
+	msg := make([]byte, 256)
+	b.SetBytes(256)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		Sum(&tag, msg, &key)
+	}
+}
+
+func BenchmarkSum512B(b *testing.B) {
+	var key [32]byte
+	var tag [16]byte
+
+	msg := make([]byte, 512)
+	b.SetBytes(512)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		Sum(&tag, msg, &key)
+	}
+}
+
+func BenchmarkSum1k(b *testing.B) {
+	var key [32]byte
+	var tag [16]byte
+
+	msg := make([]byte, 1024)
+	b.SetBytes(1024)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		Sum(&tag, msg, &key)
+	}
+}
+
+func BenchmarkSum16k(b *testing.B) {
+	var key [32]byte
+	var tag [16]byte
+
+	msg := make([]byte, 16*1024)
+	b.SetBytes(16 * 1024)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		Sum(&tag, msg, &key)
+	}
+}
+
+func BenchmarkSum64k(b *testing.B) {
+	var key [32]byte
+	var tag [16]byte
+
+	msg := make([]byte, 64*1024)
+	b.SetBytes(64 * 1024)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		Sum(&tag, msg, &key)
+	}
+}
+
+func BenchmarkWrite64B(b *testing.B) {
+	h, err := New(make([]byte, 32))
+	if err != nil {
+		b.Fatalf("Failed to create poly1305 instance: %s", err)
+	}
+	msg := make([]byte, 64)
+	b.SetBytes(64)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		h.Write(msg)
+	}
+}
+
+func BenchmarkWrite256B(b *testing.B) {
+	h, err := New(make([]byte, 32))
+	if err != nil {
+		b.Fatalf("Failed to create poly1305 instance: %s", err)
+	}
+	msg := make([]byte, 256)
+	b.SetBytes(256)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		h.Write(msg)
+	}
+}
+
+func BenchmarkWrite512B(b *testing.B) {
+	h, err := New(make([]byte, 32))
+	if err != nil {
+		b.Fatalf("Failed to create poly1305 instance: %s", err)
+	}
+	msg := make([]byte, 512)
+	b.SetBytes(512)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		h.Write(msg)
+	}
+}
+
+func BenchmarkWrite1K(b *testing.B) {
+	h, err := New(make([]byte, 32))
+	if err != nil {
+		b.Fatalf("Failed to create poly1305 instance: %s", err)
+	}
+	msg := make([]byte, 1024)
+	b.SetBytes(1024)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		h.Write(msg)
+	}
+}
+
+func BenchmarkWrite16K(b *testing.B) {
+	h, err := New(make([]byte, 32))
+	if err != nil {
+		b.Fatalf("Failed to create poly1305 instance: %s", err)
+	}
+	msg := make([]byte, 16*1024)
+	b.SetBytes(16 * 1024)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		h.Write(msg)
+	}
+}
+
+func BenchmarkWrite64K(b *testing.B) {
+	h, err := New(make([]byte, 32))
+	if err != nil {
+		b.Fatalf("Failed to create poly1305 instance: %s", err)
+	}
+	msg := make([]byte, 64*1024)
+	b.SetBytes(64 * 1024)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		h.Write(msg)
 	}
 }

@@ -1,7 +1,7 @@
 // Use of this source code is governed by a license
 // that can be found in the LICENSE file.
 
-// +build !amd64,!arm
+// +build !amd64
 
 package poly1305
 
@@ -20,8 +20,8 @@ func Sum(out *[TagSize]byte, msg []byte, key *[32]byte) {
 		for i := p.off + 1; i < TagSize; i++ {
 			p.buf[i] = 0
 		}
-		polyCore(p.buf[:], finalBlock, &(p.h), &(p.r))
+		core(p.buf[:], finalBlock, &(p.h), &(p.r))
 	}
 
-	polyFinalize(out, &(p.h), &(p.pad))
+	finalize(out, &(p.h), &(p.pad))
 }
