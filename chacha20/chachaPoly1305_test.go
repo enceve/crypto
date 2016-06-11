@@ -125,42 +125,7 @@ func BenchmarkSeal64B(b *testing.B) {
 	msg := make([]byte, 64)
 	dst := make([]byte, len(msg)+TagSize)
 	data := make([]byte, 32)
-	b.SetBytes(64)
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		dst = c.Seal(dst, nonce[:], msg, data)
-	}
-}
-
-func BenchmarkSeal256B(b *testing.B) {
-	var key [32]byte
-	var nonce [12]byte
-	c, err := NewAEAD(&key, TagSize)
-	if err != nil {
-		b.Fatalf("Failed to create ChaCha-Poly1305 instance: %s", err)
-	}
-	msg := make([]byte, 256)
-	dst := make([]byte, len(msg)+TagSize)
-	data := make([]byte, 32)
-	b.SetBytes(256)
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		dst = c.Seal(dst, nonce[:], msg, data)
-	}
-}
-
-func BenchmarkSeal512B(b *testing.B) {
-	var key [32]byte
-	var nonce [12]byte
-	c, err := NewAEAD(&key, TagSize)
-	if err != nil {
-		b.Fatalf("Failed to create ChaCha-Poly1305 instance: %s", err)
-	}
-	msg := make([]byte, 512)
-	dst := make([]byte, len(msg)+TagSize)
-	data := make([]byte, 32)
-	b.SetBytes(512)
-	b.ResetTimer()
+	b.SetBytes(int64(len(msg)))
 	for i := 0; i < b.N; i++ {
 		dst = c.Seal(dst, nonce[:], msg, data)
 	}
@@ -176,25 +141,7 @@ func BenchmarkSeal1K(b *testing.B) {
 	msg := make([]byte, 1024)
 	dst := make([]byte, len(msg)+TagSize)
 	data := make([]byte, 32)
-	b.SetBytes(1024)
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		dst = c.Seal(dst, nonce[:], msg, data)
-	}
-}
-
-func BenchmarkSeal16K(b *testing.B) {
-	var key [32]byte
-	var nonce [12]byte
-	c, err := NewAEAD(&key, TagSize)
-	if err != nil {
-		b.Fatalf("Failed to create ChaCha-Poly1305 instance: %s", err)
-	}
-	msg := make([]byte, 16*1024)
-	dst := make([]byte, len(msg)+TagSize)
-	data := make([]byte, 32)
-	b.SetBytes(16 * 1024)
-	b.ResetTimer()
+	b.SetBytes(int64(len(msg)))
 	for i := 0; i < b.N; i++ {
 		dst = c.Seal(dst, nonce[:], msg, data)
 	}
@@ -210,8 +157,7 @@ func BenchmarkSeal64K(b *testing.B) {
 	msg := make([]byte, 64*1024)
 	dst := make([]byte, len(msg)+TagSize)
 	data := make([]byte, 32)
-	b.SetBytes(64 * 1024)
-	b.ResetTimer()
+	b.SetBytes(int64(len(msg)))
 	for i := 0; i < b.N; i++ {
 		dst = c.Seal(dst, nonce[:], msg, data)
 	}
@@ -229,46 +175,7 @@ func BenchmarkOpen64B(b *testing.B) {
 	ciphertext := make([]byte, len(msg)+TagSize)
 	data := make([]byte, 32)
 	ciphertext = c.Seal(ciphertext, nonce[:], msg, data)
-	b.SetBytes(64)
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		dst, _ = c.Open(dst, nonce[:], ciphertext, data)
-	}
-}
-
-func BenchmarkOpen256B(b *testing.B) {
-	var key [32]byte
-	var nonce [12]byte
-	c, err := NewAEAD(&key, TagSize)
-	if err != nil {
-		b.Fatalf("Failed to create ChaCha-Poly1305 instance: %s", err)
-	}
-	msg := make([]byte, 256)
-	dst := make([]byte, len(msg))
-	ciphertext := make([]byte, len(msg)+TagSize)
-	data := make([]byte, 32)
-	ciphertext = c.Seal(ciphertext, nonce[:], msg, data)
-	b.SetBytes(256)
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		dst, _ = c.Open(dst, nonce[:], ciphertext, data)
-	}
-}
-
-func BenchmarkOpen512B(b *testing.B) {
-	var key [32]byte
-	var nonce [12]byte
-	c, err := NewAEAD(&key, TagSize)
-	if err != nil {
-		b.Fatalf("Failed to create ChaCha-Poly1305 instance: %s", err)
-	}
-	msg := make([]byte, 512)
-	dst := make([]byte, len(msg))
-	ciphertext := make([]byte, len(msg)+TagSize)
-	data := make([]byte, 32)
-	ciphertext = c.Seal(ciphertext, nonce[:], msg, data)
-	b.SetBytes(512)
-	b.ResetTimer()
+	b.SetBytes(int64(len(msg)))
 	for i := 0; i < b.N; i++ {
 		dst, _ = c.Open(dst, nonce[:], ciphertext, data)
 	}
@@ -293,25 +200,6 @@ func BenchmarkOpen1K(b *testing.B) {
 	}
 }
 
-func BenchmarkOpen16K(b *testing.B) {
-	var key [32]byte
-	var nonce [12]byte
-	c, err := NewAEAD(&key, TagSize)
-	if err != nil {
-		b.Fatalf("Failed to create ChaCha-Poly1305 instance: %s", err)
-	}
-	msg := make([]byte, 16*1024)
-	dst := make([]byte, len(msg))
-	ciphertext := make([]byte, len(msg)+TagSize)
-	data := make([]byte, 32)
-	ciphertext = c.Seal(ciphertext, nonce[:], msg, data)
-	b.SetBytes(16 * 1024)
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		dst, _ = c.Open(dst, nonce[:], ciphertext, data)
-	}
-}
-
 func BenchmarkOpen64K(b *testing.B) {
 	var key [32]byte
 	var nonce [12]byte
@@ -324,8 +212,7 @@ func BenchmarkOpen64K(b *testing.B) {
 	ciphertext := make([]byte, len(msg)+TagSize)
 	data := make([]byte, 32)
 	ciphertext = c.Seal(ciphertext, nonce[:], msg, data)
-	b.SetBytes(64 * 1024)
-	b.ResetTimer()
+	b.SetBytes(int64(len(msg)))
 	for i := 0; i < b.N; i++ {
 		dst, _ = c.Open(dst, nonce[:], ciphertext, data)
 	}

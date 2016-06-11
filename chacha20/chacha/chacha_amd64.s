@@ -203,7 +203,7 @@
 	MOVOU 32+off(src), t0; \
 	PXOR v2, t0; \
 	MOVOU t0, 32+off(dst); \
-	MOVOU 48+off(BX), t1; \
+	MOVOU 48+off(src), t1; \
 	PXOR v3, t1; \
 	MOVOU t1, 48+off(dst)
 
