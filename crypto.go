@@ -15,7 +15,7 @@ func (k KeySizeError) Error() string {
 	return "invalid key size " + strconv.Itoa(int(k))
 }
 
-// A NonceSizeError indicates, that the size of a given key
+// A NonceSizeError indicates, that the size of a given nonce
 // does not match the expected size.
 type NonceSizeError int
 

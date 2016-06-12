@@ -4,17 +4,8 @@
 package blake2b
 
 const (
-	// The block size of blake2b in bytes.
-	BlockSize = 128
-	// The max. hash size of blake2b in bytes.
-	Size = 64
-)
-
-const (
-	keySize          = 64                 // The max. key size of blake2b.
-	saltSize         = 16                 // The max. salt size.
-	msgBlock  uint64 = 0                  // The block flag for message blocks
-	lastBlock uint64 = 0xffffffffffffffff // The last block flag
+	MsgFlag   uint64 = 0                  // The block flag for message blocks
+	FinalFlag uint64 = 0xffffffffffffffff // The block flag for the last block
 )
 
 // the blake2b iv constants
@@ -46,13 +37,3 @@ var precomputed [12][16]byte = [12][16]byte{
 	{0, 2, 4, 6, 5, 7, 3, 1, 8, 10, 12, 14, 13, 15, 11, 9}, // equal to the first
 	{14, 4, 9, 13, 15, 6, 8, 10, 1, 0, 11, 5, 7, 3, 2, 12}, // equal to the secound
 }
-
-// predefined initial hVal for the common 512 bit hash
-var (
-	hVal512 = [8]uint64{
-		0x6a09e667f2bdc948, 0xbb67ae8584caa73b,
-		0x3c6ef372fe94f82b, 0xa54ff53a5f1d36f1,
-		0x510e527fade682d1, 0x9b05688c2b3e6c1f,
-		0x1f83d9abfb41bd6b, 0x5be0cd19137e2179,
-	}
-)
