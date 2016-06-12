@@ -4,8 +4,10 @@
 package blake2b
 
 const (
-	MsgFlag   uint64 = 0                  // The block flag for message blocks
-	FinalFlag uint64 = 0xffffffffffffffff // The block flag for the last block
+	// The block flag for message blocks
+	MsgFlag uint64 = 0
+	// The block flag for the last block
+	FinalFlag uint64 = 0xffffffffffffffff
 )
 
 // the blake2b iv constants

@@ -40,7 +40,7 @@ type Config struct {
 // or must be a valid configuraton struct - otherwise a non-nil error is returned.
 func Configure(hVal *[8]uint32, counter *[2]uint32, hashsize int, conf *Config) error {
 	if hashsize <= 0 || hashsize > Size {
-		errors.New("illegal hash size " + strconv.Itoa(hashsize))
+		return errors.New("illegal hash size " + strconv.Itoa(hashsize))
 	}
 
 	var key, salt, personal []byte
@@ -53,10 +53,10 @@ func Configure(hVal *[8]uint32, counter *[2]uint32, hashsize int, conf *Config) 
 		return crypto.KeySizeError(k)
 	}
 	if s := len(salt); s > 8 {
-		errors.New("illegal salt size " + strconv.Itoa(s))
+		return errors.New("illegal salt size " + strconv.Itoa(s))
 	}
 	if p := len(personal); p > 8 {
-		errors.New("illegal personalization size " + strconv.Itoa(p))
+		return errors.New("illegal personalization size " + strconv.Itoa(p))
 	}
 
 	var p [BlockSize]byte

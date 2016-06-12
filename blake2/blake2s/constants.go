@@ -4,8 +4,10 @@
 package blake2s
 
 const (
-	MsgFlag   uint32 = 0          // The block flag for message blocks
-	FinalFlag uint32 = 0xffffffff // The block flag for the last block
+	// The block flag for message blocks
+	MsgFlag uint32 = 0
+	// The block flag for the last block
+	FinalFlag uint32 = 0xffffffff
 )
 
 // the BLAKE2s iv constants
