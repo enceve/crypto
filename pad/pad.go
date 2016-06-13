@@ -6,6 +6,7 @@
 package pad
 
 import (
+	cryptorand "crypto/rand"
 	"io"
 	"strconv"
 )
@@ -29,8 +30,7 @@ func (p ByteError) Error() string {
 // The Padding interface represents a padding scheme.
 type Padding interface {
 
-	// BlockSize returns the block size for which
-	// the padding can be used.
+	// BlockSize returns the block size of the padding.
 	BlockSize() int
 
 	// Returns the overhead, the padding will cause
@@ -54,9 +54,7 @@ type Padding interface {
 }
 
 // NewX923 returns a new pad.Padding implementing the ANSI X.923 scheme.
-// Only block sizes between 1 and 255 are legal.
-// This function panics if the blocksize is smaller than 1
-// or greater than 255.
+// Only block sizes between 1 and 255 are valid.
 func NewX923(blocksize int) Padding {
 	if blocksize < 1 || blocksize > 255 {
 		panic("illegal blocksize - size must between 0 and 256")
@@ -66,9 +64,7 @@ func NewX923(blocksize int) Padding {
 }
 
 // NewPKCS7 returns a new pad.Padding implementing the PKCS 7 scheme.
-// Only block sizes between 1 and 255 are legal.
-// This function panics if the blocksize is smaller than 1
-// or greater than 255.
+// Only block sizes between 1 and 255 are valid.
 func NewPKCS7(blocksize int) Padding {
 	if blocksize < 1 || blocksize > 255 {
 		panic("illegal blocksize - size must between 0 and 256")
@@ -79,26 +75,24 @@ func NewPKCS7(blocksize int) Padding {
 
 // NewISO10126 returns a new pad.Padding, which uses the padding scheme
 // described in ISO 10126. The padding bytes are taken
-// form the given rand argument. This reader should return
-// random data.
-// Only block sizes between 1 and 255 are legal.
-// This function panics if the blocksize is smaller than 1
-// or greater than 255.
+// form the given rand argument. If rand is nil, crypto/rand will be used.
+// Only block sizes between 1 and 255 are valid.
 func NewISO10126(blocksize int, rand io.Reader) Padding {
 	if blocksize < 1 || blocksize > 255 {
 		panic("illegal blocksize - size must between 0 and 256")
 	}
-	pad := &isoPadding{
-		random: rand,
-	}
+	pad := new(isoPadding)
 	pad.blocksize = blocksize
+	if rand == nil {
+		pad.random = cryptorand.Reader
+	} else {
+		pad.random = rand
+	}
 	return pad
 }
 
-// Utility functions
-
 // Returns the overhead for a given slice with a
 // specific block size.
-func generalOverhead(blocksize int, src []byte) int {
+func overhead(blocksize int, src []byte) int {
 	return blocksize - (len(src) % blocksize)
 }

@@ -9,16 +9,12 @@ import (
 
 type pkcs7Padding int
 
-func (p pkcs7Padding) String() string {
-	return "PKCS7-Padding"
-}
-
 func (p pkcs7Padding) BlockSize() int {
 	return int(p)
 }
 
 func (p pkcs7Padding) Overhead(src []byte) int {
-	return generalOverhead(p.BlockSize(), src)
+	return overhead(p.BlockSize(), src)
 }
 
 func (p pkcs7Padding) Pad(src []byte) []byte {
@@ -46,17 +42,17 @@ func (p pkcs7Padding) Unpad(src []byte) ([]byte, error) {
 }
 
 // verify the pkcs7 padding in (nearly) constant time
-func verifyPkcs7ConstTime(block []byte, blocksize int) (int, error) {
-	var err error
+func verifyPkcs7ConstTime(block []byte, blocksize int) (p int, err error) {
 	padLen := block[blocksize-1]
 	if padLen <= 0 || int(padLen) > blocksize {
 		err = LengthError(padLen)
 	}
-	padStart := blocksize - int(padLen)
-	for _, b := range block[padStart:] {
+
+	p = blocksize - int(padLen)
+	for _, b := range block[p:] {
 		if b != padLen && err == nil {
 			err = ByteError(b)
 		}
 	}
-	return int(padStart), err
+	return
 }

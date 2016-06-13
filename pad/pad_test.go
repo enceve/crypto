@@ -4,105 +4,131 @@
 package pad
 
 import (
+	"bytes"
 	"crypto/rand"
 	"testing"
 )
 
-const blocksize = 16
+var blocksizes = [5]int{8, 16, 32, 64, 128}
 
-var paddings []Padding = []Padding{
-	NewPKCS7(blocksize),
-	NewX923(blocksize),
-	NewISO10126(blocksize, rand.Reader),
+var msglengths = [8]int{0, 1, 8, 16, 32, 64, 128, 249}
+
+func generateSequence(out []byte, seed uint32) {
+	a := 0xDEAD4BAD * seed // prime
+	b := uint32(1)
+
+	for i := range out { // fill the buf
+		t := a + b
+		a = b
+		b = t
+		out[i] = byte(t >> 24)
+	}
 }
 
 func TestPKCS7(t *testing.T) {
-	p := NewPKCS7(blocksize)
-	padded := p.Pad(make([]byte, blocksize-4))
-	for i := blocksize - 4; i < blocksize; i++ {
-		if padded[i] != 4 {
-			t.Fatal("PKCS 7 padding failed while padding a block")
+	message := make([]byte, 249)
+	for i, b := range blocksizes {
+		for j, m := range msglengths {
+			msg := message[:m]
+
+			generateSequence(msg, uint32((m+b)*i))
+
+			pkcs7 := NewPKCS7(b)
+			pad := pkcs7.Pad(msg)
+
+			if expected := len(msg) + pkcs7.Overhead(msg); expected != len(pad) {
+				t.Fatalf("Block: %d Message: %d\nOverhead failed: Found: %d Expected: %d", i, j, len(pad), expected)
+			}
+			if len(pad)%b != 0 {
+				t.Fatalf("Block: %d Message: %d\nPadded block not a multiply of blocksize %d", i, j, len(pad))
+			}
+
+			unpad, err := pkcs7.Unpad(pad)
+			if err != nil {
+				t.Fatalf("Block: %d Message: %d\nUnpad failed: %s", i, j, err)
+			}
+			if !bytes.Equal(msg, unpad) {
+				t.Fatalf("Block: %d Message: %d\nUnpad does not produces orginal msg", i, j)
+			}
+
+			padBytes := pad[len(msg):]
+			for _, v := range padBytes {
+				if int(v) != len(pad)-len(msg) {
+					t.Fatalf("Block: %d Message: %d\nPKCS7 does not use PKCS7-Padding scheme", i, j)
+				}
+			}
 		}
-	}
-	_, err := p.Unpad(padded)
-	if err != nil {
-		t.Fatal(err)
 	}
 }
 
 func TestX923(t *testing.T) {
-	p := NewX923(blocksize)
-	padded := p.Pad(make([]byte, blocksize-4))
-	for i := blocksize - 4; i < blocksize-1; i++ {
-		if padded[i] != 0 {
-			t.Fatal("ANSI X923 padding failed while padding a block")
+	message := make([]byte, 249)
+	for i, b := range blocksizes {
+		for j, m := range msglengths {
+			msg := message[:m]
+
+			generateSequence(msg, uint32((m+b)*i))
+
+			x923 := NewX923(b)
+			pad := x923.Pad(msg)
+
+			if expected := len(msg) + x923.Overhead(msg); expected != len(pad) {
+				t.Fatalf("Block: %d Message: %d\nOverhead failed: Found: %d Expected: %d", i, j, len(pad), expected)
+			}
+			if len(pad)%b != 0 {
+				t.Fatalf("Block: %d Message: %d\nPadded block not a multiply of blocksize %d", i, j, len(pad))
+			}
+
+			unpad, err := x923.Unpad(pad)
+			if err != nil {
+				t.Fatalf("Block: %d Message: %d\nUnpad failed: %s", i, j, err)
+			}
+			if !bytes.Equal(msg, unpad) {
+				t.Fatalf("Block: %d Message: %d\nUnpad does not produces orginal msg", i, j)
+			}
+
+			padBytes := pad[len(msg) : len(pad)-1]
+			for _, v := range padBytes {
+				if int(v) != 0 {
+					t.Fatalf("Block: %d Message: %d\nX923 does not use X923-Padding scheme", i, j)
+				}
+			}
+			if int(pad[len(pad)-1]) != len(pad)-len(msg) {
+				t.Fatalf("Block: %d Message: %d\nX923 does not use X923-Padding scheme for last byte", i, j)
+			}
 		}
 	}
-	_, err := p.Unpad(padded)
-	if err != nil {
-		t.Fatal(err)
-	}
 }
 
-func TestPaddings(t *testing.T) {
-	for i := range paddings {
-		generalPaddingTest(t, paddings[i])
-	}
-}
+func TestISO10126(t *testing.T) {
+	message := make([]byte, 249)
+	for i, b := range blocksizes {
+		for j, m := range msglengths {
+			msg := message[:m]
 
-func generalPaddingTest(t *testing.T, p Padding) {
-	empty := make([]byte, 0)
-	partEmpty := make([]byte, blocksize-3)
-	full := make([]byte, blocksize)
-	partLarge := make([]byte, 3*blocksize+5)
-	large := make([]byte, 3*blocksize)
+			generateSequence(msg, uint32((m+b)*i))
 
-	// overhead test
-	overheadTest(t, p, empty, blocksize)
-	overheadTest(t, p, partEmpty, 3)
-	overheadTest(t, p, full, blocksize)
-	overheadTest(t, p, partLarge, blocksize-5)
-	overheadTest(t, p, large, blocksize)
+			iso := NewISO10126(b, rand.Reader)
+			pad := iso.Pad(msg)
 
-	// pad test
+			if expected := len(msg) + iso.Overhead(msg); expected != len(pad) {
+				t.Fatalf("Block: %d Message: %d\nOverhead failed: Found: %d Expected: %d", i, j, len(pad), expected)
+			}
+			if len(pad)%b != 0 {
+				t.Fatalf("Block: %d Message: %d\nPadded block not a multiply of blocksize %d", i, j, len(pad))
+			}
 
-	paddedEmpty := padTest(t, p, empty)
-	paddedPartEmpty := padTest(t, p, partEmpty)
-	paddedFull := padTest(t, p, full)
-	paddedPartLarge := padTest(t, p, partLarge)
-	paddedLarge := padTest(t, p, large)
+			unpad, err := iso.Unpad(pad)
+			if err != nil {
+				t.Fatalf("Block: %d Message: %d\nUnpad failed: %s", i, j, err)
+			}
+			if !bytes.Equal(msg, unpad) {
+				t.Fatalf("Block: %d Message: %d\nUnpad does not produces orginal msg", i, j)
+			}
 
-	// unpad test
-	unpadTest(t, p, paddedEmpty)
-	unpadTest(t, p, paddedPartEmpty)
-	unpadTest(t, p, paddedFull)
-	unpadTest(t, p, paddedPartLarge)
-	unpadTest(t, p, paddedLarge)
-}
-
-func overheadTest(t *testing.T, p Padding, src []byte, expOverhead int) {
-	overhead := p.Overhead(src)
-	if overhead != expOverhead {
-		t.Fatalf("%s : overhead does not match expected overhead: found %d , expected %d", p, overhead, expOverhead)
-	}
-}
-
-func padTest(t *testing.T, p Padding, src []byte) []byte {
-	padded := p.Pad(src)
-	if len(padded)%blocksize != 0 {
-		t.Fatalf("%s : length of padded slice is not a multiply the blocksize", p)
-		t.FailNow()
-	}
-	if len(padded) != p.Overhead(src)+len(src) {
-		t.Fatalf("%s : length of padded slice is not a src length + overhead", p)
-		t.FailNow()
-	}
-	return padded
-}
-
-func unpadTest(t *testing.T, p Padding, src []byte) {
-	_, err := p.Unpad(src)
-	if err != nil {
-		t.Fatalf("%s : %s", p, err)
+			if int(pad[len(pad)-1]) != len(pad)-len(msg) {
+				t.Fatalf("Block: %d Message: %d\nISO10126 does not use ISO10126-Padding scheme for last byte", i, j)
+			}
+		}
 	}
 }

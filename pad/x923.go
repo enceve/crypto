@@ -9,16 +9,12 @@ import (
 
 type x923Padding int
 
-func (p x923Padding) String() string {
-	return "ANSI-X923-Padding"
-}
-
 func (p x923Padding) BlockSize() int {
 	return int(p)
 }
 
 func (p x923Padding) Overhead(src []byte) int {
-	return generalOverhead(p.BlockSize(), src)
+	return overhead(p.BlockSize(), src)
 }
 
 func (p x923Padding) Pad(src []byte) []byte {
@@ -44,17 +40,17 @@ func (p x923Padding) Unpad(src []byte) ([]byte, error) {
 }
 
 // verify the X923 padding in (nearly) constant time
-func verifyX923ConstTime(block []byte, blocksize int) (int, error) {
-	var err error
+func verifyX923ConstTime(block []byte, blocksize int) (p int, err error) {
 	padLen := block[blocksize-1]
 	if padLen <= 0 || int(padLen) > blocksize {
 		err = LengthError(padLen)
 	}
-	padStart := blocksize - int(padLen)
-	for _, b := range block[padStart : blocksize-1] {
+
+	p = blocksize - int(padLen)
+	for _, b := range block[p : blocksize-1] {
 		if b != 0 && err == nil {
 			err = ByteError(b)
 		}
 	}
-	return int(padStart), err
+	return
 }
