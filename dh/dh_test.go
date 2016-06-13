@@ -5,64 +5,41 @@ package dh
 
 import (
 	"crypto/rand"
+	"fmt"
 	"testing"
 )
 
-// Tests all predefined primes and
-// their "safe prime" characteristic.
-func TestPrimes(t *testing.T) {
-	g := RFC3526_2048()
-	if !g.P.ProbablyPrime(32) {
-		t.Fatal("RFC3526_2048 is not prime")
-	}
-	if !IsSafePrime(g, 32) {
-		t.Fatal("RFC3526_2048 is not a safe prime")
-	}
-
-	g = RFC3526_3072()
-	if !g.P.ProbablyPrime(32) {
-		t.Fatal("RFC3526_3072 is not prime")
-	}
-	if !IsSafePrime(g, 32) {
-		t.Fatal("RFC3526_3072 is not a safe prime")
-	}
-
-	g = RFC3526_4096()
-	if !g.P.ProbablyPrime(32) {
-		t.Fatal("RFC3526_4096 is not prime")
-	}
-	if !IsSafePrime(g, 32) {
-		t.Fatal("RFC3526_4096 is not a safe prime")
-	}
-}
-
 // A Diffie-Hellman exchange example.
-func TestDHExample(t *testing.T) {
+func ExampleKeyExchange() {
+	// using 2048 bit group
 	group := RFC3526_2048()
 
 	// Alice
 	alicePrivate, alicePublic, err := group.GenerateKey(rand.Reader)
 	if err != nil {
-		t.Fatalf("Failed to generate alice's private / public key pair: %s", err)
+		fmt.Printf("Failed to generate alice's private / public key pair: %s", err)
 	}
 
 	// Bob
 	bobPrivate, bobPublic, err := group.GenerateKey(rand.Reader)
 	if err != nil {
-		t.Fatalf("Failed to generate bob's private / public key pair: %s", err)
+		fmt.Printf("Failed to generate bob's private / public key pair: %s", err)
 	}
 
 	secretAlice := group.ComputeSecret(alicePrivate, bobPublic)
 	secretBob := group.ComputeSecret(bobPrivate, alicePublic)
 
 	if secretAlice.Cmp(secretBob) != 0 {
-		t.Fatalf("key exchange failed - secrets not equal\nAlice: %v\nBob  : %v", secretAlice, secretBob)
+		fmt.Printf("key exchange failed - secrets not equal\nAlice: %v\nBob  : %v", secretAlice, secretBob)
 	}
+
+	fmt.Println("key exchange succeed")
+	// Output:
+	// key exchange succeed
 }
 
 func BenchmarkGenerateKey2048(b *testing.B) {
 	group := RFC3526_2048()
-	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		_, _, err := group.GenerateKey(rand.Reader)
 		if err != nil {
@@ -81,7 +58,6 @@ func Benchmark2048(b *testing.B) {
 	if err != nil {
 		b.Fatalf("Failed to generate bob's private / public key: %s", err)
 	}
-	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		group.ComputeSecret(alicePrivate, bobPublic)
 	}
@@ -97,7 +73,6 @@ func Benchmark4096(b *testing.B) {
 	if err != nil {
 		b.Fatalf("Failed to generate bob's private / public key: %s", err)
 	}
-	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		group.ComputeSecret(alicePrivate, bobPublic)
 	}

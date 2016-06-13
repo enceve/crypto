@@ -4,82 +4,79 @@
 package ecdh
 
 import (
+	"bytes"
 	"crypto/elliptic"
 	"crypto/rand"
+	"fmt"
 	"testing"
 )
 
 // An example for the ECDH key-exchange using the curve P256.
-func TestECDHExample(t *testing.T) {
-	p256 := &Generic{elliptic.P256()}
+func ExampleGenericKeyExchange() {
+	p256 := GenericCurve(elliptic.P256())
 
 	privateAlice, publicAlice, err := p256.GenerateKey(rand.Reader)
 	if err != nil {
-		t.Fatalf("Failed to generate Alice's private/public key pair: %s", err)
+		fmt.Printf("Failed to generate Alice's private/public key pair: %s\n", err)
 	}
-
 	privateBob, publicBob, err := p256.GenerateKey(rand.Reader)
 	if err != nil {
-		t.Fatalf("Failed to generate Bob's private/public key pair: %s", err)
+		fmt.Printf("Failed to generate Bob's private/public key pair: %s\n", err)
 	}
 
-	// Alice computes the Diffie-Hellman secret with her private and Bob's
-	// public key.
-	if !p256.IsOnCurve(publicBob) {
-		t.Fatal("Bob's public key is not on the curve")
+	if err := p256.Check(publicBob); err != nil {
+		fmt.Printf("Bob's public key is not on the curve: %s\n", err)
 	}
 	secretAlice := p256.ComputeSecret(privateAlice, publicBob)
 
-	// Bob computes the Diffie-Hellman secret with his private and Alice's
-	// public key.
-	if !p256.IsOnCurve(publicAlice) {
-		t.Fatal("Bob's public key is not on the curve")
+	if err := p256.Check(publicAlice); err != nil {
+		fmt.Printf("Alice's public key is not on the curve: %s\n", err)
 	}
 	secretBob := p256.ComputeSecret(privateBob, publicAlice)
 
-	// Verify if the computes secret are equal
-	if secretAlice.X.Cmp(secretBob.X) != 0 {
-		t.Fatalf("key exchange failed - secret X coordinates not equal\nAlice: %v\nBob  : %v", secretAlice.X, secretBob.X)
+	if !bytes.Equal(secretAlice, secretBob) {
+		fmt.Printf("key exchange failed - secret X coordinates not equal\n")
 	}
-	if secretAlice.Y.Cmp(secretBob.Y) != 0 {
-		t.Fatalf("key exchange failed - secret Y coordinates not equal\nAlice: %v\nBob  : %v", secretAlice.Y, secretBob.Y)
-	}
+
+	fmt.Println("\nkey exchange succeed\n")
+	// Output:
+	// key exchange succeed
 }
 
 // An example for the ECDH key-exchange using Curve25519.
-func TestECDHExampleCurve25519(t *testing.T) {
-	curve := new(Curve25519)
+func ExampleCurve25519KeyExchange() {
+	c25519 := Curve25519()
 
-	privateAlice, publicAlice, err := curve.GenerateKey(rand.Reader)
+	privateAlice, publicAlice, err := c25519.GenerateKey(rand.Reader)
 	if err != nil {
-		t.Fatalf("Failed to generate Alice's private/public key pair: %s", err)
+		fmt.Printf("Failed to generate Alice's private/public key pair: %s\n", err)
 	}
-
-	privateBob, publicBob, err := curve.GenerateKey(rand.Reader)
+	privateBob, publicBob, err := c25519.GenerateKey(rand.Reader)
 	if err != nil {
-		t.Fatalf("Failed to generate Bob's private/public key pair: %s", err)
+		fmt.Printf("Failed to generate Bob's private/public key pair: %s\n", err)
 	}
 
-	// Alice computes the Diffie-Hellman secret with her private and Bob's
-	// public key.
-	var secretAlice [32]byte
-	curve.ComputeSecret(&secretAlice, privateAlice, publicBob)
-
-	// Bob computes the Diffie-Hellman secret with his private and Alice's
-	// public key.
-	var secretBob [32]byte
-	curve.ComputeSecret(&secretBob, privateBob, publicAlice)
-
-	// Verify if the computes secret are equal
-	for i := range secretAlice {
-		if secretAlice[i] != secretBob[i] {
-			t.Fatalf("key exchange failed - secrets (X coordinates) not equal\nAlice: %v\nBob  : %v", secretAlice, secretBob)
-		}
+	if err := c25519.Check(publicBob); err != nil {
+		fmt.Printf("Bob's public key is not on the curve: %s\n", err)
 	}
+	secretAlice := c25519.ComputeSecret(privateAlice, publicBob)
+
+	if err := c25519.Check(publicAlice); err != nil {
+		fmt.Printf("Alice's public key is not on the curve: %s\n", err)
+	}
+	secretBob := c25519.ComputeSecret(privateBob, publicAlice)
+
+	if !bytes.Equal(secretAlice, secretBob) {
+		fmt.Printf("key exchange failed - secret X coordinates not equal\n")
+	}
+
+	fmt.Println("\nkey exchange succeed\n")
+	// Output:
+	// key exchange succeed
 }
 
 func BenchmarkCurve25519(b *testing.B) {
-	curve := new(Curve25519)
+	curve := Curve25519()
 	privateAlice, _, err := curve.GenerateKey(rand.Reader)
 	if err != nil {
 		b.Fatalf("Failed to generate Alice's private/public key pair: %s", err)
@@ -88,15 +85,13 @@ func BenchmarkCurve25519(b *testing.B) {
 	if err != nil {
 		b.Fatalf("Failed to generate Bob's private/public key pair: %s", err)
 	}
-	var secret [32]byte
-	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		curve.ComputeSecret(&secret, privateAlice, publicBob)
+		curve.ComputeSecret(privateAlice, publicBob)
 	}
 }
 
 func BenchmarkKeyGenerateCurve25519(b *testing.B) {
-	curve := new(Curve25519)
+	curve := Curve25519()
 	for i := 0; i < b.N; i++ {
 		_, _, err := curve.GenerateKey(rand.Reader)
 		if err != nil {
@@ -106,7 +101,7 @@ func BenchmarkKeyGenerateCurve25519(b *testing.B) {
 }
 
 func BenchmarkP256(b *testing.B) {
-	p256 := &Generic{elliptic.P256()}
+	p256 := GenericCurve(elliptic.P256())
 	privateAlice, _, err := p256.GenerateKey(rand.Reader)
 	if err != nil {
 		b.Fatalf("Failed to generate Alice's private/public key pair: %s", err)
@@ -122,7 +117,7 @@ func BenchmarkP256(b *testing.B) {
 }
 
 func BenchmarkKeyGenerateP256(b *testing.B) {
-	p256 := &Generic{elliptic.P256()}
+	p256 := GenericCurve(elliptic.P256())
 	for i := 0; i < b.N; i++ {
 		_, _, err := p256.GenerateKey(rand.Reader)
 		if err != nil {
@@ -132,7 +127,7 @@ func BenchmarkKeyGenerateP256(b *testing.B) {
 }
 
 func BenchmarkP521(b *testing.B) {
-	p521 := &Generic{elliptic.P521()}
+	p521 := GenericCurve(elliptic.P256())
 	privateAlice, _, err := p521.GenerateKey(rand.Reader)
 	if err != nil {
 		b.Fatalf("Failed to generate Alice's private/public key pair: %s", err)
@@ -148,7 +143,7 @@ func BenchmarkP521(b *testing.B) {
 }
 
 func BenchmarkKeyGenerateP521(b *testing.B) {
-	p521 := &Generic{elliptic.P521()}
+	p521 := GenericCurve(elliptic.P256())
 	for i := 0; i < b.N; i++ {
 		_, _, err := p521.GenerateKey(rand.Reader)
 		if err != nil {
