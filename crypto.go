@@ -31,11 +31,3 @@ type AuthenticationError struct{}
 func (a AuthenticationError) Error() string {
 	return "authentication failed"
 }
-
-// A TweakSizeError indicates, that the actual size of a given
-// tweak does not match the expected size.
-type TweakSizeError int
-
-func (t TweakSizeError) Error() string {
-	return "invalid tweak size " + strconv.Itoa(int(t))
-}

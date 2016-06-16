@@ -1,5 +1,5 @@
 // Use of this source code is governed by a license
-// that can be found in the LICENSE file.
+// that can be found in the LICENSE file
 
 package threefish
 
@@ -9,20 +9,24 @@ import (
 	"testing"
 )
 
-type testVector struct {
-	key, tweak, plaintext, ciphertext string
+func fromHex(s string) []byte {
+	b, err := hex.DecodeString(s)
+	if err != nil {
+		panic(err)
+	}
+	return b
 }
 
-// Test vectors from:
-// https://github.com/bcgit/bc-java/blob/master/core/src/test/java/org/bouncycastle/crypto/test/Threefish256Test.java
-var testVectors256 = []testVector{
-	testVector{
+var testVectors256 = []struct {
+	key, tweak, plaintext, ciphertext string
+}{
+	{
 		key:        "0000000000000000000000000000000000000000000000000000000000000000",
 		tweak:      "00000000000000000000000000000000",
 		plaintext:  "0000000000000000000000000000000000000000000000000000000000000000",
 		ciphertext: "84da2a1f8beaee947066ae3e3103f1ad536db1f4a1192495116b9f3ce6133fd8",
 	},
-	testVector{
+	{
 		key:        "101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f",
 		tweak:      "000102030405060708090a0b0c0d0e0f",
 		plaintext:  "FFFEFDFCFBFAF9F8F7F6F5F4F3F2F1F0EFEEEDECEBEAE9E8E7E6E5E4E3E2E1E0",
@@ -30,10 +34,41 @@ var testVectors256 = []testVector{
 	},
 }
 
+func TestVectros256(t *testing.T) {
+	for i, v := range testVectors256 {
+		key := fromHex(v.key)
+		tweak := fromHex(v.tweak)
+		plaintext := fromHex(v.plaintext)
+		ciphertext := fromHex(v.ciphertext)
+
+		var Tweak [TweakSize]byte
+		copy(Tweak[:], tweak)
+
+		c, err := NewCipher(&Tweak, key)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		dst := make([]byte, BlockSize256)
+
+		c.Encrypt(dst, plaintext)
+		if !bytes.Equal(ciphertext, dst) {
+			t.Fatalf("Test vector %d : Encryption failed\nFound:      %s \nExpected: %s", i, hex.EncodeToString(dst), hex.EncodeToString(ciphertext))
+		}
+
+		c.Decrypt(dst, dst)
+		if !bytes.Equal(plaintext, dst) {
+			t.Fatalf("Test vector %d : Decryption failed\nFound:     %s \nExpected: %s", i, hex.EncodeToString(dst), hex.EncodeToString(plaintext))
+		}
+	}
+}
+
 // Test vectors from:
 // https://github.com/bcgit/bc-java/blob/master/core/src/test/java/org/bouncycastle/crypto/test/Threefish512Test.java
-var testVectors512 = []testVector{
-	testVector{
+var testVectors512 = []struct {
+	key, tweak, plaintext, ciphertext string
+}{
+	{
 		key: "0000000000000000000000000000000000000000000000000000000000000000" +
 			"0000000000000000000000000000000000000000000000000000000000000000",
 		tweak: "00000000000000000000000000000000",
@@ -42,7 +77,7 @@ var testVectors512 = []testVector{
 		ciphertext: "b1a2bbc6ef6025bc40eb3822161f36e375d1bb0aee3186fbd19e47c5d479947b" +
 			"7bc2f8586e35f0cff7e7f03084b0b7b1f1ab3961a580a3e97eb41ea14a6d7bbe",
 	},
-	testVector{
+	{
 		key: "101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f" +
 			"303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f",
 		tweak: "000102030405060708090a0b0c0d0e0f",
@@ -53,10 +88,41 @@ var testVectors512 = []testVector{
 	},
 }
 
+func TestVectros512(t *testing.T) {
+	for i, v := range testVectors512 {
+		key := fromHex(v.key)
+		tweak := fromHex(v.tweak)
+		plaintext := fromHex(v.plaintext)
+		ciphertext := fromHex(v.ciphertext)
+
+		var Tweak [TweakSize]byte
+		copy(Tweak[:], tweak)
+
+		c, err := NewCipher(&Tweak, key)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		dst := make([]byte, BlockSize512)
+
+		c.Encrypt(dst, plaintext)
+		if !bytes.Equal(ciphertext, dst) {
+			t.Fatalf("Test vector %d : Encryption failed\nFound:      %s \nExpected: %s", i, hex.EncodeToString(dst), hex.EncodeToString(ciphertext))
+		}
+
+		c.Decrypt(dst, dst)
+		if !bytes.Equal(plaintext, dst) {
+			t.Fatalf("Test vector %d : Decryption failed\nFound:     %s \nExpected: %s", i, hex.EncodeToString(dst), hex.EncodeToString(plaintext))
+		}
+	}
+}
+
 // Test vectors from:
 // https://github.com/bcgit/bc-java/blob/master/core/src/test/java/org/bouncycastle/crypto/test/Threefish1024Test.java
-var testVectors1024 = []testVector{
-	testVector{
+var testVectors1024 = []struct {
+	key, tweak, plaintext, ciphertext string
+}{
+	{
 		key: "0000000000000000000000000000000000000000000000000000000000000000" +
 			"0000000000000000000000000000000000000000000000000000000000000000" +
 			"0000000000000000000000000000000000000000000000000000000000000000" +
@@ -71,7 +137,7 @@ var testVectors1024 = []testVector{
 			"0b2e4760b40603540d82eabc5482c171c832afbe68406bc39500367a592943fa" +
 			"9a5b4a43286ca3c4cf46104b443143d560a4b230488311df4feef7e1dfe8391e",
 	},
-	testVector{
+	{
 		key: "101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f" +
 			"303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f" +
 			"505152535455565758595a5b5c5d5e5f606162636465666768696a6b6c6d6e6f" +
@@ -88,115 +154,31 @@ var testVectors1024 = []testVector{
 	},
 }
 
-func TestVectros256(t *testing.T) {
-	for i, v := range testVectors256 {
-		key, err := hex.DecodeString(v.key)
-		if err != nil {
-			t.Fatalf("Test vector %d: Failed to decode hex key: %s", i, err)
-		}
-		tweak, err := hex.DecodeString(v.tweak)
-		if err != nil {
-			t.Fatalf("Test vector %d: Failed to decode hex tweak: %s", i, err)
-		}
-		plaintext, err := hex.DecodeString(v.plaintext)
-		if err != nil {
-			t.Fatalf("Test vector %d: Failed to decode hex plaintext: %s", i, err)
-		}
-		ciphertext, err := hex.DecodeString(v.ciphertext)
-		if err != nil {
-			t.Fatalf("Test vector %d: Failed to decode hex ciphertext: %s", i, err)
-		}
-		c, err := NewCipher(key, tweak)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		dst := make([]byte, blockSize256)
-
-		c.Encrypt(dst, plaintext)
-		if !bytes.Equal(ciphertext, dst) {
-			t.Fatalf("Test vector %d : Encryption failed\nFound:    %v \nExpected: %v", i, dst, ciphertext)
-		}
-
-		c.Decrypt(dst, dst)
-		if !bytes.Equal(plaintext, dst) {
-			t.Fatalf("Test vector %d:Decryption failed\nFound: %v \nExpected: %v", i, dst, plaintext)
-		}
-	}
-}
-
-func TestVectros512(t *testing.T) {
-	for i, v := range testVectors512 {
-		key, err := hex.DecodeString(v.key)
-		if err != nil {
-			t.Fatalf("Test vector %d: Failed to decode hex key: %s", i, err)
-		}
-		tweak, err := hex.DecodeString(v.tweak)
-		if err != nil {
-			t.Fatalf("Test vector %d: Failed to decode hex tweak: %s", i, err)
-		}
-		plaintext, err := hex.DecodeString(v.plaintext)
-		if err != nil {
-			t.Fatalf("Test vector %d: Failed to decode hex plaintext: %s", i, err)
-		}
-		ciphertext, err := hex.DecodeString(v.ciphertext)
-		if err != nil {
-			t.Fatalf("Test vector %d: Failed to decode hex ciphertext: %s", i, err)
-		}
-
-		c, err := NewCipher(key, tweak)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		dst := make([]byte, blockSize512)
-
-		c.Encrypt(dst, plaintext)
-		if !bytes.Equal(ciphertext, dst) {
-			t.Fatalf("Test vector %d : Encryption failed\nFound:    %v \nExpected: %v", i, dst, ciphertext)
-		}
-
-		c.Decrypt(dst, dst)
-		if !bytes.Equal(plaintext, dst) {
-			t.Fatalf("Test vector %d:Decryption failed\nFound: %v \nExpected: %v", i, dst, plaintext)
-		}
-	}
-}
-
 func TestVectros1024(t *testing.T) {
 	for i, v := range testVectors1024 {
-		key, err := hex.DecodeString(v.key)
-		if err != nil {
-			t.Fatalf("Test vector %d: Failed to decode hex key: %s", i, err)
-		}
-		tweak, err := hex.DecodeString(v.tweak)
-		if err != nil {
-			t.Fatalf("Test vector %d: Failed to decode hex tweak: %s", i, err)
-		}
-		plaintext, err := hex.DecodeString(v.plaintext)
-		if err != nil {
-			t.Fatalf("Test vector %d: Failed to decode hex plaintext: %s", i, err)
-		}
-		ciphertext, err := hex.DecodeString(v.ciphertext)
-		if err != nil {
-			t.Fatalf("Test vector %d: Failed to decode hex ciphertext: %s", i, err)
-		}
+		key := fromHex(v.key)
+		tweak := fromHex(v.tweak)
+		plaintext := fromHex(v.plaintext)
+		ciphertext := fromHex(v.ciphertext)
 
-		c, err := NewCipher(key, tweak)
+		var Tweak [TweakSize]byte
+		copy(Tweak[:], tweak)
+
+		c, err := NewCipher(&Tweak, key)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		dst := make([]byte, blockSize1024)
+		dst := make([]byte, BlockSize1024)
 
 		c.Encrypt(dst, plaintext)
 		if !bytes.Equal(ciphertext, dst) {
-			t.Fatalf("Test vector %d : Encryption failed\nFound:    %v \nExpected: %v", i, dst, ciphertext)
+			t.Fatalf("Test vector %d : Encryption failed\nFound:      %s \nExpected: %s", i, hex.EncodeToString(dst), hex.EncodeToString(ciphertext))
 		}
 
 		c.Decrypt(dst, dst)
 		if !bytes.Equal(plaintext, dst) {
-			t.Fatalf("Test vector %d:Decryption failed\nFound: %v \nExpected: %v", i, dst, plaintext)
+			t.Fatalf("Test vector %d : Decryption failed\nFound:     %s \nExpected: %s", i, hex.EncodeToString(dst), hex.EncodeToString(plaintext))
 		}
 	}
 }

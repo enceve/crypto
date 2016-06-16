@@ -3,9 +3,9 @@
 
 // +build !amd64
 
-package skein
+package skein1024
 
-func bytesToBlock(block *[8]uint64, src []byte) {
+func bytesToBlock(block *[16]uint64, src []byte) {
 	for i := range block {
 		j := i * 8
 		block[i] = uint64(src[j]) | uint64(src[j+1])<<8 | uint64(src[j+2])<<16 |
@@ -14,7 +14,7 @@ func bytesToBlock(block *[8]uint64, src []byte) {
 	}
 }
 
-func blockToBytes(dst []byte, block *[8]uint64) {
+func blockToBytes(dst []byte, block *[16]uint64) {
 	i := 0
 	for _, v := range block {
 		dst[i] = byte(v)

@@ -11,7 +11,7 @@ import (
 	"encoding/hex"
 	"testing"
 
-	"github.com/enceve/crypto/threefish"
+	"github.com/enceve/crypto/skein/threefish"
 )
 
 // Tests Blocksize() declared in hash.Hash
@@ -142,6 +142,8 @@ func TestSum(t *testing.T) {
 
 // Tests New(c cipher.Block) declared here (cmac)
 func TestNew(t *testing.T) {
+	var tweak [threefish.TweakSize]byte
+
 	// Test 64 bit block cipher
 	c, err := des.NewCipher(make([]byte, 8))
 	if err != nil {
@@ -163,7 +165,7 @@ func TestNew(t *testing.T) {
 	}
 
 	// Test 256 bit block cipher
-	c, err = threefish.NewCipher(make([]byte, 32), make([]byte, 16))
+	c, err = threefish.NewCipher(&tweak, make([]byte, 32))
 	if err != nil {
 		t.Fatalf("Could not create Threefish-256 instance: %s", err)
 	}
@@ -173,7 +175,7 @@ func TestNew(t *testing.T) {
 	}
 
 	// Test 512 bit block cipher
-	c, err = threefish.NewCipher(make([]byte, 64), make([]byte, 16))
+	c, err = threefish.NewCipher(&tweak, make([]byte, 64))
 	if err != nil {
 		t.Fatalf("Could not create Threefish-512 instance: %s", err)
 	}
@@ -183,7 +185,7 @@ func TestNew(t *testing.T) {
 	}
 
 	// Test 1024 bit block cipher
-	c, err = threefish.NewCipher(make([]byte, 128), make([]byte, 16))
+	c, err = threefish.NewCipher(&tweak, make([]byte, 128))
 	if err != nil {
 		t.Fatalf("Could not create Threefish-1024 instance: %s", err)
 	}
