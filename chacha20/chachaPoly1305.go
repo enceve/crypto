@@ -9,6 +9,7 @@ import (
 	"errors"
 
 	"github.com/enceve/crypto"
+	"github.com/enceve/crypto/chacha20/chacha"
 	"github.com/enceve/crypto/poly1305"
 )
 
@@ -48,16 +49,20 @@ func (c *aead) Seal(dst, nonce, plaintext, additionalData []byte) []byte {
 	var Nonce [12]byte
 	copy(Nonce[:], nonce)
 
+	cha := chacha.NewCipher(&Nonce, &(c.key), 20)
+
 	// create the poly1305 key
 	var polyKey [32]byte
-	XORKeyStream(polyKey[:], polyKey[:], &Nonce, &(c.key), 0)
+	cha.XORKeyStream(polyKey[:], polyKey[:])
+	cha.SetCounter(1)
 
 	// encrypt the plaintext
 	n := len(plaintext)
-	XORKeyStream(dst, plaintext, &Nonce, &(c.key), 1)
+	cha.XORKeyStream(dst, plaintext)
 
 	// authenticate the ciphertext
-	tag := authenticate(&polyKey, dst[:n], additionalData)
+	var tag [poly1305.TagSize]byte
+	authenticate(&tag, dst[:n], additionalData, &polyKey)
 	return append(dst[:n], tag[:c.tagsize]...)
 }
 
@@ -72,29 +77,34 @@ func (c *aead) Open(dst, nonce, ciphertext, additionalData []byte) ([]byte, erro
 		panic("dst buffer to small")
 	}
 	var Nonce [12]byte
+
 	copy(Nonce[:], nonce)
 
 	hash := ciphertext[len(ciphertext)-c.tagsize:]
 	ciphertext = ciphertext[:len(ciphertext)-c.tagsize]
 
+	cha := chacha.NewCipher(&Nonce, &(c.key), 20)
+
 	// create the poly1305 key
 	var polyKey [32]byte
-	XORKeyStream(polyKey[:], polyKey[:], &Nonce, &(c.key), 0)
+	cha.XORKeyStream(polyKey[:], polyKey[:])
+	cha.SetCounter(1)
 
 	// authenticate the ciphertext
-	tag := authenticate(&polyKey, ciphertext, additionalData)
+	var tag [poly1305.TagSize]byte
+	authenticate(&tag, ciphertext, additionalData, &polyKey)
 	if subtle.ConstantTimeCompare(tag[:c.tagsize], hash[:c.tagsize]) != 1 {
 		return nil, crypto.AuthenticationError{}
 	}
 
 	// decrypt ciphertext
-	XORKeyStream(dst, ciphertext, &Nonce, &(c.key), 1)
+	cha.XORKeyStream(dst, ciphertext)
 	return dst[:len(ciphertext)], nil
 }
 
 // authenticate calculates the poly1305 tag from
 // the given ciphertext and additional data.
-func authenticate(key *[32]byte, ciphertext, additionalData []byte) []byte {
+func authenticate(out *[TagSize]byte, ciphertext, additionalData []byte, key *[32]byte) {
 	ctLen := uint64(len(ciphertext))
 	adLen := uint64(len(additionalData))
 	padAD, padCT := adLen%16, ctLen%16
@@ -117,7 +127,7 @@ func authenticate(key *[32]byte, ciphertext, additionalData []byte) []byte {
 	buf[14] = byte(ctLen >> 48)
 	buf[15] = byte(ctLen >> 56)
 
-	poly, _ := poly1305.New(key[:])
+	poly := poly1305.New(key)
 	poly.Write(additionalData)
 	if padAD > 0 {
 		poly.Write(make([]byte, 16-padAD))
@@ -127,5 +137,5 @@ func authenticate(key *[32]byte, ciphertext, additionalData []byte) []byte {
 		poly.Write(make([]byte, 16-padCT))
 	}
 	poly.Write(buf[:])
-	return poly.Sum(nil)
+	poly.Sum(out)
 }

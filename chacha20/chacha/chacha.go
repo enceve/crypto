@@ -17,6 +17,9 @@ type Cipher struct {
 }
 
 // Sets the counter of the cipher.
+// Notice that this function skips the unused
+// keystream of the current 64 byte block.
 func (c *Cipher) SetCounter(ctr uint32) {
 	c.state[12] = ctr
+	c.off = 0
 }

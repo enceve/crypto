@@ -1,7 +1,7 @@
 // Use of this source code is governed by a license
 // that can be found in the LICENSE file.
 
-// +build !386
+// +build !386,!amd64
 
 package poly1305
 

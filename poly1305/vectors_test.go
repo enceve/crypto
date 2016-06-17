@@ -46,14 +46,11 @@ func TestVectors(t *testing.T) {
 			t.Fatalf("Test vector %d : Poly1305 Tags are not equal:\nFound:    %v\nExpected: %v", i, sum, tag)
 		}
 
-		p, err := New(key)
-		if err != nil {
-			t.Fatalf("Test vector %d : Failed to create poly1305 instance: %s", i, err)
-		}
+		p := New(&k)
 		p.Write(msg)
-		s := p.Sum(nil)
-		if !bytes.Equal(s, tag) {
-			t.Fatalf("Test vector %d : Poly1305 Tags are not equal:\nFound:    %v\nExpected: %v", i, s, tag)
+		p.Sum(&sum)
+		if !bytes.Equal(sum[:], tag) {
+			t.Fatalf("Test vector %d : Poly1305 Tags are not equal:\nFound:    %v\nExpected: %v", i, sum[:], tag)
 		}
 	}
 }

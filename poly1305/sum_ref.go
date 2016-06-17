@@ -10,7 +10,7 @@ package poly1305
 // different messages with the same key allows an attacker
 // to forge messages at will.
 func Sum(out *[TagSize]byte, msg []byte, key *[32]byte) {
-	p := new(polyHash)
+	p := new(Hash)
 	initialize(&(p.r), &(p.pad), key)
 
 	p.Write(msg)

@@ -18,9 +18,7 @@ package poly1305
 
 import (
 	"crypto/subtle"
-	"hash"
-
-	"github.com/enceve/crypto"
+	"errors"
 )
 
 // The size of the poly1305 authentication tag in bytes.
@@ -35,40 +33,37 @@ func Verify(mac *[TagSize]byte, msg []byte, key *[32]byte) bool {
 }
 
 // New returns a hash.Hash computing the poly1305 sum.
-// The given key must be 256 bit (32 byte). Notice that
-// poly1305 is inseure if one key is used twice. To prevent
-// misuse the returned hash.Hash doesn't support the Reset()
-// method.
-func New(key []byte) (hash.Hash, error) {
-	if k := len(key); k != 32 {
-		return nil, crypto.KeySizeError(k)
-	}
-	var k [32]byte
-	copy(k[:], key)
-
-	p := new(polyHash)
-	initialize(&(p.r), &(p.pad), &k)
-	return p, nil
+// Notice that Poly1305 is inseure if one key is used twice.
+func New(key *[32]byte) *Hash {
+	p := new(Hash)
+	initialize(&(p.r), &(p.pad), key)
+	return p
 }
 
-// The poly1305 hash struct implementing hash.Hash
-type polyHash struct {
+var writeAfterSumErr error = errors.New("checksum already computed - adding more data is not allowed")
+
+// Hash implements a Poly1305 writer interface.
+// Poly1305 cannot used like common hash.Hash implementations,
+// beause of using a Poly1305 key twice breaks its security.
+// So poly1305.Hash does not support some kind of reset.
+type Hash struct {
 	h, r [5]uint32
 	pad  [4]uint32
 
-	buf [TagSize]byte
-	off int
+	buf  [TagSize]byte
+	off  int
+	done bool
 }
 
-func (p *polyHash) BlockSize() int { return TagSize }
-
-func (p *polyHash) Size() int { return TagSize }
-
-func (p *polyHash) Reset() {
-	panic("poly1305 does not support Reset() - poly1305 is insecure if one key is used twice!")
-}
-
-func (p *polyHash) Write(msg []byte) (int, error) {
+// Write adds more data to the running Poly1305 hash.
+// This function returns an non-nil error, if a call
+// to Write happens after the hash's Sum function was
+// called. So it's not possible to compute the checksum
+// and than add more data.
+func (p *Hash) Write(msg []byte) (int, error) {
+	if p.done {
+		return 0, writeAfterSumErr
+	}
 	n := len(msg)
 
 	diff := TagSize - p.off
@@ -93,20 +88,25 @@ func (p *polyHash) Write(msg []byte) (int, error) {
 	return n, nil
 }
 
-func (p *polyHash) Sum(b []byte) []byte {
-	var mac [TagSize]byte
-	p0 := *p
+// Sum computes the Poly1305 checksum of the prevouisly
+// proccessed data and writes it to out. It is legal to
+// call this function more than one time.
+func (p *Hash) Sum(out *[TagSize]byte) {
+	h, r := p.h, p.r
+	pad := p.pad
+	buf := p.buf
+	off := p.off
 
-	if p0.off > 0 {
-		p0.buf[p0.off] = 1 // invariant: p0.off < TagSize
-		for i := p0.off + 1; i < TagSize; i++ {
-			p0.buf[i] = 0
+	if off > 0 {
+		buf[off] = 1 // invariant: p0.off < TagSize
+		for i := off + 1; i < TagSize; i++ {
+			buf[i] = 0
 		}
-		core(p0.buf[:], finalBlock, &(p0.h), &(p0.r))
+		core(buf[:], finalBlock, &h, &r)
 	}
 
-	finalize(&mac, &(p0.h), &(p0.pad))
-	return append(b, mac[:]...)
+	finalize(out, &h, &pad)
+	p.done = true
 }
 
 const (
