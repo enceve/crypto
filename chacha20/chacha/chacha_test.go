@@ -35,10 +35,10 @@ func TestXORBlocks128(t *testing.T) {
 	}
 }
 
-func TestXORBlocks192(t *testing.T) {
+func TestXORBlocks256(t *testing.T) {
 	var (
 		state0 [16]uint32
-		buf192 [192]byte
+		buf256 [256]byte
 
 		state1 [16]uint32
 		buf64  [64]byte
@@ -46,23 +46,29 @@ func TestXORBlocks192(t *testing.T) {
 	copy(state0[:4], constants[:])
 	copy(state1[:4], constants[:])
 
-	XORBlocks(buf192[:], buf192[:], &state0, 20)
+	XORBlocks(buf256[:], buf256[:], &state0, 20)
 	Core(&buf64, &state1, 20)
 	state1[12]++
 
-	if !bytes.Equal(buf192[:64], buf64[:]) {
-		t.Fatalf("First 64 byte keystream don't match: \nXORBlocks: %s\nCore:      %s", hex.EncodeToString(buf192[:64]), hex.EncodeToString(buf64[:]))
+	if !bytes.Equal(buf256[:64], buf64[:]) {
+		t.Fatalf("First 64 byte keystream don't match: \nXORBlocks: %s\nCore:      %s", hex.EncodeToString(buf256[:64]), hex.EncodeToString(buf64[:]))
 	}
 
 	Core(&buf64, &state1, 20)
 	state1[12]++
-	if !bytes.Equal(buf192[64:128], buf64[:]) {
-		t.Fatalf("Second 64 byte keystream don't match: \nXORBlocks: %s\nCore:      %s", hex.EncodeToString(buf192[64:128]), hex.EncodeToString(buf64[:]))
+	if !bytes.Equal(buf256[64:128], buf64[:]) {
+		t.Fatalf("Second 64 byte keystream don't match: \nXORBlocks: %s\nCore:       %s", hex.EncodeToString(buf256[64:128]), hex.EncodeToString(buf64[:]))
 	}
 
 	Core(&buf64, &state1, 20)
-	if !bytes.Equal(buf192[128:], buf64[:]) {
-		t.Fatalf("Third 64 byte keystream don't match: \nXORBlocks: %s\nCore:      %s", hex.EncodeToString(buf192[128:]), hex.EncodeToString(buf64[:]))
+	state1[12]++
+	if !bytes.Equal(buf256[128:192], buf64[:]) {
+		t.Fatalf("Third 64 byte keystream don't match: \nXORBlocks: %s\nCore:      %s", hex.EncodeToString(buf256[128:192]), hex.EncodeToString(buf64[:]))
+	}
+
+	Core(&buf64, &state1, 20)
+	if !bytes.Equal(buf256[192:], buf64[:]) {
+		t.Fatalf("Fourth 64 byte keystream don't match: \nXORBlocks: %s\nCore:      %s", hex.EncodeToString(buf256[192:]), hex.EncodeToString(buf64[:]))
 	}
 }
 

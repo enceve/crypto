@@ -127,8 +127,10 @@ func (c *Cipher) XORKeyStream(dst, src []byte) {
 		}
 	}
 
-	n := length - (length % 64)
-	XORBlocks(dst, src, &(c.state), c.rounds)
+	n := length & (^(64 - 1))
+	if n > 0 {
+		XORBlocks(dst, src, &(c.state), c.rounds)
+	}
 
 	length -= n
 	if length > 0 {
@@ -157,12 +159,12 @@ func (c *Cipher) XORKeyStream(dst, src []byte) {
 // xorBlocksSSE64 crypts one 64 byte chunk from src to dst using SSE2 SIMD.
 func xorBlocksSSE64(dst *byte, src *byte, state *[16]uint32, rounds int)
 
-// xorBlocksSSE64 crypts one 128 byte chunk from src to dst using SSE2 SIMD.
+// xorBlocksSSE128 crypts one 128 byte chunk from src to dst using SSE2 SIMD.
 func xorBlocksSSE128(dst *byte, src *byte, state *[16]uint32, rounds int)
 
-// xorBlocksSSE64 crypts as many as possible 192 byte chunks (length argument)
+// xorBlocksSSE256 crypts as many as possible 256 byte chunks (length argument)
 // from src to dst using SSE2 SIMD.
-func xorBlocksSSE192(dst *byte, src *byte, length uint64, state *[16]uint32, rounds int)
+func xorBlocksSSE256(dst *byte, src *byte, length uint64, state *[16]uint32, rounds int)
 
 // XORBlocks crypts full block ( len(src) - (len(src) mod 64) bytes ) from src to
 // dst using the state. Src and dst may be the same slice
@@ -170,9 +172,9 @@ func xorBlocksSSE192(dst *byte, src *byte, length uint64, state *[16]uint32, rou
 // This function increments the counter.
 func XORBlocks(dst, src []byte, state *[16]uint32, rounds int) {
 	length := len(src)
-	n := length - (length % 192)
+	n := length & (^(256 - 1))
 	if n > 0 {
-		xorBlocksSSE192(&dst[0], &src[0], uint64(n), state, rounds)
+		xorBlocksSSE256(&dst[0], &src[0], uint64(n), state, rounds)
 	}
 
 	if length-n >= 128 {
