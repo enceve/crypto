@@ -4,11 +4,10 @@
 
 package siphash
 
-// finish the hash calculation
-func siphashFinalize(h *hashFunc) uint64 {
-	siphashCore(h, h.buf[:])
+func finalize(hVal *[4]uint64, block *[8]byte) uint64 {
+	core(hVal, block[:])
 
-	v0, v1, v2, v3 := h.v0, h.v1, h.v2, h.v3
+	v0, v1, v2, v3 := hVal[0], hVal[1], hVal[2], hVal[3]
 	v2 ^= 0xff
 
 	// Round 1.
@@ -90,15 +89,14 @@ func siphashFinalize(h *hashFunc) uint64 {
 	return v0 ^ v1 ^ v2 ^ v3
 }
 
-// updates the hash value by processing the p slice
-func siphashCore(h *hashFunc, p []uint8) {
-	v0, v1, v2, v3 := h.v0, h.v1, h.v2, h.v3
+func core(hVal *[4]uint64, msg []byte) {
+	v0, v1, v2, v3 := hVal[0], hVal[1], hVal[2], hVal[3]
 
-	for i := 0; i < len(p); i += BlockSize {
-		msg := uint64(p[i]) | uint64(p[i+1])<<8 | uint64(p[i+2])<<16 | uint64(p[i+3])<<24 |
-			uint64(p[i+4])<<32 | uint64(p[i+5])<<40 | uint64(p[i+6])<<48 | uint64(p[i+7])<<56
+	for i := 0; i < len(msg); i += BlockSize {
+		m := uint64(msg[i]) | uint64(msg[i+1])<<8 | uint64(msg[i+2])<<16 | uint64(msg[i+3])<<24 |
+			uint64(msg[i+4])<<32 | uint64(msg[i+5])<<40 | uint64(msg[i+6])<<48 | uint64(msg[i+7])<<56
 
-		v3 ^= msg
+		v3 ^= m
 
 		// Round 1.
 		v0 += v1
@@ -138,8 +136,8 @@ func siphashCore(h *hashFunc, p []uint8) {
 		v1 ^= v2
 		v2 = v2<<32 | v2>>(64-32)
 
-		v0 ^= msg
+		v0 ^= m
 	}
 
-	h.v0, h.v1, h.v2, h.v3 = v0, v1, v2, v3
+	hVal[0], hVal[1], hVal[2], hVal[3] = v0, v1, v2, v3
 }

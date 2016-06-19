@@ -18,42 +18,40 @@
     XORQ v2, v1; \
     RORQ $32, v2
 
-// siphashCore(h *hashFunc, p []uint8)
-TEXT ·siphashCore(SB),4,$0-32
-    MOVQ h+0(FP), BX
-    MOVQ 0(BX), R9		        // R9 = v0
-    MOVQ 8(BX), R10		        // R10 = v1
-    MOVQ 16(BX), R11	        // R11 = v2
-    MOVQ 24(BX), R12	        // R12 = v3
-    MOVQ p+8(FP), DI	        // DI = *uint64
-    MOVQ p_len+16(FP), SI	    // SI = nblocks
-    XORL DX, DX		            // DX = index (0)
-    SHRQ $3, SI 		        // SI /= 8
-body:
-    CMPQ DX, SI
-    JGE  end
-    MOVQ 0(DI)(DX*8), CX	    // CX = m
-    XORQ CX, R12
-    ROUND(R9, R10, R11, R12)
-    ROUND(R9, R10, R11, R12)
-    XORQ CX, R9
-    ADDQ $1, DX
-    JMP  body
-end:
-    MOVQ R9, 0(BX)
-    MOVQ R10, 8(BX)
-    MOVQ R11, 16(BX)
-    MOVQ R12, 24(BX)
-    RET
+// core(hVal *[4]uint64, msg []byte)
+TEXT ·core(SB),4,$0-32
+	MOVQ hVal+0(FP), AX
+	MOVQ msgLen+16(FP), BX
+	MOVQ msg+8(FP), CX
+	MOVQ 0(AX), R9
+    MOVQ 8(AX), R10
+    MOVQ 16(AX), R11
+    MOVQ 24(AX), R12
+	ANDQ $0XFFFFFFFFFFFFFFF8, BX	// BX & (^7)
+	loop:
+		MOVQ 0(CX), DX
+		XORQ DX, R12
+		ROUND(R9, R10, R11, R12)
+    		ROUND(R9, R10, R11, R12)
+		XORQ DX, R9
+		ADDQ $8, CX
+		SUBQ $8, BX
+		JNZ loop
+	MOVQ R9, 0(AX)
+    MOVQ R10, 8(AX)
+    MOVQ R11, 16(AX)
+    MOVQ R12, 24(AX)
+	RET
 
-// siphashFinalize(h *hashFunc) uint64
-TEXT ·siphashFinalize(SB),4,$0-16
-    MOVQ h+0(FP), BX
-    MOVQ 0(BX), R9			// R9 = v0
-    MOVQ 8(BX), R10			// R10 = v1
-    MOVQ 16(BX), R11		// R11 = v2
-    MOVQ 24(BX), R12		// R12 = v3
-    MOVQ 48(BX), CX			// CX = d.x[:]
+// finalize(hVal *[4]uint64, blokc *[8]byte) uint64
+TEXT ·finalize(SB),4,$0-24
+    MOVQ hVal+0(FP), AX
+	MOVQ block+8(FP), BX
+	MOVQ 0(BX), CX
+    MOVQ 0(AX), R9
+    MOVQ 8(AX), R10
+    MOVQ 16(AX), R11	
+    MOVQ 24(AX), R12
     XORQ CX, R12
     ROUND(R9, R10, R11, R12)
     ROUND(R9, R10, R11, R12)
@@ -66,5 +64,5 @@ TEXT ·siphashFinalize(SB),4,$0-16
     XORQ R12, R11
     XORQ R10, R9
     XORQ R11, R9
-    MOVQ R9, ret+8(FP)
+    MOVQ R9, ret+16(FP)
     RET

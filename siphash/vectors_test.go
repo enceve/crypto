@@ -36,11 +36,8 @@ func TestVectors(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Test vector %d: Failed to decode hex msg: %s", i, err)
 		}
-		h, err := New(key[:])
-		if err != nil {
-			t.Fatalf("Test vector %d: Failed to create Siphash instance: %s", i, err)
-		}
 
+		h := New(&key)
 		_, err = h.Write(msg)
 		if err != nil {
 			t.Fatalf("Test vector %d: Spihash write failed: %s", i, err)
