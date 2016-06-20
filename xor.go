@@ -1,6 +1,8 @@
 // Use of this source code is governed by a license
 // that can be found in the LICENSE file.
 
+// +build !amd64
+
 package crypto
 
 // XOR xors the bytes in src and with and writes the result to dst.

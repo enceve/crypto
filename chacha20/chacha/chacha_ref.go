@@ -130,7 +130,7 @@ func XORBlocks(dst, src []byte, state *[16]uint32, rounds int) {
 	for i := 0; i < n; i += 64 {
 		Core(&block, state, rounds)
 		state[12]++
-		crypto.XOR(dst[i], src[i:i+64], block[:])
+		crypto.XOR(dst[i:], src[i:i+64], block[:])
 	}
 }
 
