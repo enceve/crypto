@@ -24,42 +24,42 @@ const (
 
 // The EAX cipher
 type eaxCipher struct {
-	block    cipher.Block
-	ctr, buf []byte
-	mac      hash.Hash
-	size     int
+	blockCipher cipher.Block
+	ctr, block  []byte
+	mac         hash.Hash
+	size        int
 }
 
 // NewEAX returns a cipher.AEAD wrapping the cipher.Block.
 // EAX is a two pass-scheme AEAD cipher with provable security.
 // For authentication EAX uses CMac (OMAC1).
-// The tagSize argument specifies the number of bytes of the auth. tag
+// The tagsize argument specifies the number of bytes of the auth. tag
 // and must be between 1 and the block size of the cipher.
 // This function returns a non-nil error if the given block cipher
 // is not supported by CMac (see crypto/cmac for details)
-func NewEAX(c cipher.Block, tagSize int) (cipher.AEAD, error) {
+func NewEAX(c cipher.Block, tagsize int) (cipher.AEAD, error) {
 	m, err := cmac.New(c)
 	if err != nil {
 		return nil, err
 	}
-	if tagSize < 1 || tagSize > c.BlockSize() {
+	if tagsize < 1 || tagsize > c.BlockSize() {
 		return nil, errors.New("tagSize must between 1 and BlockSize() of the given cipher")
 	}
 	return &eaxCipher{
-		block: c,
-		mac:   m,
-		ctr:   make([]byte, c.BlockSize()),
-		buf:   make([]byte, c.BlockSize()),
-		size:  tagSize,
+		blockCipher: c,
+		mac:         m,
+		ctr:         make([]byte, c.BlockSize()),
+		block:       make([]byte, c.BlockSize()),
+		size:        tagsize,
 	}, nil
 }
 
-func (c *eaxCipher) NonceSize() int { return c.block.BlockSize() }
+func (c *eaxCipher) NonceSize() int { return c.blockCipher.BlockSize() }
 
 func (c *eaxCipher) Overhead() int { return c.size }
 
 func (c *eaxCipher) Seal(dst, nonce, plaintext, additionalData []byte) []byte {
-	if n := len(nonce); n != c.block.BlockSize() {
+	if n := len(nonce); n != c.blockCipher.BlockSize() {
 		panic(crypto.NonceSizeError(n))
 	}
 	if len(dst) < len(plaintext) {
@@ -101,7 +101,7 @@ func (c *eaxCipher) Seal(dst, nonce, plaintext, additionalData []byte) []byte {
 }
 
 func (c *eaxCipher) Open(dst, nonce, ciphertext, additionalData []byte) ([]byte, error) {
-	if n := len(nonce); n != c.block.BlockSize() {
+	if n := len(nonce); n != c.blockCipher.BlockSize() {
 		return nil, crypto.NonceSizeError(n)
 	}
 	if len(ciphertext) < c.size {
@@ -157,13 +157,13 @@ func (c *eaxCipher) Open(dst, nonce, ciphertext, additionalData []byte) ([]byte,
 // the ciphertext into dst
 func (c *eaxCipher) ctrCrypt(dst, src []byte) {
 	length := len(src)
-	bs := c.block.BlockSize()
-	n := length - (length % bs)
+	bs := c.blockCipher.BlockSize()
+	n := length & (^(length - bs))
 
 	for i := 0; i < n; i += bs {
 		j := i + bs
-		c.block.Encrypt(c.buf, c.ctr)
-		xor(dst[i:j], src[i:j], c.buf)
+		c.blockCipher.Encrypt(c.block, c.ctr)
+		crypto.XOR(dst[i:j], src[i:j], c.block)
 
 		// Increment counter
 		for k := len(c.ctr) - 1; k >= 0; k-- {
@@ -174,14 +174,8 @@ func (c *eaxCipher) ctrCrypt(dst, src []byte) {
 		}
 	}
 	if n < length {
-		c.block.Encrypt(c.buf, c.ctr)
-		xor(dst[n:], src[n:], c.buf)
+		c.blockCipher.Encrypt(c.block, c.ctr)
+		crypto.XOR(dst[n:], src[n:], c.block)
 	}
 	// no reset of ctr needed - Seal or Open does this for us
-}
-
-func xor(dst, src, with []byte) {
-	for i := range src {
-		dst[i] = src[i] ^ with[i]
-	}
 }

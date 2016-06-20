@@ -5,9 +5,11 @@
 
 package chacha
 
-import "unsafe"
+import (
+	"unsafe"
 
-const wordSize = int(unsafe.Sizeof(uintptr(0)))
+	"github.com/enceve/crypto"
+)
 
 // XORKeyStream crypts bytes from src to dst using the given key, nonce and counter.
 // The rounds argument specifies the number of rounds performed for keystream generation.
@@ -46,24 +48,10 @@ func XORKeyStream(dst, src []byte, nonce *[12]byte, key *[32]byte, counter uint3
 
 	length -= n
 	if length > 0 {
-		src = src[n:]
-		dst = dst[n:]
-
 		var block [64]byte
 		Core(&block, &state, rounds)
 
-		w := length / wordSize
-		if w > 0 {
-			dstw := *(*[]uintptr)(unsafe.Pointer(&dst))
-			srcw := *(*[]uintptr)(unsafe.Pointer(&src))
-			blockw := *(*[8]uintptr)(unsafe.Pointer(&block))
-			for i := 0; i < w; i++ {
-				dstw[i] = srcw[i] ^ blockw[i]
-			}
-		}
-		for i := (length - length%wordSize); i < length; i++ {
-			dst[i] = src[i] ^ block[i]
-		}
+		crypto.XOR(dst[n:], src[n:], block[:])
 	}
 }
 
@@ -134,25 +122,10 @@ func (c *Cipher) XORKeyStream(dst, src []byte) {
 
 	length -= n
 	if length > 0 {
-		src = src[n:]
-		dst = dst[n:]
-
 		Core(&(c.block), &(c.state), c.rounds)
 		c.state[12]++
 
-		w := length / wordSize
-		if w > 0 {
-			dstw := *(*[]uintptr)(unsafe.Pointer(&dst))
-			srcw := *(*[]uintptr)(unsafe.Pointer(&src))
-			blockw := *(*[8]uintptr)(unsafe.Pointer(&(c.block)))
-			for i := 0; i < w; i++ {
-				dstw[i] = srcw[i] ^ blockw[i]
-			}
-		}
-		for i := (length - length%wordSize); i < length; i++ {
-			dst[i] = src[i] ^ c.block[i]
-		}
-		c.off += length
+		c.off += crypto.XOR(dst[n:], src[n:], c.block[:])
 	}
 }
 

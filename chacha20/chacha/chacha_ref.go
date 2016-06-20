@@ -5,6 +5,8 @@
 
 package chacha
 
+import "github.com/enceve/crypto"
+
 // XORKeyStream crypts bytes from src to dst using the given key, nonce and counter.
 // The rounds argument specifies the number of rounds performed for keystream generation.
 // (Common values are 20, 12 or 8) Src and dst may be the same slice but otherwise should
@@ -40,15 +42,9 @@ func XORKeyStream(dst, src []byte, nonce *[12]byte, key *[32]byte, counter uint3
 
 	length -= n
 	if length > 0 {
-		src = src[n:]
-		dst = dst[n:]
-
 		var block [64]byte
 		Core(&block, &state, rounds)
-
-		for i, v := range src {
-			dst[i] = v ^ block[i]
-		}
+		crypto.XOR(dst[n:], src[n:], block[:])
 	}
 }
 
@@ -115,16 +111,10 @@ func (c *Cipher) XORKeyStream(dst, src []byte) {
 
 	length -= n
 	if length > 0 {
-		src = src[n:]
-		dst = dst[n:]
-
 		Core(&(c.block), &(c.state), c.rounds)
 		c.state[12]++
 
-		for i, v := range src {
-			dst[i] = v ^ c.block[i]
-		}
-		c.off += length
+		c.off += crypto.XOR(dst[n:], src[n:], c.block[:])
 	}
 }
 
@@ -140,12 +130,7 @@ func XORBlocks(dst, src []byte, state *[16]uint32, rounds int) {
 	for i := 0; i < n; i += 64 {
 		Core(&block, state, rounds)
 		state[12]++
-
-		j := i
-		for _, v := range block {
-			dst[j] = src[j] ^ v
-			j++
-		}
+		crypto.XOR(dst[i], src[i:i+64], block[:])
 	}
 }
 
