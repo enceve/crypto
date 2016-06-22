@@ -3,74 +3,8 @@
 
 package serpent
 
-const phi = 0x9e3779b9 // The Serpent phi constant (sqrt(5) - 1) * 2**31
-
-// The key schedule of serpent.
-// Serpent takes an 128, 192 or 256 bit key and expand/transform it to 8 x 32 bit words.
-// These 8 words are transformed to other 8 words. From the resulting 8 words the
-// 132 sub-keys are generated.
-func keySchedule(key []byte, sk *[132]uint32) {
-	k := make([]uint32, 16)
-	j := 0
-	for i := 0; i+4 <= len(key); i += 4 {
-		k[j] = uint32(key[i]) | uint32(key[i+1])<<8 | uint32(key[i+2])<<16 | uint32(key[i+3])<<24
-		j++
-	}
-	if j < 8 {
-		k[j] = 1
-	}
-
-	for i := 8; i < 16; i++ {
-		x := k[i-8] ^ k[i-5] ^ k[i-3] ^ k[i-1] ^ phi ^ uint32(i-8)
-		k[i] = (x << 11) | (x >> 21)
-		sk[i-8] = k[i]
-	}
-	for i := 8; i < 132; i++ {
-		x := sk[i-8] ^ sk[i-5] ^ sk[i-3] ^ sk[i-1] ^ phi ^ uint32(i)
-		sk[i] = (x << 11) | (x >> 21)
-	}
-
-	sb3(&sk[0], &sk[1], &sk[2], &sk[3])
-	sb2(&sk[4], &sk[5], &sk[6], &sk[7])
-	sb1(&sk[8], &sk[9], &sk[10], &sk[11])
-	sb0(&sk[12], &sk[13], &sk[14], &sk[15])
-	sb7(&sk[16], &sk[17], &sk[18], &sk[19])
-	sb6(&sk[20], &sk[21], &sk[22], &sk[23])
-	sb5(&sk[24], &sk[25], &sk[26], &sk[27])
-	sb4(&sk[28], &sk[29], &sk[30], &sk[31])
-
-	sb3(&sk[32], &sk[33], &sk[34], &sk[35])
-	sb2(&sk[36], &sk[37], &sk[38], &sk[39])
-	sb1(&sk[40], &sk[41], &sk[42], &sk[43])
-	sb0(&sk[44], &sk[45], &sk[46], &sk[47])
-	sb7(&sk[48], &sk[49], &sk[50], &sk[51])
-	sb6(&sk[52], &sk[53], &sk[54], &sk[55])
-	sb5(&sk[56], &sk[57], &sk[58], &sk[59])
-	sb4(&sk[60], &sk[61], &sk[62], &sk[63])
-
-	sb3(&sk[64], &sk[65], &sk[66], &sk[67])
-	sb2(&sk[68], &sk[69], &sk[70], &sk[71])
-	sb1(&sk[72], &sk[73], &sk[74], &sk[75])
-	sb0(&sk[76], &sk[77], &sk[78], &sk[79])
-	sb7(&sk[80], &sk[81], &sk[82], &sk[83])
-	sb6(&sk[84], &sk[85], &sk[86], &sk[87])
-	sb5(&sk[88], &sk[89], &sk[90], &sk[91])
-	sb4(&sk[92], &sk[93], &sk[94], &sk[95])
-
-	sb3(&sk[96], &sk[97], &sk[98], &sk[99])
-	sb2(&sk[100], &sk[101], &sk[102], &sk[103])
-	sb1(&sk[104], &sk[105], &sk[106], &sk[107])
-	sb0(&sk[108], &sk[109], &sk[110], &sk[111])
-	sb7(&sk[112], &sk[113], &sk[114], &sk[115])
-	sb6(&sk[116], &sk[117], &sk[118], &sk[119])
-	sb5(&sk[120], &sk[121], &sk[122], &sk[123])
-	sb4(&sk[124], &sk[125], &sk[126], &sk[127])
-
-	sb3(&sk[128], &sk[129], &sk[130], &sk[131])
-}
-
 // Encrypts one block with the given 132 sub-keys sk.
-func encryptBlock(dst, src []byte, sk *[132]uint32) {
+func encryptBlock(dst, src []byte, sk *subkeys) {
 	// Transform the input block to 4 x 32 bit registers
 	r0 := uint32(src[0]) | uint32(src[1])<<8 | uint32(src[2])<<16 | uint32(src[3])<<24
 	r1 := uint32(src[4]) | uint32(src[5])<<8 | uint32(src[6])<<16 | uint32(src[7])<<24
@@ -203,7 +137,7 @@ func encryptBlock(dst, src []byte, sk *[132]uint32) {
 }
 
 // Decrypts one block with the given 132 sub-keys sk.
-func decryptBlock(dst, src []byte, sk *[132]uint32) {
+func decryptBlock(dst, src []byte, sk *subkeys) {
 	// Transform the input block to 4 x 32 bit registers
 	r0 := uint32(src[0]) | uint32(src[1])<<8 | uint32(src[2])<<16 | uint32(src[3])<<24
 	r1 := uint32(src[4]) | uint32(src[5])<<8 | uint32(src[6])<<16 | uint32(src[7])<<24
