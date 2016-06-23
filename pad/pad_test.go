@@ -6,6 +6,7 @@ package pad
 import (
 	"bytes"
 	"crypto/rand"
+	"strconv"
 	"testing"
 )
 
@@ -130,5 +131,113 @@ func TestISO10126(t *testing.T) {
 				t.Fatalf("Block: %d Message: %d\nISO10126 does not use ISO10126-Padding scheme for last byte", i, j)
 			}
 		}
+	}
+}
+
+var recoverFail = func(t *testing.T, s string) {
+	if err := recover(); err == nil {
+		t.Fatalf("Function: %s\nRecover expected error, but no one occured", s)
+	}
+}
+
+func TestNewPKCS7(t *testing.T) {
+	fail := func(blocksize int) {
+		defer recoverFail(t, "NewPKCS7 with blocksize: "+strconv.Itoa(blocksize)+" failed")
+		NewPKCS7(blocksize)
+	}
+
+	fail(0)
+	fail(256)
+}
+
+func TestNewX923(t *testing.T) {
+	fail := func(blocksize int) {
+		defer recoverFail(t, "NewX923 with blocksize: "+strconv.Itoa(blocksize)+" failed")
+		NewX923(blocksize)
+	}
+
+	fail(0)
+	fail(256)
+}
+
+func TestNewISO10126(t *testing.T) {
+	fail := func(blocksize int) {
+		defer recoverFail(t, "NewISO10126 with blocksize: "+strconv.Itoa(blocksize)+" failed")
+		NewISO10126(blocksize, nil)
+	}
+
+	fail(0)
+	fail(256)
+}
+
+func TestUnpadPKCS7(t *testing.T) {
+	p := NewPKCS7(16)
+
+	if _, err := p.Unpad(make([]byte, p.BlockSize()-1)); err == nil {
+		t.Fatal("Incomplete block not rejected by PKCS7")
+	}
+	if _, err := p.Unpad(make([]byte, p.BlockSize()+1)); err == nil {
+		t.Fatal("Incomplete block not rejected by PKCS7")
+	}
+
+	block := make([]byte, p.BlockSize())
+	if _, err := p.Unpad(block); err == nil {
+		t.Fatal("Block of zeros not rejected by PKCS7")
+	}
+
+	block[len(block)-1] = byte(p.BlockSize() - 1)
+	if _, err := p.Unpad(block); err == nil {
+		t.Fatal("Invalid padding not rejected by PKCS7")
+	}
+	block[len(block)-1] = byte(p.BlockSize() + 1)
+	if _, err := p.Unpad(block); err == nil {
+		t.Fatal("Invalid padding not rejected by PKCS7")
+	}
+}
+
+func TestUnpadX923(t *testing.T) {
+	p := NewX923(16)
+
+	if _, err := p.Unpad(make([]byte, p.BlockSize()-1)); err == nil {
+		t.Fatal("Incomplete block not rejected by X923")
+	}
+	if _, err := p.Unpad(make([]byte, p.BlockSize()+1)); err == nil {
+		t.Fatal("Incomplete block not rejected by X923")
+	}
+
+	block := make([]byte, p.BlockSize())
+	if _, err := p.Unpad(block); err == nil {
+		t.Fatal("Block of zeros not rejected by X923")
+	}
+
+	block[len(block)-1] = byte(p.BlockSize() - 1)
+	block[1] = 1
+	if _, err := p.Unpad(block); err == nil {
+		t.Fatal("Invalid padding not rejected by X923")
+	}
+	block[len(block)-1] = byte(p.BlockSize() + 1)
+	if _, err := p.Unpad(block); err == nil {
+		t.Fatal("Invalid padding not rejected by X923")
+	}
+}
+
+func TestUnpadISO10126(t *testing.T) {
+	p := NewISO10126(16, nil)
+
+	if _, err := p.Unpad(make([]byte, p.BlockSize()-1)); err == nil {
+		t.Fatal("Incomplete block not rejected by ISO10126")
+	}
+	if _, err := p.Unpad(make([]byte, p.BlockSize()+1)); err == nil {
+		t.Fatal("Incomplete block not rejected by ISO10126")
+	}
+
+	block := make([]byte, p.BlockSize())
+	if _, err := p.Unpad(block); err == nil {
+		t.Fatal("Block of zeros not rejected by ISO10126")
+	}
+
+	block[len(block)-1] = byte(p.BlockSize() + 1)
+	if _, err := p.Unpad(block); err == nil {
+		t.Fatal("Invalid padding not rejected by ISO10126")
 	}
 }

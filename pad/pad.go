@@ -7,25 +7,12 @@ package pad
 
 import (
 	cryptorand "crypto/rand"
+	"errors"
 	"io"
-	"strconv"
 )
 
-// A LengthError indicates, that the length of
-// the padding is not correct.
-type LengthError int
-
-func (p LengthError) Error() string {
-	return "illegal padding length: " + strconv.Itoa(int(p))
-}
-
-// A ByteError indicates, that at least one byte
-// of the padded block is not correct.
-type ByteError int
-
-func (p ByteError) Error() string {
-	return "illegal padding byte: " + strconv.Itoa(int(p))
-}
+var badPadErr = errors.New("bad padding bytes")
+var notMulOfBlockErr = errors.New("src is not a multiply of the padding blocksize")
 
 // The Padding interface represents a padding scheme.
 type Padding interface {

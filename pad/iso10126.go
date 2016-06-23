@@ -4,7 +4,6 @@
 package pad
 
 import (
-	"errors"
 	"io"
 )
 
@@ -40,7 +39,7 @@ func (p *isoPadding) Pad(src []byte) []byte {
 func (p *isoPadding) Unpad(src []byte) ([]byte, error) {
 	length := len(src)
 	if length == 0 || length%p.blocksize != 0 {
-		return nil, errors.New("src length must be a multiply of the padding blocksize")
+		return nil, notMulOfBlockErr
 	}
 
 	block := src[length-p.blocksize:]
@@ -52,11 +51,10 @@ func (p *isoPadding) Unpad(src []byte) ([]byte, error) {
 	return src[:(length - p.BlockSize() + unLen)], nil
 }
 
-// verify the iso10126 padding
 func verifyISO(block []byte, length int) (p int, err error) {
 	padLen := block[length-1]
-	if padLen <= 0 || int(padLen) > length {
-		err = LengthError(padLen)
+	if padLen == 0 || int(padLen) > length {
+		err = badPadErr
 	}
 	p = length - int(padLen)
 	return

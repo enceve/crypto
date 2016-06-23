@@ -3,10 +3,6 @@
 
 package pad
 
-import (
-	"errors"
-)
-
 type pkcs7Padding int
 
 func (p pkcs7Padding) BlockSize() int {
@@ -30,28 +26,29 @@ func (p pkcs7Padding) Pad(src []byte) []byte {
 func (p pkcs7Padding) Unpad(src []byte) ([]byte, error) {
 	length := len(src)
 	if length == 0 || length%p.BlockSize() != 0 {
-		return nil, errors.New("src length must be a multiply of the padding blocksize")
+		return nil, notMulOfBlockErr
 	}
 
 	block := src[(length - p.BlockSize()):]
-	unLen, err := verifyPkcs7ConstTime(block, p.BlockSize())
+	unLen, err := verifyPkcs7(block, p.BlockSize())
 	if err != nil {
 		return nil, err
 	}
 	return src[:(length - p.BlockSize() + unLen)], nil
 }
 
-// verify the pkcs7 padding in (nearly) constant time
-func verifyPkcs7ConstTime(block []byte, blocksize int) (p int, err error) {
+// Verify the PKCS7 padding - NOTICE: not constant time!
+func verifyPkcs7(block []byte, blocksize int) (p int, err error) {
 	padLen := block[blocksize-1]
-	if padLen <= 0 || int(padLen) > blocksize {
-		err = LengthError(padLen)
+	if padLen == 0 || int(padLen) > blocksize {
+		err = badPadErr
+		return
 	}
 
 	p = blocksize - int(padLen)
 	for _, b := range block[p:] {
-		if b != padLen && err == nil {
-			err = ByteError(b)
+		if b != padLen {
+			err = badPadErr
 		}
 	}
 	return
