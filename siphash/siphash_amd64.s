@@ -21,7 +21,7 @@
 // core(hVal *[4]uint64, msg []byte)
 TEXT ·core(SB),4,$0-32
 	MOVQ hVal+0(FP), AX
-	MOVQ msgLen+16(FP), BX
+	MOVQ msg+16(FP), BX
 	MOVQ msg+8(FP), CX
 	MOVQ 0(AX), R9
     MOVQ 8(AX), R10
@@ -43,7 +43,7 @@ TEXT ·core(SB),4,$0-32
     MOVQ R12, 24(AX)
 	RET
 
-// finalize(hVal *[4]uint64, blokc *[8]byte) uint64
+// finalize(hVal *[4]uint64, block *[8]byte) uint64
 TEXT ·finalize(SB),4,$0-24
     MOVQ hVal+0(FP), AX
 	MOVQ block+8(FP), BX
