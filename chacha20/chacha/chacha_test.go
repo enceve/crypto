@@ -71,26 +71,3 @@ func TestXORBlocks256(t *testing.T) {
 		t.Fatalf("Fourth 64 byte keystream don't match: \nXORBlocks: %s\nCore:      %s", hex.EncodeToString(buf256[192:]), hex.EncodeToString(buf64[:]))
 	}
 }
-
-func TestCipherXORKeyStream(t *testing.T) {
-	var key [32]byte
-	var nonce [12]byte
-
-	bufPart1 := make([]byte, 100)
-	bufPart1[50] = 0x50
-	bufPart2 := make([]byte, 100)
-	bufPart1[42] = 0x42
-
-	dst0 := make([]byte, len(bufPart1)+len(bufPart2))
-	dst1 := make([]byte, len(dst0))
-
-	c := NewCipher(&nonce, &key, 20)
-	c.XORKeyStream(dst0, bufPart1)
-	c.XORKeyStream(dst0[len(bufPart1):], bufPart2)
-
-	XORKeyStream(dst1, append(bufPart1, bufPart2...), &nonce, &key, 0, 20)
-
-	if !bytes.Equal(dst0, dst1) {
-		t.Fatalf("\nc.XORKeyStream: %s\nXORKeyStream:   %s", hex.EncodeToString(dst0), hex.EncodeToString(dst1))
-	}
-}

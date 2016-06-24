@@ -12,10 +12,18 @@ import (
 )
 
 // XORKeyStream crypts bytes from src to dst using the given key, nonce and counter.
-// The rounds argument specifies the number of rounds performed for keystream generation.
-// (Common values are 20, 12 or 8) Src and dst may be the same slice but otherwise should
-// not overlap. If len(dst) < len(src) the behavior is undefined.
+// The rounds argument specifies the number of rounds (must be even) performed for
+// keystream generation. (Common values are 20, 12 or 8) Src and dst may be the same
+// slice but otherwise should not overlap. If len(dst) < len(src) this function panics.
 func XORKeyStream(dst, src []byte, nonce *[12]byte, key *[32]byte, counter uint32, rounds int) {
+	length := len(src)
+	if len(dst) < length {
+		panic("dst buffer is to small")
+	}
+	if rounds%2 != 0 {
+		panic("rounds must be a multiple of 2")
+	}
+
 	var state [16]uint32
 
 	state[0] = constants[0]
@@ -40,14 +48,11 @@ func XORKeyStream(dst, src []byte, nonce *[12]byte, key *[32]byte, counter uint3
 	state[14] = noncePtr[1]
 	state[15] = noncePtr[2]
 
-	length := len(src)
-	n := length & (^(64 - 1))
-	if n > 0 {
+	if length >= 64 {
 		XORBlocks(dst, src, &state, rounds)
 	}
 
-	length -= n
-	if length > 0 {
+	if n := length & (^(64 - 1)); length-n > 0 {
 		var block [64]byte
 		Core(&block, &state, rounds)
 
@@ -129,36 +134,11 @@ func (c *Cipher) XORKeyStream(dst, src []byte) {
 	}
 }
 
-// xorBlocksSSE64 crypts one 64 byte chunk from src to dst using SSE2 SIMD.
-func xorBlocksSSE64(dst *byte, src *byte, state *[16]uint32, rounds int)
-
-// xorBlocksSSE128 crypts one 128 byte chunk from src to dst using SSE2 SIMD.
-func xorBlocksSSE128(dst *byte, src *byte, state *[16]uint32, rounds int)
-
-// xorBlocksSSE256 crypts as many as possible 256 byte chunks (length argument)
-// from src to dst using SSE2 SIMD.
-func xorBlocksSSE256(dst *byte, src *byte, length uint64, state *[16]uint32, rounds int)
-
 // XORBlocks crypts full block ( len(src) - (len(src) mod 64) bytes ) from src to
-// dst using the state. Src and dst may be the same slice
-// but otherwise should not overlap. If len(dst) < len(src) the behavior is undefined.
-// This function increments the counter.
-func XORBlocks(dst, src []byte, state *[16]uint32, rounds int) {
-	length := len(src)
-	n := length & (^(256 - 1))
-	if n > 0 {
-		xorBlocksSSE256(&dst[0], &src[0], uint64(n), state, rounds)
-	}
-
-	if length-n >= 128 {
-		xorBlocksSSE128(&dst[n], &src[n], state, rounds)
-		n += 128
-	}
-
-	if length-n >= 64 {
-		xorBlocksSSE64(&dst[n], &src[n], state, rounds)
-	}
-}
+// dst using the state. Src and dst may be the same slice but otherwise should not
+// overlap. This function increments the counter of the given state.
+// If len(src) > len(dst), XORBlocks does nothing.
+func XORBlocks(dst, src []byte, state *[16]uint32, rounds int)
 
 // Core generates 64 byte keystream from the given state performing 'rounds' rounds
 // and writes them to dst. This function expects valid values. (no nil ptr etc.)

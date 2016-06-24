@@ -23,9 +23,6 @@ const NonceSize = 12
 // and dst may be the same slice but otherwise should not overlap. If len(dst) < len(src)
 // this function panics.
 func XORKeyStream(dst, src []byte, nonce *[NonceSize]byte, key *[32]byte, counter uint32) {
-	if len(dst) < len(src) {
-		panic("dst buffer is to small")
-	}
 	chacha.XORKeyStream(dst, src, nonce, key, counter, 20)
 }
 
