@@ -12,16 +12,16 @@ import (
 func TestBlockSize(t *testing.T) {
 	var key [16]byte
 	h := New(&key)
-	if bs := h.BlockSize(); bs != BlockSize {
-		t.Fatalf("BlockSize() returned: %d - but expected: %d", bs, BlockSize)
+	if bs := h.BlockSize(); bs != 8 {
+		t.Fatalf("BlockSize() returned: %d - but expected: %d", bs, 8)
 	}
 }
 
 func TestSize(t *testing.T) {
 	var key [16]byte
 	h := New(&key)
-	if bs := h.Size(); bs != BlockSize {
-		t.Fatalf("Size() returned: %d - but expected: %d", bs, BlockSize)
+	if bs := h.Size(); bs != 8 {
+		t.Fatalf("Size() returned: %d - but expected: %d", bs, 8)
 	}
 }
 
@@ -56,62 +56,63 @@ func TestReset(t *testing.T) {
 
 func TestWrite(t *testing.T) {
 	var key [16]byte
+	for i := range key {
+		key[i] = byte(i)
+	}
+
 	h := New(&key)
 
-	n, err := h.Write(nil)
-	if n != 0 || err != nil {
-		t.Fatalf("Failed to process nil slice: Processed bytes: %d - Returned error: %s", n, err)
+	var msg1 []byte
+	msg0 := make([]byte, 64)
+	for i := range msg0 {
+		h.Write(msg0[:i])
+		msg1 = append(msg1, msg0[:i]...)
 	}
-	n, err = h.Write(make([]byte, h.Size()))
-	if n != h.Size() || err != nil {
-		t.Fatalf("Failed to process 0-slice with length %d: Processed bytes: %d - Returned error: %s", h.Size(), n, err)
-	}
-	n, err = h.Write(make([]byte, h.BlockSize()))
-	if n != h.BlockSize() || err != nil {
-		t.Fatalf("Failed to process 0-slice with length %d: Processed bytes: %d - Returned error: %s", h.BlockSize(), n, err)
-	}
-	n, err = h.Write(make([]byte, 211)) // 211 = (2*3*5*7)+1 is prime
-	if n != 211 || err != nil {
-		t.Fatalf("Failed to process 0-slice with length %d: Processed bytes: %d - Returned error: %s", 211, n, err)
+
+	if tag0, tag1 := h.Sum64(), Sum64(msg1, &key); tag0 != tag1 {
+		t.Fatalf("Sum64 differ from siphash.Sum64\n Sum64: %x \n siphash.Sum64: %x", tag0, tag1)
 	}
 }
 
 func TestSum(t *testing.T) {
 	var key [16]byte
+	for i := range key {
+		key[i] = byte(i)
+	}
 	h := New(&key)
-	var one = [1]byte{1}
 
-	h.Sum(nil)
-	h.Write(make([]byte, BlockSize))
-	h.Write(one[:])
+	msg := make([]byte, 64)
+	var tag [8]byte
+	for i := range msg {
+		h.Write(msg[:i])
+		sum := h.Sum(nil)
+		h.Reset()
 
-	sum1 := h.Sum(nil)
-	var sum2 [BlockSize]byte
-	Sum(&sum2, append(make([]byte, BlockSize), one[:]...), &key)
-	if !bytes.Equal(sum1, sum2[:]) {
-		t.Fatalf("Hash does not match:\nFound:    %s\nExpected: %s", hex.EncodeToString(sum1), hex.EncodeToString(sum2[:]))
+		Sum(&tag, msg[:i], &key)
+
+		if !bytes.Equal(sum, tag[:]) {
+			t.Fatalf("Iteration %d: Sum differ from siphash.Sum\n Sum: %s \n sipash.Sum %s", i, hex.EncodeToString(sum), hex.EncodeToString(tag[:]))
+		}
 	}
 }
 
-func TestSumFunc(t *testing.T) {
+func TestVerify(t *testing.T) {
 	var key [16]byte
+	for i := range key {
+		key[i] = byte(i)
+	}
 	h := New(&key)
 
-	h.Write(nil)
-	sum1 := h.Sum(nil)
-	var sum2 [BlockSize]byte
-	Sum(&sum2, nil, &key)
-	if !bytes.Equal(sum1, sum2[:]) {
-		t.Fatalf("Hash does not match:\nFound:    %s\nExpected: %s", hex.EncodeToString(sum1), hex.EncodeToString(sum2[:]))
-	}
+	msg := make([]byte, 64)
+	var tag [8]byte
+	for i := range msg {
+		h.Write(msg[:i])
+		h.Sum(tag[:0])
+		h.Reset()
 
-	h = New(&key)
-
-	h.Write(make([]byte, 1))
-	sum1 = h.Sum(nil)
-	Sum(&sum2, make([]byte, 1), &key)
-	if !bytes.Equal(sum1, sum2[:]) {
-		t.Fatalf("Hash does not match:\nFound:    %s\nExpected: %s", hex.EncodeToString(sum1), hex.EncodeToString(sum2[:]))
+		if !Verify(&tag, msg[:i], &key) {
+			t.Fatalf("Iteration %d: Verify failed: %s not accepted ", i, hex.EncodeToString(tag[:]))
+		}
 	}
 }
 
@@ -121,17 +122,6 @@ func BenchmarkWrite_8B(b *testing.B) {
 	var key [16]byte
 	h := New(&key)
 	buf := make([]byte, 8)
-
-	b.SetBytes(int64(len(buf)))
-	for i := 0; i < b.N; i++ {
-		h.Write(buf)
-	}
-}
-
-func BenchmarkWrite_64B(b *testing.B) {
-	var key [16]byte
-	h := New(&key)
-	buf := make([]byte, 64)
 
 	b.SetBytes(int64(len(buf)))
 	for i := 0; i < b.N; i++ {
@@ -163,7 +153,7 @@ func BenchmarkWrite_64K(b *testing.B) {
 
 func BenchmarkSum_8B(b *testing.B) {
 	var key [16]byte
-	var out [BlockSize]byte
+	var out [TagSize]byte
 	msg := make([]byte, 8)
 
 	b.SetBytes(int64(len(msg)))
@@ -174,7 +164,7 @@ func BenchmarkSum_8B(b *testing.B) {
 
 func BenchmarkSum_1K(b *testing.B) {
 	var key [16]byte
-	var out [BlockSize]byte
+	var out [TagSize]byte
 	msg := make([]byte, 1024)
 
 	b.SetBytes(int64(len(msg)))
@@ -185,7 +175,7 @@ func BenchmarkSum_1K(b *testing.B) {
 
 func BenchmarkSum_64K(b *testing.B) {
 	var key [16]byte
-	var out [BlockSize]byte
+	var out [TagSize]byte
 	msg := make([]byte, 64*1024)
 
 	b.SetBytes(int64(len(msg)))
@@ -196,7 +186,7 @@ func BenchmarkSum_64K(b *testing.B) {
 
 func BenchmarkVerify_8B(b *testing.B) {
 	var key [16]byte
-	var hash [BlockSize]byte
+	var hash [TagSize]byte
 	msg := make([]byte, 8)
 	Sum(&hash, msg, &key)
 
@@ -208,7 +198,7 @@ func BenchmarkVerify_8B(b *testing.B) {
 
 func BenchmarkVerify_1K(b *testing.B) {
 	var key [16]byte
-	var hash [BlockSize]byte
+	var hash [TagSize]byte
 	msg := make([]byte, 1024)
 	Sum(&hash, msg, &key)
 
@@ -220,7 +210,7 @@ func BenchmarkVerify_1K(b *testing.B) {
 
 func BenchmarkVerify_64K(b *testing.B) {
 	var key [16]byte
-	var hash [BlockSize]byte
+	var hash [TagSize]byte
 	msg := make([]byte, 64*1024)
 	Sum(&hash, msg, &key)
 

@@ -9,4 +9,4 @@ package siphash
 func core(hVal *[4]uint64, msg []byte)
 
 //go:noescape
-func finalize(hVal *[4]uint64, block *[8]byte) uint64
+func finalize(hVal *[4]uint64, block *[TagSize]byte) uint64

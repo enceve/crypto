@@ -4,7 +4,7 @@
 
 package siphash
 
-func finalize(hVal *[4]uint64, block *[8]byte) uint64 {
+func finalize(hVal *[4]uint64, block *[TagSize]byte) uint64 {
 	core(hVal, block[:])
 
 	v0, v1, v2, v3 := hVal[0], hVal[1], hVal[2], hVal[3]
@@ -92,7 +92,7 @@ func finalize(hVal *[4]uint64, block *[8]byte) uint64 {
 func core(hVal *[4]uint64, msg []byte) {
 	v0, v1, v2, v3 := hVal[0], hVal[1], hVal[2], hVal[3]
 
-	for i := 0; i < len(msg); i += BlockSize {
+	for i := 0; i < len(msg); i += TagSize {
 		m := uint64(msg[i]) | uint64(msg[i+1])<<8 | uint64(msg[i+2])<<16 | uint64(msg[i+3])<<24 |
 			uint64(msg[i+4])<<32 | uint64(msg[i+5])<<40 | uint64(msg[i+6])<<48 | uint64(msg[i+7])<<56
 

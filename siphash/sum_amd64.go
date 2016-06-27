@@ -10,7 +10,7 @@ import (
 	"unsafe"
 )
 
-// New returns a hash.Hash64 computing the SipHash checksum using a 128 bit key.
+// New returns a hash.Hash64 computing the SipHash checksum with a 128 bit key.
 func New(key *[16]byte) hash.Hash64 {
 	h := new(hashFunc)
 	h.key[0] = *(*uint64)(unsafe.Pointer(&key[0]))
@@ -19,14 +19,14 @@ func New(key *[16]byte) hash.Hash64 {
 	return h
 }
 
-// Sum generates an authenticator for msg using a 128 bit key
+// Sum generates an authenticator for msg with a 128 bit key
 // and puts the 64 bit result into out.
-func Sum(out *[BlockSize]byte, msg []byte, key *[16]byte) {
+func Sum(out *[TagSize]byte, msg []byte, key *[16]byte) {
 	(*[1]uint64)(unsafe.Pointer(&out[0]))[0] = Sum64(msg, key)
 }
 
 // Sum64 generates and returns the 64 bit authenticator
-// for msg using a 128 bit key.
+// for msg with a 128 bit key.
 func Sum64(msg []byte, key *[16]byte) uint64 {
 	k0 := *(*uint64)(unsafe.Pointer(&key[0]))
 	k1 := *(*uint64)(unsafe.Pointer(&key[8]))
@@ -40,13 +40,13 @@ func Sum64(msg []byte, key *[16]byte) uint64 {
 	n := len(msg)
 	ctr := byte(n)
 
-	if n >= BlockSize {
-		n &= (^(BlockSize - 1))
+	if n >= TagSize {
+		n &= (^(TagSize - 1))
 		core(&hVal, msg[:n])
 		msg = msg[n:]
 	}
 
-	var block [BlockSize]byte
+	var block [TagSize]byte
 	for i, v := range msg {
 		block[i] = v
 	}

@@ -13,8 +13,8 @@ package siphash
 
 import "crypto/subtle"
 
-// The block size of SipHash in bytes.
-const BlockSize = 8
+// The size of the SipHash authentication tag in bytes.
+const TagSize = 8
 
 // The four initialization constants
 const (
@@ -28,8 +28,8 @@ const (
 // computed checksum of msg. This function returns true
 // if and only if the computed checksum is equal to the
 // given sum.
-func Verify(sum *[BlockSize]byte, msg []byte, key *[16]byte) bool {
-	var out [BlockSize]byte
+func Verify(sum *[TagSize]byte, msg []byte, key *[16]byte) bool {
+	var out [TagSize]byte
 	Sum(&out, msg, key)
 	return subtle.ConstantTimeCompare(sum[:], out[:]) == 1
 }
@@ -38,14 +38,14 @@ func Verify(sum *[BlockSize]byte, msg []byte, key *[16]byte) bool {
 type hashFunc struct {
 	hVal  [4]uint64
 	key   [2]uint64
-	block [BlockSize]byte
+	block [TagSize]byte
 	off   int
 	ctr   byte
 }
 
-func (h *hashFunc) BlockSize() int { return BlockSize }
+func (h *hashFunc) BlockSize() int { return TagSize }
 
-func (h *hashFunc) Size() int { return BlockSize }
+func (h *hashFunc) Size() int { return TagSize }
 
 func (h *hashFunc) Reset() {
 	h.hVal[0] = h.key[0] ^ c0
@@ -62,7 +62,7 @@ func (h *hashFunc) Write(p []byte) (int, error) {
 	h.ctr += byte(n)
 
 	if h.off > 0 {
-		dif := BlockSize - h.off
+		dif := TagSize - h.off
 		if n > dif {
 			h.off += copy(h.block[h.off:], p[:dif])
 			p = p[dif:]
@@ -74,8 +74,8 @@ func (h *hashFunc) Write(p []byte) (int, error) {
 		}
 	}
 
-	if nn := len(p); nn >= BlockSize {
-		nn &= (^(BlockSize - 1))
+	if nn := len(p); nn >= TagSize {
+		nn &= (^(TagSize - 1))
 		core(&(h.hVal), p[:nn])
 		p = p[nn:]
 	}
@@ -89,7 +89,7 @@ func (h *hashFunc) Write(p []byte) (int, error) {
 func (h *hashFunc) Sum64() uint64 {
 	hVal := h.hVal
 	block := h.block
-	for i := h.off; i < BlockSize-1; i++ {
+	for i := h.off; i < TagSize-1; i++ {
 		block[i] = 0
 	}
 	block[7] = h.ctr
@@ -99,7 +99,7 @@ func (h *hashFunc) Sum64() uint64 {
 func (h *hashFunc) Sum(b []byte) []byte {
 	r := h.Sum64()
 
-	var out [BlockSize]byte
+	var out [TagSize]byte
 	out[0] = byte(r)
 	out[1] = byte(r >> 8)
 	out[2] = byte(r >> 16)
