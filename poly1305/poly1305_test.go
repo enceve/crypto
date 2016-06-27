@@ -4,63 +4,69 @@
 package poly1305
 
 import (
-	"bytes"
 	"encoding/hex"
 	"testing"
 )
 
+func TestWriteAfterSum(t *testing.T) {
+	var sum [TagSize]byte
+
+	msg := make([]byte, 64)
+	for i := range msg {
+		h := New(new([32]byte))
+
+		if _, err := h.Write(msg[:i]); err != nil {
+			t.Fatalf("Iteration %d: poly1305.Hash returned unexpected error: %s", i, err)
+		}
+		h.Sum(&sum)
+		if _, err := h.Write(nil); err == nil {
+			t.Fatalf("Iteration %d: poly1305.Hash returned no error for write after sum", i)
+		}
+	}
+}
+
 func TestWrite(t *testing.T) {
 	var key [32]byte
-	var sum [TagSize]byte
+	for i := range key {
+		key[i] = byte(i)
+	}
+
 	h := New(&key)
 
-	_, err := h.Write(make([]byte, TagSize))
-	if err != nil {
-		t.Fatalf("Hash returns an unexpected error: %s", err)
+	var msg1 []byte
+	msg0 := make([]byte, 64)
+	for i := range msg0 {
+		h.Write(msg0[:i])
+		msg1 = append(msg1, msg0[:i]...)
 	}
-	h.Sum(&sum)
-	_, err = h.Write(make([]byte, TagSize))
-	if err == nil {
-		t.Fatalf("Hash returns no error, but write-after-sum error ecpected")
+
+	var tag0, tag1 [TagSize]byte
+	h.Sum(&tag0)
+	Sum(&tag1, msg1, &key)
+
+	if tag0 != tag1 {
+		t.Fatalf("Sum differ from poly1305.Sum\n Sum: %s \n poly1305.Sum: %s", hex.EncodeToString(tag0[:]), hex.EncodeToString(tag1[:]))
 	}
 }
 
 func TestSum(t *testing.T) {
 	var key [32]byte
-	var sum, sum2 [TagSize]byte
-	h := New(&key)
-
-	_, err := h.Write(make([]byte, TagSize))
-	if err != nil {
-		t.Fatalf("Hash returns an unexpected error: %s", err)
-	}
-	h.Sum(&sum)
-	h.Sum(&sum2)
-	if !bytes.Equal(sum[:], sum2[:]) {
-		t.Fatalf("first sum is not equal to second sum: %s : %s", hex.EncodeToString(sum[:]), hex.EncodeToString(sum2[:]))
-	}
-}
-
-func TestSumFunc(t *testing.T) {
-	var key [32]byte
-	var sum, sum2 [TagSize]byte
-
-	h := New(&key)
-	h.Write(nil)
-	h.Sum(&sum)
-
-	Sum(&sum2, nil, &key)
-	if !bytes.Equal(sum[:], sum2[:]) {
-		t.Fatalf("Hash does not match:\nFound:    %s\nExpected: %s", hex.EncodeToString(sum[:]), hex.EncodeToString(sum2[:]))
+	for i := range key {
+		key[i] = byte(i)
 	}
 
-	h = New(&key)
-	h.Write(make([]byte, 1))
-	h.Sum(&sum)
+	msg := make([]byte, 64)
+	var tag, sum [TagSize]byte
+	for i := range msg {
+		h := New(&key)
+		h.Write(msg[:i])
+		h.Sum(&sum)
 
-	Sum(&sum2, make([]byte, 1), &key)
-	if !bytes.Equal(sum[:], sum2[:]) {
-		t.Fatalf("Hash does not match:\nFound:    %s\nExpected: %s", hex.EncodeToString(sum[:]), hex.EncodeToString(sum2[:]))
+		Sum(&tag, msg[:i], &key)
+
+		if tag != sum {
+			t.Fatalf("Iteration %d: Sum differ from poly1305.Sum\n Sum: %s \n poly1305.Sum %s", i, hex.EncodeToString(sum[:]), hex.EncodeToString(tag[:]))
+		}
 	}
 }
 

@@ -71,14 +71,17 @@ func (p *Hash) Write(msg []byte) (int, error) {
 	}
 	n := len(msg)
 
-	diff := TagSize - p.off
 	if p.off > 0 {
-		p.off += copy(p.buf[p.off:], msg[:diff])
-		if p.off == TagSize {
+		dif := TagSize - p.off
+		if n > dif {
+			p.off += copy(p.buf[p.off:], msg[:dif])
+			msg = msg[dif:]
 			core(p.buf[:], msgBlock, &(p.h), &(p.r))
 			p.off = 0
+		} else {
+			p.off += copy(p.buf[p.off:], msg)
+			return n, nil
 		}
-		msg = msg[diff:]
 	}
 
 	length := len(msg) & (^(TagSize - 1))
