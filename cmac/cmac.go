@@ -24,6 +24,17 @@ import (
 	"crypto/subtle"
 	"errors"
 	"hash"
+
+	"github.com/enceve/crypto"
+)
+
+const (
+	// minimal irreducible polynomial for blocksize
+	p64   = 0x1b    // for 64  bit block ciphers
+	p128  = 0x87    // for 128 bit block ciphers (like AES)
+	p256  = 0x425   // special for large block ciphers (Threefish)
+	p512  = 0x125   // special for large block ciphers (Threefish)
+	p1024 = 0x80043 // special for large block ciphers (Threefish)
 )
 
 // Sum computes the CMac checksum of msg using the cipher.Block.
@@ -111,40 +122,42 @@ func (h *macFunc) Reset() {
 	h.off = 0
 }
 
-func (h *macFunc) Write(p []byte) (int, error) {
-	bs := len(h.buf)
-	length := len(p)
+func (h *macFunc) Write(msg []byte) (int, error) {
+	bs := h.BlockSize()
+	n := len(msg)
 
-	// fill and process buffer (if necessary)
-	if left := bs - h.off; len(p) > left {
-		xor(h.buf[h.off:], p[:left])
-		p = p[left:]
-		length -= left
-		h.cipher.Encrypt(h.buf, h.buf)
-		h.off = 0
+	if h.off > 0 {
+		dif := bs - h.off
+		if n > dif {
+			crypto.XOR(h.buf[h.off:], h.buf[h.off:], msg[:dif])
+			msg = msg[dif:]
+			h.cipher.Encrypt(h.buf, h.buf)
+			h.off = 0
+		} else {
+			crypto.XOR(h.buf[h.off:], h.buf[h.off:], msg)
+			h.off += n
+			return n, nil
+		}
 	}
 
-	// process complete blocks accept for the last
-	if length > bs {
-		n := length & (^(bs - 1))
-		if n == length {
-			n -= bs
+	if length := len(msg); length > bs {
+		nn := length & (^(bs - 1))
+		if length == nn {
+			nn -= bs
 		}
-		for i := 0; i < n; i += bs {
-			for j, v := range p[i : i+bs] {
-				h.buf[j] ^= v
-			}
+		for i := 0; i < nn; i += bs {
+			crypto.XOR(h.buf, h.buf, msg[i:i+bs])
 			h.cipher.Encrypt(h.buf, h.buf)
 		}
-		p = p[n:]
+		msg = msg[nn:]
 	}
 
-	// process the last (may incomplete block)
-	if n := len(p); n > 0 {
-		xor(h.buf[h.off:], p)
-		h.off += n
+	if length := len(msg); length > 0 {
+		crypto.XOR(h.buf[h.off:], h.buf[h.off:], msg)
+		h.off += length
 	}
-	return length, nil
+
+	return n, nil
 }
 
 func (h *macFunc) Sum(b []byte) []byte {
@@ -158,13 +171,21 @@ func (h *macFunc) Sum(b []byte) []byte {
 	if h.off < bs {
 		k = h.k1
 	}
-	for i, v := range h.buf {
-		hash[i] = k[i] ^ v
-	}
+	crypto.XOR(hash, k, h.buf)
 	if h.off < h.cipher.BlockSize() {
 		hash[h.off] ^= 0x80
 	}
 
 	h.cipher.Encrypt(hash, hash)
 	return append(b, hash...)
+}
+
+func shift(dst, src []byte) int {
+	var b, bit byte
+	for i := len(src) - 1; i >= 0; i-- { // a range would be nice
+		bit = src[i] >> 7
+		dst[i] = src[i]<<1 | b
+		b = bit
+	}
+	return int(b)
 }
