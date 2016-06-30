@@ -9,65 +9,92 @@ import (
 	"testing"
 )
 
-func TestXORBlocks128(t *testing.T) {
-	var (
-		state0 [16]uint32
-		buf128 [128]byte
-
-		state1 [16]uint32
-		buf64  [64]byte
-	)
-	copy(state0[:4], constants[:])
-	copy(state1[:4], constants[:])
-
-	XORBlocks(buf128[:], buf128[:], &state0, 20)
-	Core(&buf64, &state1, 20)
-	state1[12]++
-
-	if !bytes.Equal(buf128[:64], buf64[:]) {
-		t.Fatalf("First 64 byte keystream don't match: \nXORBlocks: %s\nCore:      %s", hex.EncodeToString(buf128[:64]), hex.EncodeToString(buf64[:]))
-	}
-
-	Core(&buf64, &state1, 20)
-	state1[12]++
-	if !bytes.Equal(buf128[64:], buf64[:]) {
-		t.Fatalf("Second 64 byte keystream don't match: \nXORBlocks: %s\nCore:      %s", hex.EncodeToString(buf128[64:]), hex.EncodeToString(buf64[:]))
+var recFail = func(t *testing.T, msg string) {
+	if err := recover(); err == nil {
+		t.Fatalf("Expected error: %s", msg)
 	}
 }
 
-func TestXORBlocks256(t *testing.T) {
-	var (
-		state0 [16]uint32
-		buf256 [256]byte
-
-		state1 [16]uint32
-		buf64  [64]byte
-	)
-	copy(state0[:4], constants[:])
-	copy(state1[:4], constants[:])
-
-	XORBlocks(buf256[:], buf256[:], &state0, 20)
-	Core(&buf64, &state1, 20)
-	state1[12]++
-
-	if !bytes.Equal(buf256[:64], buf64[:]) {
-		t.Fatalf("First 64 byte keystream don't match: \nXORBlocks: %s\nCore:      %s", hex.EncodeToString(buf256[:64]), hex.EncodeToString(buf64[:]))
+func TestNewCipher(t *testing.T) {
+	mustFail := func(t *testing.T, msg string, nonce *[12]byte, key *[32]byte, rounds int) {
+		defer recFail(t, msg)
+		NewCipher(nonce, key, rounds)
 	}
 
-	Core(&buf64, &state1, 20)
-	state1[12]++
-	if !bytes.Equal(buf256[64:128], buf64[:]) {
-		t.Fatalf("Second 64 byte keystream don't match: \nXORBlocks: %s\nCore:       %s", hex.EncodeToString(buf256[64:128]), hex.EncodeToString(buf64[:]))
+	key := new([32]byte)
+	nonce := new([12]byte)
+
+	mustFail(t, "rounds is 0", nonce, key, 0)
+
+	mustFail(t, "rounds is not even", nonce, key, 21)
+}
+
+func TestSetCounter(t *testing.T) {
+	var key [32]byte
+	var nonce [12]byte
+	for i := range key {
+		key[i] = byte(i)
+	}
+	buf0, buf1 := make([]byte, 128), make([]byte, 128)
+
+	c := NewCipher(&nonce, &key, 20)
+	c.XORKeyStream(buf0[:1], buf0[:1])
+	c.SetCounter(20)
+	c.XORKeyStream(buf0[1:], buf0[1:])
+
+	XORKeyStream(buf1[:1], buf1[:1], &nonce, &key, 0, 20)
+	XORKeyStream(buf1[1:], buf1[1:], &nonce, &key, 20, 20)
+
+	if !bytes.Equal(buf0, buf1) {
+		t.Fatalf("XORKeyStream differ from chacha.XORKeyStream\n XORKeyStream: %s \n chacha.XORKeyStream: %s", hex.EncodeToString(buf1), hex.EncodeToString(buf0))
+	}
+}
+
+func TestXORKeyStream(t *testing.T) {
+	var key [32]byte
+	var nonce [12]byte
+	for i := range key {
+		key[i] = byte(i)
+	}
+	buf0, buf1 := make([]byte, 256), make([]byte, 256)
+
+	c := NewCipher(&nonce, &key, 20)
+	c.XORKeyStream(buf0[:1], buf0[:1])
+	c.XORKeyStream(buf0[1:65], buf0[1:65])
+	c.XORKeyStream(buf0[65:193], buf0[65:193])
+	c.XORKeyStream(buf0[193:200], buf0[193:200])
+	c.XORKeyStream(buf0[200:], buf0[200:])
+
+	XORKeyStream(buf1, buf1, &nonce, &key, 0, 20)
+
+	if !bytes.Equal(buf0, buf1) {
+		t.Fatalf("XORKeyStream differ from chacha.XORKeyStream\n XORKeyStream: %s \n chacha.XORKeyStream: %s", hex.EncodeToString(buf1), hex.EncodeToString(buf0))
+	}
+}
+
+func TestXORKeyStreamPanic(t *testing.T) {
+	mustFail := func(t *testing.T, msg string, dst, src []byte, nonce *[12]byte, key *[32]byte, counter uint32, rounds int) {
+		defer recFail(t, msg)
+		XORKeyStream(dst, src, nonce, key, counter, rounds)
 	}
 
-	Core(&buf64, &state1, 20)
-	state1[12]++
-	if !bytes.Equal(buf256[128:192], buf64[:]) {
-		t.Fatalf("Third 64 byte keystream don't match: \nXORBlocks: %s\nCore:      %s", hex.EncodeToString(buf256[128:192]), hex.EncodeToString(buf64[:]))
+	key := new([32]byte)
+	nonce := new([12]byte)
+	src, dst := make([]byte, 65), make([]byte, 65)
+
+	mustFail(t, "rounds is 0", dst, src, nonce, key, 0, 0)
+
+	mustFail(t, "rounds is not even", dst, src, nonce, key, 0, 21)
+
+	mustFail(t, "len(dst) < len(src)", dst[:len(src)-1], src, nonce, key, 0, 20)
+
+	c := NewCipher(nonce, key, 20)
+
+	mustFail2 := func(t *testing.T, msg string, dst, src []byte) {
+		defer recFail(t, msg)
+		c.XORKeyStream(dst, src)
 	}
 
-	Core(&buf64, &state1, 20)
-	if !bytes.Equal(buf256[192:], buf64[:]) {
-		t.Fatalf("Fourth 64 byte keystream don't match: \nXORBlocks: %s\nCore:      %s", hex.EncodeToString(buf256[192:]), hex.EncodeToString(buf64[:]))
-	}
+	mustFail2(t, "len(dst) < len(src)", dst[:len(src)-1], src)
+
 }

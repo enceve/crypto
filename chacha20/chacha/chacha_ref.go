@@ -8,75 +8,57 @@ package chacha
 import "github.com/enceve/crypto"
 
 // XORKeyStream crypts bytes from src to dst using the given key, nonce and counter.
-// The rounds argument specifies the number of rounds performed for keystream generation.
-// (Common values are 20, 12 or 8) Src and dst may be the same slice but otherwise should
-// not overlap. If len(dst) < len(src) the behavior is undefined.
+// The rounds argument specifies the number of rounds (must be even) performed for
+// keystream generation. (Common values are 20, 12 or 8) Src and dst may be the same
+// slice but otherwise should not overlap. If len(dst) < len(src) this function panics.
 func XORKeyStream(dst, src []byte, nonce *[12]byte, key *[32]byte, counter uint32, rounds int) {
-	var state [16]uint32
-
-	state[0] = constants[0]
-	state[1] = constants[1]
-	state[2] = constants[2]
-	state[3] = constants[3]
-
-	state[4] = uint32(key[0]) | uint32(key[1])<<8 | uint32(key[2])<<16 | uint32(key[3])<<24
-	state[5] = uint32(key[4]) | uint32(key[5])<<8 | uint32(key[6])<<16 | uint32(key[7])<<24
-	state[6] = uint32(key[8]) | uint32(key[9])<<8 | uint32(key[10])<<16 | uint32(key[11])<<24
-	state[7] = uint32(key[12]) | uint32(key[13])<<8 | uint32(key[14])<<16 | uint32(key[15])<<24
-	state[8] = uint32(key[16]) | uint32(key[17])<<8 | uint32(key[18])<<16 | uint32(key[19])<<24
-	state[9] = uint32(key[20]) | uint32(key[21])<<8 | uint32(key[22])<<16 | uint32(key[23])<<24
-	state[10] = uint32(key[24]) | uint32(key[25])<<8 | uint32(key[26])<<16 | uint32(key[27])<<24
-	state[11] = uint32(key[28]) | uint32(key[29])<<8 | uint32(key[30])<<16 | uint32(key[31])<<24
-
-	state[12] = counter
-
-	state[13] = uint32(nonce[0]) | uint32(nonce[1])<<8 | uint32(nonce[2])<<16 | uint32(nonce[3])<<24
-	state[14] = uint32(nonce[4]) | uint32(nonce[5])<<8 | uint32(nonce[6])<<16 | uint32(nonce[7])<<24
-	state[15] = uint32(nonce[8]) | uint32(nonce[9])<<8 | uint32(nonce[10])<<16 | uint32(nonce[11])<<24
-
 	length := len(src)
-	n := length - (length % 64)
-	if n > 0 {
+	if len(dst) < length {
+		panic("chacha20/chacha: dst buffer is to small")
+	}
+	if rounds <= 0 || rounds%2 != 0 {
+		panic("chacha20/chacha: rounds must be a multiple of 2")
+	}
+
+	var state [64]byte
+
+	copy(state[:], constants[:])
+
+	copy(state[16:], key[:])
+
+	state[48] = byte(counter)
+	state[49] = byte(counter << 8)
+	state[50] = byte(counter << 16)
+	state[51] = byte(counter << 24)
+
+	copy(state[52:], nonce[:])
+
+	if length >= 64 {
 		XORBlocks(dst, src, &state, rounds)
 	}
 
-	length -= n
-	if length > 0 {
+	if n := length & (^(64 - 1)); length-n > 0 {
 		var block [64]byte
 		Core(&block, &state, rounds)
+
 		crypto.XOR(dst[n:], src[n:], block[:])
 	}
 }
 
-// NewCipher returns a new *chacha.Cipher implementing the ChaCha/X (X = rounds)
-// stream cipher. The nonce must be unique for one
-// key for all time.
+// NewCipher returns a new *chacha.Cipher implementing the ChaCha/X (X = even number of rounds)
+// stream cipher. The nonce must be unique for one key for all time.
 func NewCipher(nonce *[12]byte, key *[32]byte, rounds int) *Cipher {
-	if rounds%2 != 0 {
-		panic("rounds must be a multiply of 2")
+	if rounds <= 0 || rounds%2 != 0 {
+		panic("chacha20/chacha: rounds must be a multiply of 2")
 	}
 	c := new(Cipher)
 	c.rounds = rounds
 
-	c.state[0] = constants[0]
-	c.state[1] = constants[1]
-	c.state[2] = constants[2]
-	c.state[3] = constants[3]
+	copy(c.state[:], constants[:])
 
-	c.state[4] = uint32(key[0]) | uint32(key[1])<<8 | uint32(key[2])<<16 | uint32(key[3])<<24
-	c.state[5] = uint32(key[4]) | uint32(key[5])<<8 | uint32(key[6])<<16 | uint32(key[7])<<24
-	c.state[6] = uint32(key[8]) | uint32(key[9])<<8 | uint32(key[10])<<16 | uint32(key[11])<<24
-	c.state[7] = uint32(key[12]) | uint32(key[13])<<8 | uint32(key[14])<<16 | uint32(key[15])<<24
-	c.state[8] = uint32(key[16]) | uint32(key[17])<<8 | uint32(key[18])<<16 | uint32(key[19])<<24
-	c.state[9] = uint32(key[20]) | uint32(key[21])<<8 | uint32(key[22])<<16 | uint32(key[23])<<24
-	c.state[10] = uint32(key[24]) | uint32(key[25])<<8 | uint32(key[26])<<16 | uint32(key[27])<<24
-	c.state[11] = uint32(key[28]) | uint32(key[29])<<8 | uint32(key[30])<<16 | uint32(key[31])<<24
+	copy(c.state[16:], key[:])
 
-	c.state[12] = 0
-
-	c.state[13] = uint32(nonce[0]) | uint32(nonce[1])<<8 | uint32(nonce[2])<<16 | uint32(nonce[3])<<24
-	c.state[14] = uint32(nonce[4]) | uint32(nonce[5])<<8 | uint32(nonce[6])<<16 | uint32(nonce[7])<<24
-	c.state[15] = uint32(nonce[8]) | uint32(nonce[9])<<8 | uint32(nonce[10])<<16 | uint32(nonce[11])<<24
+	copy(c.state[52:], nonce[:])
 
 	return c
 }
@@ -86,33 +68,27 @@ func NewCipher(nonce *[12]byte, key *[32]byte, rounds int) *Cipher {
 func (c *Cipher) XORKeyStream(dst, src []byte) {
 	length := len(src)
 	if len(dst) < length {
-		panic("dst buffer is to small")
+		panic("chacha20/chacha: dst buffer is to small")
 	}
 
 	if c.off > 0 {
-		left := 64 - c.off
-		if left > length {
-			left = length
+		n := crypto.XOR(dst, src, c.block[c.off:])
+		if n == length {
+			c.off += n
+			return
 		}
-		for i, v := range c.block[c.off : c.off+left] {
-			dst[i] = src[i] ^ v
-		}
-		src = src[left:]
-		dst = dst[left:]
-		length -= left
-		c.off += left
-		if c.off == 64 {
-			c.off = 0
-		}
+		src = src[n:]
+		dst = dst[n:]
+		length -= n
+		c.off = 0
 	}
 
-	n := length - (length % 64)
-	XORBlocks(dst, src, &(c.state), c.rounds)
+	if length >= 64 {
+		XORBlocks(dst, src, &(c.state), c.rounds)
+	}
 
-	length -= n
-	if length > 0 {
+	if n := length & (^(64 - 1)); length-n > 0 {
 		Core(&(c.block), &(c.state), c.rounds)
-		c.state[12]++
 
 		c.off += crypto.XOR(dst[n:], src[n:], c.block[:])
 	}
@@ -121,27 +97,40 @@ func (c *Cipher) XORKeyStream(dst, src []byte) {
 // XORBlocks crypts full block ( len(src) - (len(src) mod 64) bytes ) from src to
 // dst using the state. Src and dst may be the same slice
 // but otherwise should not overlap. If len(dst) < len(src) the behavior is undefined.
-// This function increments the counter.
-func XORBlocks(dst, src []byte, state *[16]uint32, rounds int) {
-	length := len(src)
-	n := length - (length % 64)
+// This function increments the counter of state.
+func XORBlocks(dst, src []byte, state *[64]byte, rounds int) {
+	n := len(src) & (^(64 - 1))
 
 	var block [64]byte
 	for i := 0; i < n; i += 64 {
 		Core(&block, state, rounds)
-		state[12]++
-		crypto.XOR(dst[i:], src[i:i+64], block[:])
+		crypto.XOR(dst[i:], src[i:], block[:])
 	}
 }
 
 // Core generates 64 byte keystream from the given state performing 'rounds' rounds
 // and writes them to dst. This function expects valid values. (no nil ptr etc.)
-// Core does NOT increment the counter.
-func Core(dst *[64]byte, state *[16]uint32, rounds int) {
-	v00, v01, v02, v03 := state[0], state[1], state[2], state[3]
-	v04, v05, v06, v07 := state[4], state[5], state[6], state[7]
-	v08, v09, v10, v11 := state[8], state[9], state[10], state[11]
-	v12, v13, v14, v15 := state[12], state[13], state[14], state[15]
+// Core increments the counter of the state.
+func Core(dst *[64]byte, state *[64]byte, rounds int) {
+	v00 := uint32(state[0]) | (uint32(state[1]) << 8) | (uint32(state[2]) << 16) | (uint32(state[3]) << 24)
+	v01 := uint32(state[4]) | (uint32(state[5]) << 8) | (uint32(state[6]) << 16) | (uint32(state[7]) << 24)
+	v02 := uint32(state[8]) | (uint32(state[9]) << 8) | (uint32(state[10]) << 16) | (uint32(state[11]) << 24)
+	v03 := uint32(state[12]) | (uint32(state[13]) << 8) | (uint32(state[14]) << 16) | (uint32(state[15]) << 24)
+	v04 := uint32(state[16]) | (uint32(state[17]) << 8) | (uint32(state[18]) << 16) | (uint32(state[19]) << 24)
+	v05 := uint32(state[20]) | (uint32(state[21]) << 8) | (uint32(state[22]) << 16) | (uint32(state[23]) << 24)
+	v06 := uint32(state[24]) | (uint32(state[25]) << 8) | (uint32(state[26]) << 16) | (uint32(state[27]) << 24)
+	v07 := uint32(state[28]) | (uint32(state[29]) << 8) | (uint32(state[30]) << 16) | (uint32(state[31]) << 24)
+	v08 := uint32(state[32]) | (uint32(state[33]) << 8) | (uint32(state[34]) << 16) | (uint32(state[35]) << 24)
+	v09 := uint32(state[36]) | (uint32(state[37]) << 8) | (uint32(state[38]) << 16) | (uint32(state[39]) << 24)
+	v10 := uint32(state[40]) | (uint32(state[41]) << 8) | (uint32(state[42]) << 16) | (uint32(state[43]) << 24)
+	v11 := uint32(state[44]) | (uint32(state[45]) << 8) | (uint32(state[46]) << 16) | (uint32(state[47]) << 24)
+	v12 := uint32(state[48]) | (uint32(state[49]) << 8) | (uint32(state[50]) << 16) | (uint32(state[51]) << 24)
+	v13 := uint32(state[52]) | (uint32(state[53]) << 8) | (uint32(state[54]) << 16) | (uint32(state[55]) << 24)
+	v14 := uint32(state[56]) | (uint32(state[57]) << 8) | (uint32(state[58]) << 16) | (uint32(state[59]) << 24)
+	v15 := uint32(state[60]) | (uint32(state[61]) << 8) | (uint32(state[62]) << 16) | (uint32(state[63]) << 24)
+
+	s00, s01, s02, s03, s04, s05, s06, s07 := v00, v01, v02, v03, v04, v05, v06, v07
+	s08, s09, s10, s11, s12, s13, s14, s15 := v08, v09, v10, v11, v12, v13, v14, v15
 
 	for i := 0; i < rounds; i += 2 {
 		v00 += v04
@@ -242,22 +231,28 @@ func Core(dst *[64]byte, state *[16]uint32, rounds int) {
 		v04 = (v04 << 7) | (v04 >> 25)
 	}
 
-	v00 += state[0]
-	v01 += state[1]
-	v02 += state[2]
-	v03 += state[3]
-	v04 += state[4]
-	v05 += state[5]
-	v06 += state[6]
-	v07 += state[7]
-	v08 += state[8]
-	v09 += state[9]
-	v10 += state[10]
-	v11 += state[11]
-	v12 += state[12]
-	v13 += state[13]
-	v14 += state[14]
-	v15 += state[15]
+	v00 += s00
+	v01 += s01
+	v02 += s02
+	v03 += s03
+	v04 += s04
+	v05 += s05
+	v06 += s06
+	v07 += s07
+	v08 += s08
+	v09 += s09
+	v10 += s10
+	v11 += s11
+	v12 += s12
+	v13 += s13
+	v14 += s14
+	v15 += s15
+
+	s12 += 1
+	state[48] = byte(s12)
+	state[49] = byte(s12 >> 8)
+	state[50] = byte(s12 >> 16)
+	state[51] = byte(s12 >> 24)
 
 	dst[0] = byte(v00)
 	dst[1] = byte(v00 >> 8)

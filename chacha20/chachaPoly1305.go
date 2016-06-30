@@ -16,11 +16,19 @@ import (
 // The max. size of the auth. tag for the ChaCha20Poly1305 AEAD cipher in bytes.
 const TagSize = poly1305.TagSize
 
-// NewAEAD returns a cipher.AEAD implementing the
-// ChaCha20Poly1305 construction specified in
-// RFC 7539 with arbitrary tag size. The tagsize must be
-// between 1 and the TagSize constant.
-func NewAEAD(key *[32]byte, tagsize int) (cipher.AEAD, error) {
+// NewChaCha20Poly1305 returns a cipher.AEAD implementing the
+// ChaCha20Poly1305 construction specified in RFC 7539 with a
+// 128 bit auth. tag.
+func NewChaCha20Poly1305(key *[32]byte) cipher.AEAD {
+	c := &aead{tagsize: TagSize}
+	c.key = *key
+	return c
+}
+
+// NewChaCha20Poly1305WithTagSize returns a cipher.AEAD implementing the
+// ChaCha20Poly1305 construction specified in RFC 7539 with arbitrary tag size.
+// The tagsize must be between 1 and the TagSize constant.
+func NewChaCha20Poly1305WithTagSize(key *[32]byte, tagsize int) (cipher.AEAD, error) {
 	if tagsize < 1 || tagsize > TagSize {
 		return nil, errors.New("tag size must be between 1 and 16")
 	}

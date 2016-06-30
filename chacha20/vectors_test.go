@@ -9,6 +9,14 @@ import (
 	"testing"
 )
 
+func fromHex(s string) []byte {
+	b, err := hex.DecodeString(s)
+	if err != nil {
+		panic(err)
+	}
+	return b
+}
+
 // Test vector from:
 // https://tools.ietf.org/html/rfc7539#section-2.8.1
 var chacha20TestVectors = []struct {
@@ -105,22 +113,10 @@ var chacha20TestVectors = []struct {
 
 func TestVectors(t *testing.T) {
 	for i, v := range chacha20TestVectors {
-		key, err := hex.DecodeString(v.key)
-		if err != nil {
-			t.Fatalf("Test vector %d: Failed to decode hex key: %s", i, err)
-		}
-		nonce, err := hex.DecodeString(v.nonce)
-		if err != nil {
-			t.Fatalf("Test vector %d: Failed to decode hex nonce: %s", i, err)
-		}
-		msg, err := hex.DecodeString(v.msg)
-		if err != nil {
-			t.Fatalf("Test vector %d: Failed to decode hex msg: %s", i, err)
-		}
-		ciphertext, err := hex.DecodeString(v.ciphertext)
-		if err != nil {
-			t.Fatalf("Test vector %d: Failed to decode hex ciphertext: %s", i, err)
-		}
+		key := fromHex(v.key)
+		nonce := fromHex(v.nonce)
+		msg := fromHex(v.msg)
+		ciphertext := fromHex(v.ciphertext)
 
 		var (
 			Key   [32]byte
@@ -198,30 +194,15 @@ var aeadTestVectors = []struct {
 
 func TestAEADVectors(t *testing.T) {
 	for i, v := range aeadTestVectors {
-		key, err := hex.DecodeString(v.key)
-		if err != nil {
-			t.Fatalf("Test vector %d: Failed to decode hex key: %s", i, err)
-		}
-		nonce, err := hex.DecodeString(v.nonce)
-		if err != nil {
-			t.Fatalf("Test vector %d: Failed to decode hex nonce: %s", i, err)
-		}
-		msg, err := hex.DecodeString(v.msg)
-		if err != nil {
-			t.Fatalf("Test vector %d: Failed to decode hex msg: %s", i, err)
-		}
-		data, err := hex.DecodeString(v.data)
-		if err != nil {
-			t.Fatalf("Test vector %d: Failed to decode hex data: %s", i, err)
-		}
-		ciphertext, err := hex.DecodeString(v.ciphertext)
-		if err != nil {
-			t.Fatalf("Test vector %d: Failed to decode hex ciphertext: %s", i, err)
-		}
+		key := fromHex(v.key)
+		nonce := fromHex(v.nonce)
+		msg := fromHex(v.msg)
+		data := fromHex(v.data)
+		ciphertext := fromHex(v.ciphertext)
 
 		var Key [32]byte
 		copy(Key[:], key)
-		c, err := NewAEAD(&Key, v.tagSize)
+		c, err := NewChaCha20Poly1305WithTagSize(&Key, v.tagSize)
 		if err != nil {
 			t.Fatalf("Test vector %d: Failed to create AEAD instance: %s", i, err)
 		}
