@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"encoding/hex"
 	"testing"
+	"unsafe"
 )
 
 func TestBlockSize(t *testing.T) {
@@ -118,104 +119,52 @@ func TestVerify(t *testing.T) {
 
 // Benchmarks
 
-func BenchmarkWrite_8B(b *testing.B) {
+func BenchmarkWrite_8(b *testing.B)           { benchmarkWrite(b, 8, false) }
+func BenchmarkWriteUnaligned_8(b *testing.B)  { benchmarkWrite(b, 8, true) }
+func BenchmarkWrite_1K(b *testing.B)          { benchmarkWrite(b, 1024, false) }
+func BenchmarkWriteUnaligned_1K(b *testing.B) { benchmarkWrite(b, 1024, true) }
+func BenchmarkSum_8(b *testing.B)             { benchmarkWrite(b, 8, false) }
+func BenchmarkSumUnaligned_8(b *testing.B)    { benchmarkWrite(b, 8, true) }
+func BenchmarkSum_1K(b *testing.B)            { benchmarkWrite(b, 1024, false) }
+func BenchmarkSumUnaligned_1K(b *testing.B)   { benchmarkWrite(b, 1024, true) }
+
+func unalignBytes(in []byte) []byte {
+	out := make([]byte, len(in)+1)
+	if uintptr(unsafe.Pointer(&out[0]))&(unsafe.Alignof(uint32(0))-1) == 0 {
+		out = out[1:]
+	} else {
+		out = out[:len(in)]
+	}
+	copy(out, in)
+	return out
+}
+
+func benchmarkWrite(b *testing.B, size int, unalign bool) {
 	var key [16]byte
 	h := New(&key)
-	buf := make([]byte, 8)
+	msg := make([]byte, size)
+	if unalign {
+		msg = unalignBytes(msg)
+	}
 
-	b.SetBytes(int64(len(buf)))
+	b.SetBytes(int64(size))
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		h.Write(buf)
+		h.Write(msg)
 	}
 }
 
-func BenchmarkWrite_1K(b *testing.B) {
-	var key [16]byte
-	h := New(&key)
-	buf := make([]byte, 1024)
-
-	b.SetBytes(int64(len(buf)))
-	for i := 0; i < b.N; i++ {
-		h.Write(buf)
-	}
-}
-
-func BenchmarkWrite_64K(b *testing.B) {
-	var key [16]byte
-	h := New(&key)
-	buf := make([]byte, 64*1024)
-
-	b.SetBytes(int64(len(buf)))
-	for i := 0; i < b.N; i++ {
-		h.Write(buf)
-	}
-}
-
-func BenchmarkSum_8B(b *testing.B) {
-	var key [16]byte
+func benchmarkSum(b *testing.B, size int, unalign bool) {
 	var out [TagSize]byte
-	msg := make([]byte, 8)
+	var key [16]byte
+	msg := make([]byte, size)
+	if unalign {
+		msg = unalignBytes(msg)
+	}
 
-	b.SetBytes(int64(len(msg)))
+	b.SetBytes(int64(size))
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		Sum(&out, msg, &key)
-	}
-}
-
-func BenchmarkSum_1K(b *testing.B) {
-	var key [16]byte
-	var out [TagSize]byte
-	msg := make([]byte, 1024)
-
-	b.SetBytes(int64(len(msg)))
-	for i := 0; i < b.N; i++ {
-		Sum(&out, msg, &key)
-	}
-}
-
-func BenchmarkSum_64K(b *testing.B) {
-	var key [16]byte
-	var out [TagSize]byte
-	msg := make([]byte, 64*1024)
-
-	b.SetBytes(int64(len(msg)))
-	for i := 0; i < b.N; i++ {
-		Sum(&out, msg, &key)
-	}
-}
-
-func BenchmarkVerify_8B(b *testing.B) {
-	var key [16]byte
-	var hash [TagSize]byte
-	msg := make([]byte, 8)
-	Sum(&hash, msg, &key)
-
-	b.SetBytes(int64(len(msg)))
-	for i := 0; i < b.N; i++ {
-		Verify(&hash, msg, &key)
-	}
-}
-
-func BenchmarkVerify_1K(b *testing.B) {
-	var key [16]byte
-	var hash [TagSize]byte
-	msg := make([]byte, 1024)
-	Sum(&hash, msg, &key)
-
-	b.SetBytes(int64(len(msg)))
-	for i := 0; i < b.N; i++ {
-		Verify(&hash, msg, &key)
-	}
-}
-
-func BenchmarkVerify_64K(b *testing.B) {
-	var key [16]byte
-	var hash [TagSize]byte
-	msg := make([]byte, 64*1024)
-	Sum(&hash, msg, &key)
-
-	b.SetBytes(int64(len(msg)))
-	for i := 0; i < b.N; i++ {
-		Verify(&hash, msg, &key)
 	}
 }
