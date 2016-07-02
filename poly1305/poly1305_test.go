@@ -6,6 +6,7 @@ package poly1305
 import (
 	"encoding/hex"
 	"testing"
+	"unsafe"
 )
 
 func TestWriteAfterSum(t *testing.T) {
@@ -97,94 +98,56 @@ func TestVerify(t *testing.T) {
 	}
 }
 
-func BenchmarkSum64B(b *testing.B) {
+// Benchmarks
+
+func BenchmarkSum_8(b *testing.B)             { benchmarkSum(b, 8, false) }
+func BenchmarkSumUnaligned_8(b *testing.B)    { benchmarkSum(b, 8, true) }
+func BenchmarkSum_4K(b *testing.B)            { benchmarkSum(b, 4*1024, false) }
+func BenchmarkSumUnaligned_4K(b *testing.B)   { benchmarkSum(b, 4*1024, true) }
+func BenchmarkWrite_8(b *testing.B)           { benchmarkWrite(b, 8, false) }
+func BenchmarkWriteUnaligned_8(b *testing.B)  { benchmarkWrite(b, 8, true) }
+func BenchmarkWrite_4K(b *testing.B)          { benchmarkWrite(b, 4*1024, false) }
+func BenchmarkWriteUnaligned_4K(b *testing.B) { benchmarkWrite(b, 4*1024, true) }
+
+func benchmarkSum(b *testing.B, size int, unalign bool) {
 	var key [32]byte
 	var tag [16]byte
 
-	msg := make([]byte, 64)
-	b.SetBytes(64)
+	msg := make([]byte, size)
+	if unalign {
+		msg = unalignBytes(msg)
+	}
+
+	b.SetBytes(int64(size))
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		Sum(&tag, msg, &key)
 	}
 }
 
-func BenchmarkSum512B(b *testing.B) {
-	var key [32]byte
-	var tag [16]byte
-
-	msg := make([]byte, 512)
-	b.SetBytes(512)
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		Sum(&tag, msg, &key)
-	}
-}
-
-func BenchmarkSum1k(b *testing.B) {
-	var key [32]byte
-	var tag [16]byte
-
-	msg := make([]byte, 1024)
-	b.SetBytes(1024)
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		Sum(&tag, msg, &key)
-	}
-}
-
-func BenchmarkSum64k(b *testing.B) {
-	var key [32]byte
-	var tag [16]byte
-
-	msg := make([]byte, 64*1024)
-	b.SetBytes(64 * 1024)
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		Sum(&tag, msg, &key)
-	}
-}
-
-func BenchmarkWrite64B(b *testing.B) {
+func benchmarkWrite(b *testing.B, size int, unalign bool) {
 	var key [32]byte
 	h := New(&key)
-	msg := make([]byte, 64)
-	b.SetBytes(64)
+
+	msg := make([]byte, size)
+	if unalign {
+		msg = unalignBytes(msg)
+	}
+
+	b.SetBytes(int64(size))
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		h.Write(msg)
 	}
 }
 
-func BenchmarkWrite512B(b *testing.B) {
-	var key [32]byte
-	h := New(&key)
-	msg := make([]byte, 512)
-	b.SetBytes(512)
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		h.Write(msg)
+func unalignBytes(in []byte) []byte {
+	out := make([]byte, len(in)+1)
+	if uintptr(unsafe.Pointer(&out[0]))&(unsafe.Alignof(uint32(0))-1) == 0 {
+		out = out[1:]
+	} else {
+		out = out[:len(in)]
 	}
-}
-
-func BenchmarkWrite1K(b *testing.B) {
-	var key [32]byte
-	h := New(&key)
-	msg := make([]byte, 1024)
-	b.SetBytes(1024)
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		h.Write(msg)
-	}
-}
-
-func BenchmarkWrite64K(b *testing.B) {
-	var key [32]byte
-	h := New(&key)
-	msg := make([]byte, 64*1024)
-	b.SetBytes(64 * 1024)
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		h.Write(msg)
-	}
+	copy(out, in)
+	return out
 }

@@ -97,7 +97,7 @@ func (p *Hash) Write(msg []byte) (int, error) {
 }
 
 // Sum computes the Poly1305 checksum of the prevouisly
-// proccessed data and writes it to out. It is legal to
+// processed data and writes it to out. It is legal to
 // call this function more than one time.
 func (p *Hash) Sum(out *[TagSize]byte) {
 	h, r := p.h, p.r
