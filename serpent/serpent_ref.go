@@ -118,6 +118,7 @@ func encryptBlock(dst, src []byte, sk *subkeys) {
 	r3 ^= sk[131]
 
 	// write the encrypted block to the output
+
 	dst[0] = byte(r0)
 	dst[1] = byte(r0 >> 8)
 	dst[2] = byte(r0 >> 16)

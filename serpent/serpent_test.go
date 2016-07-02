@@ -255,58 +255,41 @@ func TestLinear(t *testing.T) {
 
 // Benchmarks
 
-func BenchmarkEncrypt_16B(b *testing.B) {
+func BenchmarkEncrypt_16(b *testing.B) { benchmarkEncrypt(b, 16) }
+func BenchmarkDecrypt_16(b *testing.B) { benchmarkDecrypt(b, 16) }
+func BenchmarkEncrypt_1K(b *testing.B) { benchmarkEncrypt(b, 1024) }
+func BenchmarkDecrypt_1K(b *testing.B) { benchmarkDecrypt(b, 1024) }
+
+func benchmarkEncrypt(b *testing.B, size int) {
 	c, err := NewCipher(make([]byte, 16))
 	if err != nil {
 		b.Fatalf("Failed to create Serpent instance: %s", err)
 	}
 	buf := make([]byte, c.BlockSize())
-	b.SetBytes(int64(len(buf)))
-	for i := 0; i < b.N; i++ {
-		c.Encrypt(buf, buf)
-	}
-}
+	b.SetBytes(int64(size - (size % c.BlockSize())))
 
-func BenchmarkEncrypt_1K(b *testing.B) {
-	c, err := NewCipher(make([]byte, 16))
-	if err != nil {
-		b.Fatalf("Failed to create Serpent instance: %s", err)
-	}
-	buf := make([]byte, 1024)
-	b.SetBytes(int64(len(buf)))
-	n := len(buf) / BlockSize
+	n := size / c.BlockSize()
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		for j := 0; j < n; j++ {
-			b := buf[j*BlockSize:]
-			c.Decrypt(b, b)
+			c.Encrypt(buf, buf)
 		}
 	}
 }
 
-func BenchmarkDecrypt_16B(b *testing.B) {
+func benchmarkDecrypt(b *testing.B, size int) {
 	c, err := NewCipher(make([]byte, 16))
 	if err != nil {
 		b.Fatalf("Failed to create Serpent instance: %s", err)
 	}
 	buf := make([]byte, c.BlockSize())
-	b.SetBytes(int64(len(buf)))
-	for i := 0; i < b.N; i++ {
-		c.Decrypt(buf, buf)
-	}
-}
+	b.SetBytes(int64(size - (size % c.BlockSize())))
 
-func BenchmarkDecrypt_1024B(b *testing.B) {
-	c, err := NewCipher(make([]byte, 16))
-	if err != nil {
-		b.Fatalf("Failed to create Serpent instance: %s", err)
-	}
-	buf := make([]byte, 1024)
-	b.SetBytes(int64(len(buf)))
-	n := len(buf) / BlockSize
+	n := size / c.BlockSize()
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		for j := 0; j < n; j++ {
-			b := buf[j*BlockSize:]
-			c.Decrypt(b, b)
+			c.Decrypt(buf, buf)
 		}
 	}
 }
