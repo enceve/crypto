@@ -13,19 +13,29 @@ type testVector struct {
 	key, plaintext, ciphertext string
 }
 
+func fromHex(s string) []byte {
+	b, err := hex.DecodeString(s)
+	if err != nil {
+		panic(err)
+	}
+	return b
+}
+
 // Test vectors from RFC3713 - https://www.ietf.org/rfc/rfc3713.txt
-var vectors = []testVector{
-	testVector{
+var vectors = []struct {
+	key, plaintext, ciphertext string
+}{
+	{
 		key:        "0123456789abcdeffedcba9876543210",
 		plaintext:  "0123456789abcdeffedcba9876543210",
 		ciphertext: "67673138549669730857065648eabe43",
 	},
-	testVector{
+	{
 		key:        "0123456789abcdeffedcba98765432100011223344556677",
 		plaintext:  "0123456789abcdeffedcba9876543210",
 		ciphertext: "b4993401b3e996f84ee5cee7d79b09b9",
 	},
-	testVector{
+	{
 		key:        "0123456789abcdeffedcba987654321000112233445566778899aabbccddeeff",
 		plaintext:  "0123456789abcdeffedcba9876543210",
 		ciphertext: "9acc237dff16d76c20ef7c919e3a7509",
@@ -34,18 +44,9 @@ var vectors = []testVector{
 
 func TestVectors(t *testing.T) {
 	for i, v := range vectors {
-		key, err := hex.DecodeString(v.key)
-		if err != nil {
-			t.Fatalf("Test vector %d: Failed to decode hex key: %s", i, err)
-		}
-		plaintext, err := hex.DecodeString(v.plaintext)
-		if err != nil {
-			t.Fatalf("Test vector %d: Failed to decode hex plaintext: %s", i, err)
-		}
-		ciphertext, err := hex.DecodeString(v.ciphertext)
-		if err != nil {
-			t.Fatalf("Test vector %d: Failed to decode hex ciphertext: %s", i, err)
-		}
+		key := fromHex(v.key)
+		plaintext := fromHex(v.plaintext)
+		ciphertext := fromHex(v.ciphertext)
 		buf := make([]byte, BlockSize)
 
 		c, err := NewCipher(key)
