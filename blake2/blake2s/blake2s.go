@@ -38,7 +38,7 @@ type Config struct {
 // Configure takes the hash size and the BLAKE2s configuration and
 // computes the 8 32-bit chain values. The conf is optional and can be nil,
 // or must be a valid configuraton struct - otherwise a non-nil error is returned.
-func Configure(hVal *[8]uint32, counter *[2]uint32, hashsize int, conf *Config) error {
+func Configure(hVal *[8]uint32, hashsize int, conf *Config) error {
 	if hashsize <= 0 || hashsize > Size {
 		return errors.New("illegal hash size " + strconv.Itoa(hashsize))
 	}
@@ -98,7 +98,7 @@ func Sum(msg []byte, hashsize int, conf *Config) ([]byte, error) {
 // if the configuration is invalid.
 func New(hashsize int, conf *Config) (hash.Hash, error) {
 	h := new(hashFunc)
-	if err := Configure(&(h.hVal), &(h.ctr), hashsize, conf); err != nil {
+	if err := Configure(&(h.hVal), hashsize, conf); err != nil {
 		return nil, err
 	}
 	h.hashsize = hashsize

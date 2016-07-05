@@ -159,55 +159,29 @@ func TestSum160s(t *testing.T) {
 	}
 }
 
-var (
-	sum512  [64]byte
-	sum256s [32]byte
-)
+// Benchmarks
 
-func BenchmarkSum512_64B(b *testing.B) {
-	buf := make([]byte, 64)
-	b.SetBytes(int64(len(buf)))
+func benchmarkSum512(b *testing.B, size int) {
+	var sum512 [64]byte
+	buf := make([]byte, size)
+	b.SetBytes(int64(size))
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		Sum512(&sum512, buf, nil)
 	}
 }
 
-func BenchmarkSum512_1K(b *testing.B) {
-	buf := make([]byte, 1024)
-	b.SetBytes(int64(len(buf)))
-	for i := 0; i < b.N; i++ {
-		Sum512(&sum512, buf, nil)
-	}
-}
-
-func BenchmarkSum512_64K(b *testing.B) {
-	buf := make([]byte, 64*1024)
-	b.SetBytes(int64(len(buf)))
-	for i := 0; i < b.N; i++ {
-		Sum512(&sum512, buf, nil)
-	}
-}
-
-func BenchmarkSum256s_64B(b *testing.B) {
-	buf := make([]byte, 64)
-	b.SetBytes(int64(len(buf)))
+func benchmarkSum256s(b *testing.B, size int) {
+	var sum256s [32]byte
+	buf := make([]byte, size)
+	b.SetBytes(int64(size))
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		Sum256s(&sum256s, buf, nil)
 	}
 }
 
-func BenchmarkSum256s_1K(b *testing.B) {
-	buf := make([]byte, 1024)
-	b.SetBytes(int64(len(buf)))
-	for i := 0; i < b.N; i++ {
-		Sum256s(&sum256s, buf, nil)
-	}
-}
-
-func BenchmarkSum256s_64K(b *testing.B) {
-	buf := make([]byte, 64*1024)
-	b.SetBytes(int64(len(buf)))
-	for i := 0; i < b.N; i++ {
-		Sum256s(&sum256s, buf, nil)
-	}
-}
+func BenchmarkSum512_64(b *testing.B)    { benchmarkSum512(b, 64) }
+func BenchmarkSum512_1024(b *testing.B)  { benchmarkSum512(b, 1024) }
+func BenchmarkSum256s_64(b *testing.B)   { benchmarkSum256s(b, 64) }
+func BenchmarkSum256s_1024(b *testing.B) { benchmarkSum256s(b, 1024) }
