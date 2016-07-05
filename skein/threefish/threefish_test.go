@@ -5,89 +5,115 @@ package threefish
 
 import "testing"
 
-func BenchmarkEncrypt256_32B(b *testing.B) {
-	var key [32]byte
+// The UBI256, UBI512 and UBI1024 functions are tested within
+// the skein packages (skein, skein256 and skein1024)
+
+func testBlockSize(t *testing.T, blocksize int) {
 	var tweak [TweakSize]byte
+	c, err := NewCipher(&tweak, make([]byte, blocksize))
+	if err != nil {
+		t.Fatalf("Failed to create Threefish-%d instance: %s", blocksize*8, err)
+	}
 
-	c, _ := NewCipher(&tweak, key[:])
-	buf := make([]byte, BlockSize256)
-
-	b.SetBytes(int64(len(buf)))
-	for i := 0; i < b.N; i++ {
-		c.Encrypt(buf, buf)
+	if bs := c.BlockSize(); bs != blocksize {
+		t.Fatalf("BlockSize() returned unexpected value: %d - expected %d", bs, blocksize)
 	}
 }
 
-func BenchmarkEncrypt256_1K(b *testing.B) {
-	var key [32]byte
+func TestBlockSize(t *testing.T) {
+	testBlockSize(t, BlockSize256)
+	testBlockSize(t, BlockSize512)
+	testBlockSize(t, BlockSize1024)
+}
+
+func TestNew(t *testing.T) {
+	badKeyLengths := []int{
+		0, 31, 33, 63, 65, 127, 129,
+	}
 	var tweak [TweakSize]byte
-
-	c, _ := NewCipher(&tweak, key[:])
-	buf := make([]byte, 32*BlockSize256)
-
-	b.SetBytes(int64(len(buf)))
-	for i := 0; i < b.N; i++ {
-		for j := 0; j < 32; j++ {
-			b := buf[j*BlockSize256:]
-			c.Encrypt(b, b)
+	for i, v := range badKeyLengths {
+		_, err := NewCipher(&tweak, make([]byte, v))
+		if err == nil {
+			t.Fatalf("BadKey %d:  NewCipher accepted inavlid key length %d", i, v)
 		}
 	}
 }
 
-func BenchmarkEncrypt512_64B(b *testing.B) {
-	var key [64]byte
-	var tweak [TweakSize]byte
+func TestIncrementTweak(t *testing.T) {
+	var tweak [3]uint64
 
-	c, _ := NewCipher(&tweak, key[:])
-	buf := make([]byte, BlockSize512)
+	IncrementTweak(&tweak, 1)
+	if tweak[0] != 1 {
+		t.Fatalf("IncrementTweak failed by increment of %d", 1)
+	}
 
-	b.SetBytes(int64(len(buf)))
-	for i := 0; i < b.N; i++ {
-		c.Encrypt(buf, buf)
+	tweak[0] = ^uint64(0)
+	IncrementTweak(&tweak, 2)
+	if tweak[0] != 1 && tweak[1] != 1 {
+		t.Fatalf("IncrementTweak failed by increment of %d", 2)
+	}
+
+	tweak[0] = ^uint64(0)
+	tweak[1] = uint64(0xFFFFFFFF)
+	IncrementTweak(&tweak, 1)
+	if tweak[0] != 0 && tweak[1] != 0 {
+		t.Fatalf("IncrementTweak failed by increment of %d", 1)
 	}
 }
 
-func BenchmarkEncrypt512_1K(b *testing.B) {
-	var key [64]byte
+// Benchmarks
+
+func benchmarkEncrypt(b *testing.B, blocksize, size int) {
+	key := make([]byte, blocksize)
 	var tweak [TweakSize]byte
 
-	c, _ := NewCipher(&tweak, key[:])
-	buf := make([]byte, 16*BlockSize512)
+	c, err := NewCipher(&tweak, key)
+	if err != nil {
+		b.Fatalf("Failed to create Threefish-%d instance: %s", blocksize*8, err)
+	}
+	n := size / blocksize
+	buf := make([]byte, blocksize)
+	b.SetBytes(int64(blocksize * n))
 
-	b.SetBytes(int64(len(buf)))
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		for j := 0; j < 16; j++ {
-			b := buf[j*BlockSize512:]
-			c.Encrypt(b, b)
+		for j := 0; j < n; j++ {
+			c.Encrypt(buf, buf)
 		}
 	}
 }
 
-func BenchmarkEncrypt1024_128B(b *testing.B) {
-	var key [128]byte
+func benchmarkDecrypt(b *testing.B, blocksize, size int) {
+	key := make([]byte, blocksize)
 	var tweak [TweakSize]byte
 
-	c, _ := NewCipher(&tweak, key[:])
-	buf := make([]byte, BlockSize1024)
-
-	b.SetBytes(int64(len(buf)))
-	for i := 0; i < b.N; i++ {
-		c.Encrypt(buf, buf)
+	c, err := NewCipher(&tweak, key)
+	if err != nil {
+		b.Fatalf("Failed to create Threefish-%d instance: %s", blocksize*8, err)
 	}
-}
 
-func BenchmarkEncrypt1024_1K(b *testing.B) {
-	var key [128]byte
-	var tweak [TweakSize]byte
+	n := size / blocksize
+	buf := make([]byte, blocksize)
+	b.SetBytes(int64(blocksize * n))
 
-	c, _ := NewCipher(&tweak, key[:])
-	buf := make([]byte, 8*BlockSize1024)
-
-	b.SetBytes(int64(len(buf)))
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		for j := 0; j < 8; j++ {
-			b := buf[j*BlockSize1024:]
-			c.Encrypt(b, b)
+		for j := 0; j < n; j++ {
+			c.Decrypt(buf, buf)
 		}
 	}
 }
+
+func BenchmarkEncrypt256_32(b *testing.B)    { benchmarkEncrypt(b, BlockSize256, 32) }
+func BenchmarkEncrypt256_1024(b *testing.B)  { benchmarkEncrypt(b, BlockSize256, 1024) }
+func BenchmarkEncrypt512_64(b *testing.B)    { benchmarkEncrypt(b, BlockSize512, 64) }
+func BenchmarkEncrypt512_1024(b *testing.B)  { benchmarkEncrypt(b, BlockSize512, 1024) }
+func BenchmarkEncrypt1024_128(b *testing.B)  { benchmarkEncrypt(b, BlockSize1024, 128) }
+func BenchmarkEncrypt1024_1024(b *testing.B) { benchmarkEncrypt(b, BlockSize1024, 1024) }
+
+func BenchmarkDecrypt256_32(b *testing.B)    { benchmarkDecrypt(b, BlockSize256, 32) }
+func BenchmarkDecrypt256_1024(b *testing.B)  { benchmarkDecrypt(b, BlockSize256, 1024) }
+func BenchmarkDecrypt512_64(b *testing.B)    { benchmarkDecrypt(b, BlockSize512, 64) }
+func BenchmarkDecrypt512_1024(b *testing.B)  { benchmarkDecrypt(b, BlockSize512, 1024) }
+func BenchmarkDecrypt1024_128(b *testing.B)  { benchmarkDecrypt(b, BlockSize1024, 128) }
+func BenchmarkDecrypt1024_1024(b *testing.B) { benchmarkDecrypt(b, BlockSize1024, 1024) }

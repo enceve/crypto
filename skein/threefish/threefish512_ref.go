@@ -22,6 +22,7 @@ func (t *threefish512) Decrypt(dst, src []byte) {
 
 	block512ToBytes(dst, &block)
 }
+
 func newCipher512(tweak *[TweakSize]byte, key []byte) *threefish512 {
 	c := new(threefish512)
 
@@ -304,7 +305,7 @@ func Decrypt512(block *[8]uint64, keys *[9]uint64, tweak *[3]uint64) {
 	block[4], block[5], block[6], block[7] = b4, b5, b6, b7
 }
 
-// UBI512does a Threefish512 encryption of the given block using
+// UBI512 does a Threefish512 encryption of the given block using
 // the chain values hVal and the tweak.
 // The chain values are updated through hVal[i] = block[i] ^ Enc(block)[i]
 func UBI512(block *[8]uint64, hVal *[9]uint64, tweak *[3]uint64) {

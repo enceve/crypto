@@ -56,7 +56,7 @@ func IncrementTweak(tweak *[3]uint64, ctr uint64) {
 	tweak[0] += ctr
 	if tweak[0] < t0 {
 		t1 := tweak[1]
-		tweak[1] = (t1 & 0xFFFFFFFF00000000) | ((t1 + 1) & 0x00000000FFFFFFFF)
+		tweak[1] = (t1 + 1) & 0x00000000FFFFFFFF
 	}
 }
 
